@@ -1,14 +1,41 @@
 <?php
 
-use App\Http\Controllers\TimesheetController;
+// routes/web.php
 
-// Timesheet routes
-Route::get('/timesheet', [TimesheetController::class, 'index'])->name('timesheet.index');
+use App\Http\Controllers\TimeLogController;
+use Illuminate\Support\Facades\Route;
 
-// AJAX routes for timesheet functionality
-Route::post('/timesheet/entries', [TimesheetController::class, 'storeEntry'])->name('timesheet.store');
-Route::get('/timesheet/entries', [TimesheetController::class, 'getEntries'])->name('timesheet.entries');
-Route::put('/timesheet/entries/{entry}', [TimesheetController::class, 'updateEntry'])->name('timesheet.update');
-Route::delete('/timesheet/entries/{entry}', [TimesheetController::class, 'deleteEntry'])->name('timesheet.delete');
-Route::get('/timesheet/report', [TimesheetController::class, 'getTwoWeekReport'])->name('timesheet.report');
-Route::get('/timesheet/export', [TimesheetController::class, 'exportExcel'])->name('timesheet.export');
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
+
+// Main timesheet interface
+Route::get('/', [TimeLogController::class, 'index'])->name('timesheet.index');
+Route::get('/timesheet', [TimeLogController::class, 'index'])->name('timesheet.dashboard');
+
+// Time tracking routes
+Route::prefix('api/timesheet')->name('timesheet.api.')->group(function () {
+    
+    // Session management
+    Route::post('/clock-in', [TimeLogController::class, 'clockIn'])->name('clock-in');
+    Route::post('/clock-out', [TimeLogController::class, 'clockOut'])->name('clock-out');
+    Route::delete('/cancel-session', [TimeLogController::class, 'cancelSession'])->name('cancel-session');
+    Route::get('/active-session', [TimeLogController::class, 'getActiveSession'])->name('active-session');
+    
+    // History and CRUD
+    Route::get('/history', [TimeLogController::class, 'getHistory'])->name('history');
+    Route::put('/logs/{id}', [TimeLogController::class, 'updateLog'])->name('update-log');
+    Route::delete('/logs/{id}', [TimeLogController::class, 'deleteLog'])->name('delete-log');
+    
+    // Reports and analytics
+    Route::get('/report', [TimeLogController::class, 'generateReport'])->name('report');
+    Route::get('/dashboard-stats', [TimeLogController::class, 'getDashboardStats'])->name('dashboard-stats');
+    Route::get('/export-excel', [TimeLogController::class, 'exportExcel'])->name('export-excel');
+});
+
+// Fallback route
+Route::fallback(function () {
+    return redirect()->route('timesheet.index');
+});
