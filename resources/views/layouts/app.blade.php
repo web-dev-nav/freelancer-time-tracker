@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -81,9 +82,6 @@
             box-shadow: var(--shadow-lg);
             border: 1px solid rgba(255, 255, 255, 0.2);
             overflow: hidden;
-            position: relative;
-            z-index: auto;
-            isolation: isolate;
         }
 
         /* Utility Classes */

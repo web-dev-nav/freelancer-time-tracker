@@ -363,76 +363,6 @@
     </div>
 </div>
 
-<!-- Edit Log Modal -->
-<div class="modal" id="edit-log-modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3>Edit Time Entry</h3>
-            <button class="modal-close" onclick="hideEditModal()">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        
-        <form id="edit-log-form" class="modal-body">
-            <input type="hidden" id="edit-log-id">
-            
-            <div class="form-group">
-                <label class="form-label" for="edit-date">
-                    <i class="fas fa-calendar"></i>
-                    Date
-                </label>
-                <input type="date" id="edit-date" class="form-control" required>
-            </div>
-            
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label" for="edit-clock-in-time">
-                        <i class="fas fa-clock"></i>
-                        Clock In Time
-                    </label>
-                    <input type="time" id="edit-clock-in-time" class="form-control" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label" for="edit-clock-out-time">
-                        <i class="fas fa-clock"></i>
-                        Clock Out Time
-                    </label>
-                    <input type="time" id="edit-clock-out-time" class="form-control" required>
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label" for="edit-work-description">
-                    <i class="fas fa-edit"></i>
-                    Work Description
-                </label>
-                <textarea id="edit-work-description" class="form-control" rows="4" 
-                         placeholder="Describe what you worked on..." required></textarea>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label" for="edit-project-name">
-                    <i class="fas fa-folder"></i>
-                    Project (Optional)
-                </label>
-                <input type="text" id="edit-project-name" class="form-control" 
-                       placeholder="Enter project name or category">
-            </div>
-        </form>
-        
-        <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="hideEditModal()">
-                Cancel
-            </button>
-            <button type="submit" form="edit-log-form" class="btn btn-primary">
-                <i class="fas fa-save"></i>
-                Save Changes
-            </button>
-        </div>
-    </div>
-</div>
-
 <!-- Overlay -->
 <div class="modal-overlay" id="modal-overlay"></div>
 @endsection
@@ -875,7 +805,7 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        z-index: 9999 !important;
+        z-index: 1001;
         max-width: 500px;
         width: 90%;
         max-height: 90vh;
@@ -883,16 +813,14 @@
     }
 
     .modal.show {
-        display: block !important;
+        display: block;
     }
 
     .modal-content {
         background: white;
         border-radius: 12px;
-        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+        box-shadow: var(--shadow-lg);
         overflow: hidden;
-        position: relative;
-        z-index: 10000 !important;
     }
 
     .modal-header {
@@ -901,9 +829,6 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: white;
-        position: relative;
-        z-index: 10001 !important;
     }
 
     .modal-header h3 {
@@ -918,19 +843,10 @@
         cursor: pointer;
         color: var(--text-secondary);
         padding: 4px;
-        border-radius: 4px;
-        transition: background-color 0.2s ease;
-    }
-
-    .modal-close:hover {
-        background: var(--light-color);
     }
 
     .modal-body {
         padding: 24px;
-        background: white;
-        position: relative;
-        z-index: 10001 !important;
     }
 
     .modal-footer {
@@ -939,9 +855,6 @@
         display: flex;
         justify-content: flex-end;
         gap: 12px;
-        background: white;
-        position: relative;
-        z-index: 10001 !important;
     }
 
     .modal-overlay {
@@ -951,13 +864,12 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.7) !important;
-        z-index: 9998 !important;
-        backdrop-filter: blur(8px);
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
     }
 
     .modal-overlay.show {
-        display: block !important;
+        display: block;
     }
 
     /* Responsive Design */
@@ -1107,17 +1019,8 @@
             generateReport();
         });
 
-        // Edit log form
-        document.getElementById('edit-log-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            updateLog();
-        });
-
-        // Modal overlay for edit modal
-        document.getElementById('modal-overlay').addEventListener('click', function() {
-            hideClockOutModal();
-            hideEditModal();
-        });
+        // Modal overlay
+        document.getElementById('modal-overlay').addEventListener('click', hideClockOutModal);
     }
 
     // Tab Management
@@ -1288,30 +1191,17 @@
             return;
         }
 
-        // Hide any other open modals first
-        hideEditModal();
-
         const now = utils.getCurrentDateTime();
         document.getElementById('clock-out-time').value = now.time;
         
-        const modal = document.getElementById('clock-out-modal');
-        const overlay = document.getElementById('modal-overlay');
-        
-        modal.classList.add('show');
-        overlay.classList.add('show');
+        document.getElementById('clock-out-modal').classList.add('show');
+        document.getElementById('modal-overlay').classList.add('show');
         document.body.style.overflow = 'hidden';
-        
-        // Ensure proper z-index
-        modal.style.zIndex = '1001';
-        overlay.style.zIndex = '1000';
     }
 
     function hideClockOutModal() {
-        const modal = document.getElementById('clock-out-modal');
-        const overlay = document.getElementById('modal-overlay');
-        
-        modal.classList.remove('show');
-        overlay.classList.remove('show');
+        document.getElementById('clock-out-modal').classList.remove('show');
+        document.getElementById('modal-overlay').classList.remove('show');
         document.body.style.overflow = 'auto';
         
         // Clear form
@@ -1407,9 +1297,6 @@
                             <td>${workDescription}</td>
                             <td>${projectName}</td>
                             <td>
-                                <button class="btn btn-warning" onclick="editLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 5px;">
-                                    <i class="fas fa-edit"></i>
-                                </button>
                                 <button class="btn btn-danger" onclick="deleteLog(${log.id})" style="padding: 6px 12px; font-size: 12px;">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -1429,9 +1316,6 @@
                             <td>${log.work_description || '-'}</td>
                             <td>${log.project_name || '-'}</td>
                             <td>
-                                <button class="btn btn-warning" onclick="editLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 5px;">
-                                    <i class="fas fa-edit"></i>
-                                </button>
                                 <button class="btn btn-danger" onclick="deleteLog(${log.id})" style="padding: 6px 12px; font-size: 12px;">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -1445,178 +1329,6 @@
         } catch (error) {
             tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Failed to load history. Please try again.</td></tr>';
             window.notify.error('Failed to load history: ' + error.message);
-        }
-    }
-
-    async function editLog(id) {
-        try {
-            // Find the log data from the current workEntries or fetch it
-            const response = await window.api.request('/api/timesheet/history');
-            if (response.success) {
-                const log = response.data.data.find(entry => entry.id === id);
-                if (log) {
-                    showEditModal(log);
-                } else {
-                    window.notify.error('Entry not found');
-                }
-            }
-        } catch (error) {
-            window.notify.error('Failed to load entry for editing: ' + error.message);
-        }
-    }
-
-    function showEditModal(log) {
-        // Hide any other open modals first
-        hideClockOutModal();
-        
-        // Populate the edit form with current data
-        document.getElementById('edit-log-id').value = log.id;
-        
-        // Format date for input
-        const clockInDate = new Date(log.clock_in);
-        document.getElementById('edit-date').value = clockInDate.toISOString().split('T')[0];
-        
-        // Format times for input
-        try {
-            const clockInTime = window.utils.formatTimeForDisplay ? 
-                window.utils.formatTimeForDisplay(log.clock_in).substring(0, 5) :
-                new Date(log.clock_in).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false});
-            
-            const clockOutTime = log.clock_out ? 
-                (window.utils.formatTimeForDisplay ? 
-                    window.utils.formatTimeForDisplay(log.clock_out).substring(0, 5) :
-                    new Date(log.clock_out).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false})) : '';
-            
-            document.getElementById('edit-clock-in-time').value = clockInTime;
-            document.getElementById('edit-clock-out-time').value = clockOutTime;
-        } catch (error) {
-            // Fallback time formatting
-            document.getElementById('edit-clock-in-time').value = new Date(log.clock_in).toTimeString().slice(0, 5);
-            document.getElementById('edit-clock-out-time').value = log.clock_out ? new Date(log.clock_out).toTimeString().slice(0, 5) : '';
-        }
-        
-        document.getElementById('edit-work-description').value = log.work_description || '';
-        document.getElementById('edit-project-name').value = log.project_name || '';
-        
-        // Add body class and show modal
-        document.body.classList.add('modal-open');
-        document.body.style.overflow = 'hidden';
-        
-        const modal = document.getElementById('edit-log-modal');
-        const overlay = document.getElementById('modal-overlay');
-        
-        overlay.classList.add('show');
-        modal.classList.add('show');
-        
-        // Force modal to highest layer
-        setTimeout(() => {
-            modal.style.zIndex = '99999';
-            overlay.style.zIndex = '99998';
-        }, 10);
-    }
-
-    function hideEditModal() {
-        const modal = document.getElementById('edit-log-modal');
-        const overlay = document.getElementById('modal-overlay');
-        
-        modal.classList.remove('show');
-        overlay.classList.remove('show');
-        document.body.classList.remove('modal-open');
-        document.body.style.overflow = 'auto';
-        
-        // Clear form
-        document.getElementById('edit-log-form').reset();
-    }
-
-    function showClockOutModal() {
-        if (!currentActiveSession) {
-            window.notify.error('No active session found');
-            return;
-        }
-
-        // Hide any other open modals first
-        hideEditModal();
-
-        const now = utils.getCurrentDateTime();
-        document.getElementById('clock-out-time').value = now.time;
-        
-        // Add body class and show modal
-        document.body.classList.add('modal-open');
-        document.body.style.overflow = 'hidden';
-        
-        const modal = document.getElementById('clock-out-modal');
-        const overlay = document.getElementById('modal-overlay');
-        
-        overlay.classList.add('show');
-        modal.classList.add('show');
-        
-        // Force modal to highest layer
-        setTimeout(() => {
-            modal.style.zIndex = '99999';
-            overlay.style.zIndex = '99998';
-        }, 10);
-    }
-
-    function hideClockOutModal() {
-        const modal = document.getElementById('clock-out-modal');
-        const overlay = document.getElementById('modal-overlay');
-        
-        modal.classList.remove('show');
-        overlay.classList.remove('show');
-        document.body.classList.remove('modal-open');
-        document.body.style.overflow = 'auto';
-        
-        // Clear form
-        document.getElementById('clock-out-form').reset();
-    }
-
-    function hideClockOutModal() {
-        const modal = document.getElementById('clock-out-modal');
-        const overlay = document.getElementById('modal-overlay');
-        
-        modal.classList.remove('show');
-        overlay.classList.remove('show');
-        document.body.style.overflow = 'auto';
-        
-        // Clear form
-        document.getElementById('clock-out-form').reset();
-    }
-
-    async function updateLog() {
-        const id = document.getElementById('edit-log-id').value;
-        const date = document.getElementById('edit-date').value;
-        const clockInTime = document.getElementById('edit-clock-in-time').value;
-        const clockOutTime = document.getElementById('edit-clock-out-time').value;
-        const description = document.getElementById('edit-work-description').value.trim();
-        const project = document.getElementById('edit-project-name').value.trim();
-
-        if (!date || !clockInTime || !clockOutTime || !description) {
-            window.notify.error('Please fill in all required fields');
-            return;
-        }
-
-        try {
-            const response = await window.api.request(`/api/timesheet/logs/${id}`, {
-                method: 'PUT',
-                body: JSON.stringify({
-                    date: date,
-                    clock_in_time: clockInTime,
-                    clock_out_time: clockOutTime,
-                    work_description: description,
-                    project_name: project || null
-                })
-            });
-
-            if (response.success) {
-                hideEditModal();
-                loadHistory();
-                loadDashboardStats(); // Refresh stats
-                window.notify.success('Entry updated successfully!');
-            } else {
-                window.notify.error(response.message || 'Failed to update entry');
-            }
-        } catch (error) {
-            window.notify.error('Failed to update entry: ' + error.message);
         }
     }
 
