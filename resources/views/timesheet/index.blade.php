@@ -449,6 +449,55 @@
     </div>
 </div>
 
+<!-- View Details Modal -->
+<div class="modal" id="view-details-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Work Session Details</h3>
+            <button class="modal-close" onclick="hideViewDetailsModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="modal-body" id="view-details-content">
+            <div class="detail-section">
+                <h4><i class="fas fa-calendar-alt"></i> Session Information</h4>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label>Date:</label>
+                        <span id="detail-date">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Start Time:</label>
+                        <span id="detail-start-time">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>End Time:</label>
+                        <span id="detail-end-time">-</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Duration:</label>
+                        <span id="detail-duration">-</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h4><i class="fas fa-tasks"></i> Work Description</h4>
+                <div class="work-description-content" id="detail-work-description">
+                    -
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="hideViewDetailsModal()">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Overlay -->
 <div class="modal-overlay" id="modal-overlay"></div>
 
@@ -1054,6 +1103,77 @@
         display: block;
     }
 
+    /* View Details Modal Styles */
+    .detail-section {
+        margin-bottom: 24px;
+    }
+
+    .detail-section h4 {
+        margin-bottom: 16px;
+        color: var(--primary-color);
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .detail-item label {
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .detail-item span {
+        color: var(--text-primary);
+        font-size: 1rem;
+        font-weight: 500;
+    }
+
+    .work-description-content {
+        background: var(--secondary-color);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 16px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        line-height: 1.6;
+        max-height: 300px;
+        overflow-y: auto;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .description-preview {
+        display: inline;
+    }
+
+    .description-truncated {
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-weight: 500;
+        text-decoration: none;
+        margin-left: 4px;
+        font-size: 0.875rem;
+    }
+
+    .description-truncated:hover {
+        color: var(--primary-color);
+        text-decoration: underline;
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
         .dashboard-grid {
@@ -1502,18 +1622,25 @@
                         const clockOutDisplay = log.clock_out ? window.utils.formatTimeForDisplay(log.clock_out) : '-';
                         const formattedDuration = log.formatted_duration || (log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-');
                         const workDescription = log.work_description || '-';
+                        const truncatedDescription = truncateDescription(workDescription, 80);
                         
                         row.innerHTML = `
                             <td>${window.utils.formatDate(log.clock_in)}</td>
                             <td>${clockInDisplay}</td>
                             <td>${clockOutDisplay}</td>
                             <td>${formattedDuration}</td>
-                            <td>${workDescription}</td>
                             <td>
-                                <button class="btn btn-primary" onclick="editLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;">
+                                <div class="description-preview">${truncatedDescription}</div>
+                                ${workDescription.length > 80 ? `<a href="#" class="description-truncated" onclick="viewDetails(${log.id}); return false;">View Details</a>` : ''}
+                            </td>
+                            <td>
+                                <button class="btn btn-info" onclick="viewDetails(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-primary" onclick="editLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="btn btn-danger" onclick="deleteLog(${log.id})" style="padding: 6px 12px; font-size: 12px;">
+                                <button class="btn btn-danger" onclick="deleteLog(${log.id})" style="padding: 6px 12px; font-size: 12px;" title="Delete">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </td>
@@ -1524,18 +1651,26 @@
                         const clockOutTime = log.clock_out ? new Date(log.clock_out).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false}) : '-';
                         const formattedDuration = log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-';
                         
+                        const workDesc = log.work_description || '-';
+                        const truncatedDesc = truncateDescription(workDesc, 80);
+                        
                         row.innerHTML = `
                             <td>${new Date(log.clock_in).toLocaleDateString()}</td>
                             <td>${clockInTime}</td>
                             <td>${clockOutTime}</td>
                             <td>${formattedDuration}</td>
-                            <td>${log.work_description || '-'}</td>
-                            <td>${log.project_name || '-'}</td>
                             <td>
-                                <button class="btn btn-primary" onclick="editLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;">
+                                <div class="description-preview">${truncatedDesc}</div>
+                                ${workDesc.length > 80 ? `<a href="#" class="description-truncated" onclick="viewDetails(${log.id}); return false;">View Details</a>` : ''}
+                            </td>
+                            <td>
+                                <button class="btn btn-info" onclick="viewDetails(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-primary" onclick="editLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="btn btn-danger" onclick="deleteLog(${log.id})" style="padding: 6px 12px; font-size: 12px;">
+                                <button class="btn btn-danger" onclick="deleteLog(${log.id})" style="padding: 6px 12px; font-size: 12px;" title="Delete">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </td>
@@ -1735,6 +1870,49 @@
         }
     }
 
+    // Utility Functions
+    function truncateDescription(text, maxLength) {
+        if (!text || text === '-' || text.length <= maxLength) {
+            return text;
+        }
+        return text.substring(0, maxLength) + '...';
+    }
+
+    // View Details Functions
+    async function viewDetails(logId) {
+        try {
+            const response = await window.api.request(`/api/timesheet/logs/${logId}`);
+
+            if (response.success) {
+                const log = response.data;
+                
+                // Populate modal with data
+                document.getElementById('detail-date').textContent = window.utils.formatDate(log.clock_in);
+                document.getElementById('detail-start-time').textContent = window.utils.formatTimeForDisplay(log.clock_in);
+                document.getElementById('detail-end-time').textContent = log.clock_out ? window.utils.formatTimeForDisplay(log.clock_out) : '-';
+                document.getElementById('detail-duration').textContent = log.formatted_duration || (log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-');
+                document.getElementById('detail-work-description').textContent = log.work_description || 'No description provided';
+                
+                // Show modal
+                showViewDetailsModal();
+            } else {
+                window.notify.error('Failed to load entry details');
+            }
+        } catch (error) {
+            window.notify.error('Failed to load entry details: ' + error.message);
+        }
+    }
+
+    function showViewDetailsModal() {
+        document.getElementById('view-details-modal').classList.add('show');
+        document.getElementById('modal-overlay').classList.add('show');
+    }
+
+    function hideViewDetailsModal() {
+        document.getElementById('view-details-modal').classList.remove('show');
+        document.getElementById('modal-overlay').classList.remove('show');
+    }
+
     // Report Functions
     function getWeekStart(date, weekStartDay) {
         const d = new Date(date);
@@ -1884,13 +2062,17 @@
                 const clockOutDisplay = log.clock_out ? window.utils.formatTimeForDisplay(log.clock_out) : '-';
                 const formattedDuration = log.formatted_duration || (log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-');
                 const workDescription = log.work_description || '-';
+                const truncatedDescription = truncateDescription(workDescription, 100);
                 
                 row.innerHTML = `
                     <td>${window.utils.formatDate(log.clock_in)}</td>
                     <td>${clockInDisplay}</td>
                     <td>${clockOutDisplay}</td>
                     <td>${formattedDuration}</td>
-                    <td>${workDescription}</td>
+                    <td>
+                        <div class="description-preview">${truncatedDescription}</div>
+                        ${workDescription.length > 100 ? `<a href="#" class="description-truncated" onclick="viewDetails(${log.id}); return false;">View Details</a>` : ''}
+                    </td>
                 `;
             } catch (error) {
                 // Fallback formatting
@@ -1898,12 +2080,18 @@
                 const clockOutTime = log.clock_out ? new Date(log.clock_out).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false}) : '-';
                 const formattedDuration = log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-';
                 
+                const workDesc = log.work_description || '-';
+                const truncatedDesc = truncateDescription(workDesc, 100);
+                
                 row.innerHTML = `
                     <td>${new Date(log.clock_in).toLocaleDateString()}</td>
                     <td>${clockInTime}</td>
                     <td>${clockOutTime}</td>
                     <td>${formattedDuration}</td>
-                    <td>${log.work_description || '-'}</td>
+                    <td>
+                        <div class="description-preview">${truncatedDesc}</div>
+                        ${workDesc.length > 100 ? `<a href="#" class="description-truncated" onclick="viewDetails(${log.id}); return false;">View Details</a>` : ''}
+                    </td>
                 `;
             }
         });
