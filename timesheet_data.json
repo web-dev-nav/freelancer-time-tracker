@@ -1,0 +1,218 @@
+[
+  {
+    "date": "2025-05-22",
+    "start_time": "18:30",
+    "end_time": "20:00",
+    "work_description": "Re-arranging folder structure for Controllers and models",
+    "duration_minutes": 90,
+    "project_name": null
+  },
+  {
+    "date": "2025-05-23",
+    "start_time": "16:30",
+    "end_time": "19:00",
+    "work_description": "Re-arranging folder structure for Resource and views",
+    "duration_minutes": 150,
+    "project_name": null
+  },
+  {
+    "date": "2025-05-29",
+    "start_time": "16:12",
+    "end_time": "17:15",
+    "work_description": "Retrying to run the new upated version of lsmh on localhost - postgres, created list of error word file - no dumpfile found, tried old new_db - fixed porstgres default password complience requirememts",
+    "duration_minutes": 63,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-02",
+    "start_time": "13:05",
+    "end_time": "13:42",
+    "work_description": "Reinstall the project to check db migrate - fix migrate issues",
+    "duration_minutes": 36,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-05",
+    "start_time": "14:03",
+    "end_time": "15:53",
+    "work_description": "Reintall master branch- and testing accessment workflow",
+    "duration_minutes": 109,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-05",
+    "start_time": "19:36",
+    "end_time": "22:39",
+    "work_description": "Implimenting Stripe - work in progress....",
+    "duration_minutes": 184,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-06",
+    "start_time": "17:03",
+    "end_time": "22:33",
+    "work_description": "Stripe implimentation cont..+ new sql repo zip testing and migrate stripe in it - branch from sql repo - changes 1. fixed - assessment next issue 2. added stripe and remove insurance 3. added redo assessment - stripe modal 4. fix - progress bar issue 5. fix - admin payment UI and implement stripe and receipt  6. Fix migration sytnax issues",
+    "duration_minutes": 330,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-07",
+    "start_time": "18:08",
+    "end_time": "22:44",
+    "work_description": "fix route for  stripe receipt and implimenting Claude AI - in progress",
+    "duration_minutes": 276,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-10",
+    "start_time": "16:25",
+    "end_time": "22:39",
+    "work_description": "fix- Fixed Database Field Names, fix - Enhanced Clinical Findings Generation, created - ClinicalFindingsService for reusable code, fix- Improved Suicidal Ideation Detection, Dynamic Recommendations, fix migration and deleted old files",
+    "duration_minutes": 375,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-11",
+    "start_time": "16:28",
+    "end_time": "20:31",
+    "work_description": "fix some miror issue, create word file - create comprehensive report feature",
+    "duration_minutes": 243,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-12",
+    "start_time": "15:28",
+    "end_time": "22:47",
+    "work_description": "refactor patient , and some minor fix, db cleanup, accessment UI change",
+    "duration_minutes": 439,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-13",
+    "start_time": "17:24",
+    "end_time": "23:20",
+    "work_description": "refactor admin and UI change, bug fixes",
+    "duration_minutes": 355,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-14",
+    "start_time": "16:01",
+    "end_time": "20:35",
+    "work_description": "admin/patient controller refactor, bug fixing",
+    "duration_minutes": 273,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-15",
+    "start_time": "15:46",
+    "end_time": "22:43",
+    "work_description": "patient registration restruction - client/company table based on word file",
+    "duration_minutes": 417,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-16",
+    "start_time": "17:20",
+    "end_time": "21:27",
+    "work_description": "fixing, modal popup, and minor migration, creating CURD for User/admin",
+    "duration_minutes": 247,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-17",
+    "start_time": "18:43",
+    "end_time": "22:22",
+    "work_description": "fix - phone, rewamp patient register structure, fixed loophole for direct accessment access",
+    "duration_minutes": 219,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-18",
+    "start_time": "12:33",
+    "end_time": "13:40",
+    "work_description": "fixing - direct accessemnt url",
+    "duration_minutes": 67,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-18",
+    "start_time": "16:21",
+    "end_time": "22:45",
+    "work_description": "restructure dir for accessment, sperate logic and controller, accessemnt tracking, some major or miror fixes",
+    "duration_minutes": 384,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-19",
+    "start_time": "01:40",
+    "end_time": "02:30",
+    "work_description": "fixing term&cond modal",
+    "duration_minutes": 49,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-23",
+    "start_time": "17:30",
+    "end_time": "23:23",
+    "work_description": "sign old restructure, new css color palet, accessment color change",
+    "duration_minutes": 352,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-24",
+    "start_time": "17:45",
+    "end_time": "23:59",
+    "work_description": "Stripe coupon code impliment, js restructure",
+    "duration_minutes": 373,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-24",
+    "start_time": "00:00",
+    "end_time": "02:23",
+    "work_description": "dynamic PID for product catelog",
+    "duration_minutes": 142,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-25",
+    "start_time": "16:58",
+    "end_time": "20:30",
+    "work_description": "Coupon code restriction - rollback due to stripe dashboard issue",
+    "duration_minutes": 211,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-26",
+    "start_time": "02:35",
+    "end_time": "04:21",
+    "work_description": "Applied Coupon restriction - using metadata",
+    "duration_minutes": 106,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-26",
+    "start_time": "15:40",
+    "end_time": "20:30",
+    "work_description": "Accessment portal implimentation admin panel",
+    "duration_minutes": 289,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-27",
+    "start_time": "16:45",
+    "end_time": "23:24",
+    "work_description": "Questionare -  patient accessment and pdf report fix,  Question post to db fixed",
+    "duration_minutes": 400,
+    "project_name": null
+  },
+  {
+    "date": "2025-06-29",
+    "start_time": "00:41",
+    "end_time": "03:34",
+    "work_description": "Assessment PDF Updates -  top 3 issues display + patient details update also Question Counter: Now updates from \"0 / 5 questions\" to \"1 / 5 questions\" etc.   2. Individual Progress: \"X of Y completed\" updates properly in the submit section   3. Overall Progress: \"X of Y sections completed\" updates when questionnaires finish   4. Radio Button Colors: All radio buttons now use orange (#EC7132) instead of blue   5. Sidebar Visual States:     - Completed modules: Bright with blue styling     - Active module: Bright white     - Upcoming modules: Greyed out   6. Sidebar Auto-scroll: Automatically scrolls to keep the active questionnaire visible +Sticking header- patient accessment question stick to top when scroll for long list of questions",
+    "duration_minutes": 174,
+    "project_name": null
+  }
+]

@@ -35,13 +35,14 @@ class TimeLogExport implements FromArray, WithHeadings, WithStyles, WithColumnWi
     {
         $data = [];
         
-        // Header section
-        $data[] = ['PROFESSIONAL TIMESHEET'];
+        // Header section with improved spacing
+        $data[] = ['FREELANCER TIMESHEET REPORT'];
         $data[] = [''];
-        $data[] = ['Period:', "{$this->startDate} to {$this->endDate}"];
-        $data[] = ['Total Hours:', $this->totalHours];
-        $data[] = ['Total Sessions:', $this->logs->count()];
-        $data[] = ['Generated:', now()->format('M j, Y g:i A')];
+        $data[] = ['Report Period:', "{$this->startDate} to {$this->endDate}"];
+        $data[] = ['Total Hours Worked:', $this->totalHours . ' hours'];
+        $data[] = ['Total Work Sessions:', $this->logs->count()];
+        $data[] = ['Report Generated:', now('America/Toronto')->format('M j, Y g:i A T')];
+        $data[] = [''];
         $data[] = [''];
 
         // Group logs by date
@@ -53,36 +54,36 @@ class TimeLogExport implements FromArray, WithHeadings, WithStyles, WithColumnWi
             $dayTotal = $dailyLogs->sum('total_minutes');
             $dayHours = round($dayTotal / 60, 2);
             
-            // Date header
+            // Date header with better formatting
             $data[] = [
                 strtoupper($dailyLogs->first()->clock_in->format('l, F j, Y')),
                 '',
                 '',
-                '',
-                "Day Total: {$dayHours} hrs"
+                "Daily Total: {$dayHours} hrs"
             ];
             
-            // Daily entries
+            // Daily entries without project column
             foreach ($dailyLogs as $log) {
                 $data[] = [
                     $log->clock_in_time,
                     $log->clock_out_time,
                     $log->formatted_duration,
-                    $log->work_description,
-                    $log->project_name ?: 'General'
+                    $log->work_description
                 ];
             }
             
-            $data[] = ['', '', '', '', '']; // Empty row between days
+            $data[] = ['', '', '', '']; // Empty row between days
         }
 
-        // Summary section
-        $data[] = ['', '', '', '', ''];
-        $data[] = ['SUMMARY'];
-        $data[] = ['Total Working Days:', $groupedLogs->count()];
-        $data[] = ['Total Sessions:', $this->logs->count()];
-        $data[] = ['Total Hours:', $this->totalHours];
-        $data[] = ['Average Hours/Day:', $groupedLogs->count() > 0 ? round($this->totalHours / $groupedLogs->count(), 2) : 0];
+        // Enhanced summary section
+        $data[] = ['', '', '', ''];
+        $data[] = ['TIMESHEET SUMMARY', '', '', ''];
+        $data[] = ['━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', '', '', ''];
+        $data[] = ['Total Working Days:', $groupedLogs->count() . ' days'];
+        $data[] = ['Total Work Sessions:', $this->logs->count() . ' sessions'];
+        $data[] = ['Total Hours Worked:', $this->totalHours . ' hours'];
+        $data[] = ['Average Hours per Day:', $groupedLogs->count() > 0 ? round($this->totalHours / $groupedLogs->count(), 2) . ' hours' : '0 hours'];
+        $data[] = ['Average Session Length:', $this->logs->count() > 0 ? round($this->totalMinutes / $this->logs->count()) . ' minutes' : '0 minutes'];
 
         return $data;
     }
@@ -90,25 +91,24 @@ class TimeLogExport implements FromArray, WithHeadings, WithStyles, WithColumnWi
     public function headings(): array
     {
         return [
-            [], [], [], [], [], [], [],
-            ['Start Time', 'End Time', 'Duration', 'Work Description', 'Project']
+            [], [], [], [], [], [], [], [],
+            ['Start Time', 'End Time', 'Duration', 'Work Description']
         ];
     }
 
     public function columnWidths(): array
     {
         return [
-            'A' => 15,  // Start Time
-            'B' => 15,  // End Time  
-            'C' => 12,  // Duration
-            'D' => 50,  // Work Description
-            'E' => 20,  // Project
+            'A' => 18,  // Start Time
+            'B' => 18,  // End Time  
+            'C' => 15,  // Duration
+            'D' => 60,  // Work Description (expanded)
         ];
     }
 
     public function title(): string
     {
-        return 'Timesheet ' . $this->startDate . ' to ' . $this->endDate;
+        return 'Freelancer Timesheet ' . $this->startDate . ' to ' . $this->endDate;
     }
 
     public function styles(Worksheet $sheet)
@@ -118,38 +118,49 @@ class TimeLogExport implements FromArray, WithHeadings, WithStyles, WithColumnWi
             1 => [
                 'font' => [
                     'bold' => true,
-                    'size' => 18,
+                    'size' => 20,
                     'color' => ['rgb' => 'FFFFFF']
                 ],
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
-                    'color' => ['rgb' => '2c3e50']
+                    'color' => ['rgb' => '1a73e8']
                 ],
                 'alignment' => [
                     'horizontal' => Alignment::HORIZONTAL_CENTER,
                 ]
             ],
             
-            // Period info
-            3 => ['font' => ['bold' => true]],
-            4 => ['font' => ['bold' => true]],
-            5 => ['font' => ['bold' => true]],
-            6 => ['font' => ['italic' => true, 'color' => ['rgb' => '666666']]],
+            // Period info styling
+            3 => ['font' => ['bold' => true, 'size' => 11]],
+            4 => ['font' => ['bold' => true, 'size' => 11]],
+            5 => ['font' => ['bold' => true, 'size' => 11]],
+            6 => ['font' => ['italic' => true, 'color' => ['rgb' => '666666'], 'size' => 10]],
             
             // Column headers
-            8 => [
+            9 => [
                 'font' => [
                     'bold' => true,
-                    'color' => ['rgb' => 'FFFFFF']
+                    'color' => ['rgb' => 'FFFFFF'],
+                    'size' => 12
                 ],
                 'fill' => [
                     'fillType' => Fill::FILL_SOLID,
-                    'color' => ['rgb' => '34495e']
+                    'color' => ['rgb' => '4285f4']
                 ],
                 'alignment' => [
                     'horizontal' => Alignment::HORIZONTAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => Border::BORDER_THIN,
+                        'color' => ['rgb' => '000000']
+                    ]
                 ]
             ],
+            
+            // Summary section header
+            'A' => ['alignment' => ['wrapText' => true]],
+            'D' => ['alignment' => ['wrapText' => true]]
         ];
     }
 }

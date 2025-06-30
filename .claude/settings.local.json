@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php artisan config:clear:*)",
+      "Bash(php artisan:*)",
+      "Bash(composer install:*)",
+      "Bash(python3:*)",
+      "Bash(mv:*)",
+      "Bash(rg:*)"
+    ],
+    "deny": []
+  }
+}

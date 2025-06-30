@@ -16,19 +16,21 @@
     <!-- Styles -->
     <style>
         :root {
-            --primary-color: #6366f1;
-            --primary-dark: #4f46e5;
-            --secondary-color: #f1f5f9;
+            --primary-color: #8b5cf6;
+            --primary-dark: #7c3aed;
+            --secondary-color: #374151;
             --success-color: #10b981;
             --warning-color: #f59e0b;
             --danger-color: #ef4444;
-            --dark-color: #1e293b;
-            --light-color: #f8fafc;
-            --border-color: #e2e8f0;
-            --text-primary: #0f172a;
-            --text-secondary: #64748b;
-            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --dark-color: #111827;
+            --darker-color: #0f172a;
+            --light-color: #1f2937;
+            --lighter-color: #374151;
+            --border-color: #4b5563;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.2);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3);
         }
 
         * {
@@ -39,7 +41,7 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             min-height: 100vh;
             color: var(--text-primary);
         }
@@ -51,13 +53,13 @@
         }
 
         .app-header {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(31, 41, 55, 0.95);
             backdrop-filter: blur(10px);
             border-radius: 16px;
             padding: 24px;
             margin-bottom: 24px;
             box-shadow: var(--shadow-lg);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(75, 85, 99, 0.5);
         }
 
         .app-title {
@@ -76,11 +78,11 @@
         }
 
         .main-content {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(31, 41, 55, 0.95);
             backdrop-filter: blur(10px);
             border-radius: 16px;
             box-shadow: var(--shadow-lg);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(75, 85, 99, 0.5);
             overflow: hidden;
         }
 
@@ -150,21 +152,21 @@
         }
 
         .alert-success {
-            background: #f0fdf4;
+            background: rgba(16, 185, 129, 0.1);
             border-color: var(--success-color);
-            color: #166534;
+            color: #6ee7b7;
         }
 
         .alert-error {
-            background: #fef2f2;
+            background: rgba(239, 68, 68, 0.1);
             border-color: var(--danger-color);
-            color: #991b1b;
+            color: #fca5a5;
         }
 
         .alert-warning {
-            background: #fffbeb;
+            background: rgba(245, 158, 11, 0.1);
             border-color: var(--warning-color);
-            color: #92400e;
+            color: #fcd34d;
         }
 
         .form-group {
@@ -185,17 +187,18 @@
             border-radius: 8px;
             font-size: 14px;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
-            background: white;
+            background: var(--dark-color);
+            color: var(--text-primary);
         }
 
         .form-control:focus {
             outline: none;
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
         }
 
         .card {
-            background: white;
+            background: var(--light-color);
             border-radius: 12px;
             padding: 24px;
             box-shadow: var(--shadow);

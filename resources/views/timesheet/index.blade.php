@@ -214,13 +214,12 @@
                             <th>Clock Out</th>
                             <th>Duration</th>
                             <th>Description</th>
-                            <th>Project</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="history-tbody">
                         <tr>
-                            <td colspan="7" class="text-center">
+                            <td colspan="6" class="text-center">
                                 <div class="loading">
                                     <div class="spinner"></div>
                                     Loading history...
@@ -246,6 +245,41 @@
                 
                 <form id="report-form" class="report-form">
                     <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="week-start-day">
+                                <i class="fas fa-cog"></i>
+                                Week Starts On
+                            </label>
+                            <select id="week-start-day" class="form-control">
+                                <option value="monday">Monday</option>
+                                <option value="sunday">Sunday</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-calendar-week"></i>
+                                Quick Select
+                            </label>
+                            <div class="quick-select-buttons">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectThisWeek()">This Week</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectLastWeek()">Last Week</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectThisMonth()">This Month</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectLastMonth()">Last Month</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="report-start-date">
+                                <i class="fas fa-calendar-alt"></i>
+                                Report Start Date
+                            </label>
+                            <input type="date" id="report-start-date" class="form-control" required>
+                        </div>
                         <div class="form-group">
                             <label class="form-label" for="report-end-date">
                                 <i class="fas fa-calendar-alt"></i>
@@ -301,7 +335,6 @@
                                 <th>Clock Out</th>
                                 <th>Duration</th>
                                 <th>Description</th>
-                                <th>Project</th>
                             </tr>
                         </thead>
                         <tbody id="report-tbody">
@@ -312,6 +345,7 @@
         </div>
     </div>
 </div>
+@endsection
 
 <!-- Clock Out Modal -->
 <div class="modal" id="clock-out-modal">
@@ -340,15 +374,6 @@
                 <textarea id="work-description" class="form-control" rows="4" 
                          placeholder="Describe what you accomplished during this work session..." required></textarea>
             </div>
-            
-            <div class="form-group">
-                <label class="form-label" for="project-name">
-                    <i class="fas fa-folder"></i>
-                    Project (Optional)
-                </label>
-                <input type="text" id="project-name" class="form-control" 
-                       placeholder="Enter project name or category">
-            </div>
         </form>
         
         <div class="modal-footer">
@@ -363,21 +388,81 @@
     </div>
 </div>
 
+<!-- Edit Log Modal -->
+<div class="modal" id="edit-log-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Edit Time Log</h3>
+            <button class="modal-close" onclick="hideEditLogModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <form id="edit-log-form" class="modal-body">
+            <input type="hidden" id="edit-log-id">
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="edit-clock-in-date">
+                        <i class="fas fa-calendar"></i>
+                        Date
+                    </label>
+                    <input type="date" id="edit-clock-in-date" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="edit-clock-in-time">
+                        <i class="fas fa-clock"></i>
+                        Clock In Time
+                    </label>
+                    <input type="time" id="edit-clock-in-time" class="form-control" required>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="edit-clock-out-time">
+                    <i class="fas fa-clock"></i>
+                    Clock Out Time
+                </label>
+                <input type="time" id="edit-clock-out-time" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label" for="edit-work-description">
+                    <i class="fas fa-edit"></i>
+                    Work Description
+                </label>
+                <textarea id="edit-work-description" class="form-control" rows="4" 
+                         placeholder="Describe what you accomplished during this work session..." required></textarea>
+            </div>
+        </form>
+        
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="hideEditLogModal()">
+                Cancel
+            </button>
+            <button type="submit" form="edit-log-form" class="btn btn-primary">
+                <i class="fas fa-save"></i>
+                Save Changes
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Overlay -->
 <div class="modal-overlay" id="modal-overlay"></div>
-@endsection
 
 @push('styles')
 <style>
     /* Navigation Tabs */
     .nav-tabs {
         display: flex;
-        background: rgba(255, 255, 255, 0.2);
+        background: rgba(31, 41, 55, 0.3);
         border-radius: 12px;
         padding: 4px;
         margin-bottom: 24px;
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        border: 1px solid rgba(75, 85, 99, 0.5);
     }
 
     .nav-tab {
@@ -387,7 +472,7 @@
         border: none;
         border-radius: 8px;
         cursor: pointer;
-        color: rgba(255, 255, 255, 0.8);
+        color: var(--text-secondary);
         font-weight: 500;
         transition: all 0.2s ease;
         display: flex;
@@ -398,13 +483,13 @@
     }
 
     .nav-tab:hover {
-        color: white;
-        background: rgba(255, 255, 255, 0.15);
+        color: var(--text-primary);
+        background: rgba(75, 85, 99, 0.3);
         transform: translateY(-1px);
     }
 
     .nav-tab.active {
-        background: white;
+        background: var(--light-color);
         color: var(--primary-color);
         box-shadow: var(--shadow);
         font-weight: 600;
@@ -439,7 +524,7 @@
     }
 
     .stat-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
         color: white;
         padding: 20px;
         border-radius: 12px;
@@ -466,7 +551,7 @@
     }
 
     .active-session-card {
-        background: white;
+        background: var(--light-color);
         padding: 24px;
         border-radius: 12px;
         box-shadow: var(--shadow);
@@ -533,7 +618,7 @@
     }
 
     .quick-actions {
-        background: white;
+        background: var(--light-color);
         padding: 24px;
         border-radius: 12px;
         box-shadow: var(--shadow);
@@ -558,17 +643,18 @@
         align-items: center;
         gap: 12px;
         padding: 12px 16px;
-        background: var(--light-color);
+        background: var(--secondary-color);
         border: 1px solid var(--border-color);
         border-radius: 8px;
         cursor: pointer;
         transition: all 0.2s ease;
         text-align: left;
         font-weight: 500;
+        color: var(--text-primary);
     }
 
     .action-btn:hover {
-        background: var(--secondary-color);
+        background: var(--lighter-color);
         transform: translateY(-1px);
     }
 
@@ -579,7 +665,7 @@
     }
 
     .clock-section {
-        background: white;
+        background: var(--light-color);
         padding: 32px;
         border-radius: 16px;
         box-shadow: var(--shadow-lg);
@@ -662,7 +748,7 @@
 
     /* History Styles */
     .history-container {
-        background: white;
+        background: var(--light-color);
         border-radius: 12px;
         overflow: hidden;
     }
@@ -697,7 +783,7 @@
     }
 
     .history-table th {
-        background: var(--light-color);
+        background: var(--secondary-color);
         font-weight: 600;
         color: var(--text-primary);
         position: sticky;
@@ -705,12 +791,79 @@
     }
 
     .history-table tbody tr:hover {
-        background: var(--light-color);
+        background: var(--secondary-color);
+    }
+
+    /* Pagination Styles */
+    .pagination-container {
+        padding: 20px 24px;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .pagination-info {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+
+    .pagination-controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .pagination-btn {
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        background: var(--secondary-color);
+        color: var(--text-primary);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.875rem;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+        background: var(--lighter-color);
+        transform: translateY(-1px);
+    }
+
+    .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .pagination-btn.active {
+        background: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .page-size-selector {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+    }
+
+    .page-size-selector select {
+        padding: 4px 8px;
+        border: 1px solid var(--border-color);
+        background: var(--secondary-color);
+        color: var(--text-primary);
+        border-radius: 4px;
+        font-size: 0.875rem;
     }
 
     /* Reports Styles */
     .reports-container {
-        background: white;
+        background: var(--light-color);
         border-radius: 12px;
         overflow: hidden;
     }
@@ -734,6 +887,33 @@
         margin-bottom: 24px;
     }
 
+    .quick-select-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+    }
+
+    .quick-select-buttons .btn-sm {
+        padding: 6px 12px;
+        font-size: 0.875rem;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .quick-select-buttons .btn-outline-secondary {
+        border-color: var(--border-color);
+        color: var(--text-secondary);
+        background: transparent;
+    }
+
+    .quick-select-buttons .btn-outline-secondary:hover {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+        transform: translateY(-1px);
+    }
+
     .report-actions {
         display: flex;
         gap: 12px;
@@ -751,7 +931,7 @@
     }
 
     .summary-card {
-        background: var(--light-color);
+        background: var(--secondary-color);
         padding: 20px;
         border-radius: 8px;
         text-align: center;
@@ -770,11 +950,12 @@
     }
 
     .report-period {
-        background: var(--secondary-color);
+        background: var(--lighter-color);
         padding: 16px 20px;
         border-radius: 8px;
         margin-bottom: 24px;
         font-weight: 500;
+        color: var(--text-primary);
     }
 
     .report-table-container {
@@ -794,8 +975,9 @@
     }
 
     .report-table th {
-        background: var(--light-color);
+        background: var(--secondary-color);
         font-weight: 600;
+        color: var(--text-primary);
     }
 
     /* Modal Styles */
@@ -817,7 +999,7 @@
     }
 
     .modal-content {
-        background: white;
+        background: var(--light-color);
         border-radius: 12px;
         box-shadow: var(--shadow-lg);
         overflow: hidden;
@@ -864,7 +1046,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(0, 0, 0, 0.7);
         z-index: 1000;
     }
 
@@ -902,6 +1084,16 @@
         .report-actions {
             flex-direction: column;
         }
+
+        .pagination-container {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .pagination-controls {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
     }
 
     /* Utility Classes */
@@ -919,6 +1111,9 @@
     let currentActiveSession = null;
     let dashboardStats = {};
     let currentReportData = null;
+    let currentPage = 1;
+    let currentPerPage = 15;
+    let totalPages = 1;
 
     // Initialize Application
     document.addEventListener('DOMContentLoaded', function() {
@@ -978,6 +1173,15 @@
             };
         };
         
+        // Load week start preference
+        const savedWeekStart = localStorage.getItem('weekStartDay') || 'monday';
+        document.getElementById('week-start-day').value = savedWeekStart;
+        
+        // Save week start preference when changed
+        document.getElementById('week-start-day').addEventListener('change', function() {
+            localStorage.setItem('weekStartDay', this.value);
+        });
+        
         initializeApp();
         setupEventListeners();
         loadDashboardStats();
@@ -1013,6 +1217,12 @@
             clockOut();
         });
 
+        // Edit log form
+        document.getElementById('edit-log-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            updateLog();
+        });
+
         // Report form
         document.getElementById('report-form').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -1020,7 +1230,10 @@
         });
 
         // Modal overlay
-        document.getElementById('modal-overlay').addEventListener('click', hideClockOutModal);
+        document.getElementById('modal-overlay').addEventListener('click', function(e) {
+            hideClockOutModal();
+            hideEditLogModal();
+        });
     }
 
     // Tab Management
@@ -1039,6 +1252,7 @@
 
         // Load data for specific tabs
         if (tabName === 'history') {
+            currentPage = 1; // Reset to first page
             loadHistory();
         } else if (tabName === 'dashboard') {
             loadDashboardStats();
@@ -1211,7 +1425,6 @@
     async function clockOut() {
         const time = document.getElementById('clock-out-time').value;
         const description = document.getElementById('work-description').value.trim();
-        const project = document.getElementById('project-name').value.trim();
 
         if (!time || !description) {
             window.notify.error('Please fill in end time and work description');
@@ -1224,8 +1437,7 @@
                 body: JSON.stringify({
                     session_id: currentActiveSession.session_id,
                     time: time,
-                    work_description: description,
-                    project_name: project || null
+                    work_description: description
                 })
             });
 
@@ -1266,19 +1478,22 @@
         }
     }
 
-    // History Functions
-    async function loadHistory() {
+    // History Functions with Pagination
+    async function loadHistory(page = 1, perPage = null) {
         const tbody = document.getElementById('history-tbody');
         
         try {
+            currentPage = page;
+            if (perPage) currentPerPage = perPage;
+            
             tbody.innerHTML = '<tr><td colspan="7" class="text-center"><div class="loading"><div class="spinner"></div>Loading history...</div></td></tr>';
             
-            const response = await window.api.request('/api/timesheet/history');
+            const response = await window.api.request(`/api/timesheet/history?page=${currentPage}&per_page=${currentPerPage}`);
             
-            if (response.success && response.data.data.length > 0) {
+            if (response.success && response.data.items.length > 0) {
                 tbody.innerHTML = '';
                 
-                response.data.data.forEach(log => {
+                response.data.items.forEach(log => {
                     const row = tbody.insertRow();
                     
                     try {
@@ -1287,7 +1502,6 @@
                         const clockOutDisplay = log.clock_out ? window.utils.formatTimeForDisplay(log.clock_out) : '-';
                         const formattedDuration = log.formatted_duration || (log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-');
                         const workDescription = log.work_description || '-';
-                        const projectName = log.project_name || '-';
                         
                         row.innerHTML = `
                             <td>${window.utils.formatDate(log.clock_in)}</td>
@@ -1295,8 +1509,10 @@
                             <td>${clockOutDisplay}</td>
                             <td>${formattedDuration}</td>
                             <td>${workDescription}</td>
-                            <td>${projectName}</td>
                             <td>
+                                <button class="btn btn-primary" onclick="editLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;">
+                                    <i class="fas fa-edit"></i>
+                                </button>
                                 <button class="btn btn-danger" onclick="deleteLog(${log.id})" style="padding: 6px 12px; font-size: 12px;">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -1316,6 +1532,9 @@
                             <td>${log.work_description || '-'}</td>
                             <td>${log.project_name || '-'}</td>
                             <td>
+                                <button class="btn btn-primary" onclick="editLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;">
+                                    <i class="fas fa-edit"></i>
+                                </button>
                                 <button class="btn btn-danger" onclick="deleteLog(${log.id})" style="padding: 6px 12px; font-size: 12px;">
                                     <i class="fas fa-trash"></i>
                                 </button>
@@ -1323,12 +1542,174 @@
                         `;
                     }
                 });
+                
+                // Update pagination
+                updatePagination(response.data.pagination);
             } else {
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center">No work history found. Start tracking your time!</td></tr>';
+                updatePagination(null);
             }
         } catch (error) {
             tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Failed to load history. Please try again.</td></tr>';
             window.notify.error('Failed to load history: ' + error.message);
+            updatePagination(null);
+        }
+    }
+
+    function updatePagination(pagination) {
+        const container = document.getElementById('pagination-container');
+        
+        if (!pagination || pagination.total === 0) {
+            container.innerHTML = '';
+            return;
+        }
+        
+        totalPages = pagination.last_page;
+        currentPage = pagination.current_page;
+        
+        const startItem = pagination.from || 0;
+        const endItem = pagination.to || 0;
+        const total = pagination.total;
+        
+        container.innerHTML = `
+            <div class="pagination-info">
+                Showing ${startItem} to ${endItem} of ${total} entries
+            </div>
+            <div class="pagination-controls">
+                <button class="pagination-btn" onclick="loadHistory(1)" ${currentPage === 1 ? 'disabled' : ''}>
+                    <i class="fas fa-angle-double-left"></i>
+                </button>
+                <button class="pagination-btn" onclick="loadHistory(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+                    <i class="fas fa-angle-left"></i>
+                </button>
+                ${generatePageNumbers()}
+                <button class="pagination-btn" onclick="loadHistory(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+                    <i class="fas fa-angle-right"></i>
+                </button>
+                <button class="pagination-btn" onclick="loadHistory(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>
+                    <i class="fas fa-angle-double-right"></i>
+                </button>
+            </div>
+            <div class="page-size-selector">
+                <span>Show:</span>
+                <select onchange="changePageSize(this.value)">
+                    <option value="10" ${currentPerPage === 10 ? 'selected' : ''}>10</option>
+                    <option value="15" ${currentPerPage === 15 ? 'selected' : ''}>15</option>
+                    <option value="25" ${currentPerPage === 25 ? 'selected' : ''}>25</option>
+                    <option value="50" ${currentPerPage === 50 ? 'selected' : ''}>50</option>
+                </select>
+                <span>entries</span>
+            </div>
+        `;
+    }
+
+    function generatePageNumbers() {
+        let pages = '';
+        const maxVisible = 5;
+        let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+        let end = Math.min(totalPages, start + maxVisible - 1);
+        
+        if (end - start + 1 < maxVisible) {
+            start = Math.max(1, end - maxVisible + 1);
+        }
+        
+        for (let i = start; i <= end; i++) {
+            pages += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="loadHistory(${i})">${i}</button>`;
+        }
+        
+        return pages;
+    }
+
+    function changePageSize(newSize) {
+        currentPerPage = parseInt(newSize);
+        currentPage = 1; // Reset to first page
+        loadHistory(1, currentPerPage);
+    }
+
+    // Edit Log Functions
+    async function editLog(id) {
+        try {
+            const response = await window.api.request(`/api/timesheet/logs/${id}`);
+            
+            if (response.success) {
+                const log = response.data;
+                
+                // Populate the edit form
+                document.getElementById('edit-log-id').value = log.id;
+                
+                // Parse the clock_in datetime
+                const clockInDate = new Date(log.clock_in);
+                document.getElementById('edit-clock-in-date').value = clockInDate.toISOString().split('T')[0];
+                document.getElementById('edit-clock-in-time').value = clockInDate.toTimeString().slice(0, 5);
+                
+                // Parse the clock_out datetime if it exists
+                if (log.clock_out) {
+                    const clockOutDate = new Date(log.clock_out);
+                    document.getElementById('edit-clock-out-time').value = clockOutDate.toTimeString().slice(0, 5);
+                } else {
+                    document.getElementById('edit-clock-out-time').value = '';
+                }
+                
+                document.getElementById('edit-work-description').value = log.work_description || '';
+                
+                // Show the modal
+                showEditLogModal();
+            } else {
+                window.notify.error(response.message);
+            }
+        } catch (error) {
+            window.notify.error('Failed to load entry details: ' + error.message);
+        }
+    }
+
+    function showEditLogModal() {
+        document.getElementById('edit-log-modal').classList.add('show');
+        document.getElementById('modal-overlay').classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function hideEditLogModal() {
+        document.getElementById('edit-log-modal').classList.remove('show');
+        document.getElementById('modal-overlay').classList.remove('show');
+        document.body.style.overflow = 'auto';
+        
+        // Clear form
+        document.getElementById('edit-log-form').reset();
+    }
+
+    async function updateLog() {
+        const logId = document.getElementById('edit-log-id').value;
+        const date = document.getElementById('edit-clock-in-date').value;
+        const clockInTime = document.getElementById('edit-clock-in-time').value;
+        const clockOutTime = document.getElementById('edit-clock-out-time').value;
+        const description = document.getElementById('edit-work-description').value.trim();
+
+        if (!date || !clockInTime || !clockOutTime || !description) {
+            window.notify.error('Please fill in all required fields');
+            return;
+        }
+
+        try {
+            const response = await window.api.request(`/api/timesheet/logs/${logId}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    date: date,
+                    clock_in_time: clockInTime,
+                    clock_out_time: clockOutTime,
+                    work_description: description
+                })
+            });
+
+            if (response.success) {
+                hideEditLogModal();
+                loadHistory(currentPage); // Reload current page
+                loadDashboardStats(); // Refresh dashboard stats
+                window.notify.success('Entry updated successfully');
+            } else {
+                window.notify.error(response.message);
+            }
+        } catch (error) {
+            window.notify.error('Failed to update entry: ' + error.message);
         }
     }
 
@@ -1343,7 +1724,8 @@
             });
 
             if (response.success) {
-                loadHistory();
+                loadHistory(currentPage); // Reload current page
+                loadDashboardStats(); // Refresh dashboard stats
                 window.notify.success('Entry deleted successfully');
             } else {
                 window.notify.error(response.message);
@@ -1354,16 +1736,81 @@
     }
 
     // Report Functions
+    function getWeekStart(date, weekStartDay) {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = weekStartDay === 'sunday' ? day : (day === 0 ? 6 : day - 1);
+        d.setDate(d.getDate() - diff);
+        return d;
+    }
+
+    function getWeekEnd(date, weekStartDay) {
+        const weekStart = getWeekStart(date, weekStartDay);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        return weekEnd;
+    }
+
+    function formatDateForInput(date) {
+        return date.toISOString().split('T')[0];
+    }
+
+    function selectThisWeek() {
+        const weekStartDay = document.getElementById('week-start-day').value;
+        const today = new Date();
+        const weekStart = getWeekStart(today, weekStartDay);
+        const weekEnd = getWeekEnd(today, weekStartDay);
+        
+        document.getElementById('report-start-date').value = formatDateForInput(weekStart);
+        document.getElementById('report-end-date').value = formatDateForInput(weekEnd);
+    }
+
+    function selectLastWeek() {
+        const weekStartDay = document.getElementById('week-start-day').value;
+        const today = new Date();
+        const lastWeek = new Date(today);
+        lastWeek.setDate(today.getDate() - 7);
+        const weekStart = getWeekStart(lastWeek, weekStartDay);
+        const weekEnd = getWeekEnd(lastWeek, weekStartDay);
+        
+        document.getElementById('report-start-date').value = formatDateForInput(weekStart);
+        document.getElementById('report-end-date').value = formatDateForInput(weekEnd);
+    }
+
+    function selectThisMonth() {
+        const today = new Date();
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+        const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        
+        document.getElementById('report-start-date').value = formatDateForInput(monthStart);
+        document.getElementById('report-end-date').value = formatDateForInput(monthEnd);
+    }
+
+    function selectLastMonth() {
+        const today = new Date();
+        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+        
+        document.getElementById('report-start-date').value = formatDateForInput(lastMonth);
+        document.getElementById('report-end-date').value = formatDateForInput(lastMonthEnd);
+    }
+
     async function generateReport() {
+        const startDate = document.getElementById('report-start-date').value;
         const endDate = document.getElementById('report-end-date').value;
         
-        if (!endDate) {
-            window.notify.error('Please select an end date');
+        if (!startDate || !endDate) {
+            window.notify.error('Please select both start and end dates');
+            return;
+        }
+
+        if (new Date(startDate) > new Date(endDate)) {
+            window.notify.error('Start date cannot be after end date');
             return;
         }
 
         try {
-            const response = await window.api.request(`/api/timesheet/report?end_date=${endDate}`);
+            const response = await window.api.request(`/api/timesheet/report?start_date=${startDate}&end_date=${endDate}`);
 
             if (response.success && response.data.logs.length > 0) {
                 currentReportData = response.data;
@@ -1391,9 +1838,37 @@
         document.getElementById('report-days-worked').textContent = summary.days_worked;
         document.getElementById('report-avg-hours').textContent = utils.formatTime(Math.round(summary.average_hours_per_day * 60));
 
-        // Update period
+        // Update period with week context
+        const startDate = new Date(period.start_date);
+        const endDate = new Date(period.end_date);
+        const weekStartDay = document.getElementById('week-start-day').value;
+        
+        let periodContext = '';
+        const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+        
+        if (daysDiff === 7) {
+            const weekStart = getWeekStart(startDate, weekStartDay);
+            const weekEnd = getWeekEnd(startDate, weekStartDay);
+            
+            if (startDate.getTime() === weekStart.getTime() && endDate.getTime() === weekEnd.getTime()) {
+                const today = new Date();
+                const thisWeekStart = getWeekStart(today, weekStartDay);
+                const lastWeekStart = new Date(thisWeekStart);
+                lastWeekStart.setDate(thisWeekStart.getDate() - 7);
+                
+                if (startDate.getTime() === thisWeekStart.getTime()) {
+                    periodContext = ' (This Week)';
+                } else if (startDate.getTime() === lastWeekStart.getTime()) {
+                    periodContext = ' (Last Week)';
+                } else {
+                    periodContext = ` (Week starting ${weekStartDay === 'sunday' ? 'Sunday' : 'Monday'})`;
+                }
+            }
+        }
+        
         document.getElementById('report-period').innerHTML = `
-            <strong>Report Period:</strong> ${utils.formatDate(period.start_date)} - ${utils.formatDate(period.end_date)}
+            <strong>Report Period:</strong> ${utils.formatDate(period.start_date)} - ${utils.formatDate(period.end_date)}${periodContext}
+            <br><small class="text-muted">Week starts on ${weekStartDay.charAt(0).toUpperCase() + weekStartDay.slice(1)}</small>
         `;
 
         // Update table
@@ -1409,7 +1884,6 @@
                 const clockOutDisplay = log.clock_out ? window.utils.formatTimeForDisplay(log.clock_out) : '-';
                 const formattedDuration = log.formatted_duration || (log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-');
                 const workDescription = log.work_description || '-';
-                const projectName = log.project_name || '-';
                 
                 row.innerHTML = `
                     <td>${window.utils.formatDate(log.clock_in)}</td>
@@ -1417,7 +1891,6 @@
                     <td>${clockOutDisplay}</td>
                     <td>${formattedDuration}</td>
                     <td>${workDescription}</td>
-                    <td>${projectName}</td>
                 `;
             } catch (error) {
                 // Fallback formatting
@@ -1431,7 +1904,6 @@
                     <td>${clockOutTime}</td>
                     <td>${formattedDuration}</td>
                     <td>${log.work_description || '-'}</td>
-                    <td>${log.project_name || '-'}</td>
                 `;
             }
         });
@@ -1445,10 +1917,11 @@
             return;
         }
 
+        const startDate = document.getElementById('report-start-date').value;
         const endDate = document.getElementById('report-end-date').value;
 
         try {
-            const url = `/api/timesheet/export-excel?end_date=${endDate}`;
+            const url = `/api/timesheet/export-excel?start_date=${startDate}&end_date=${endDate}`;
             const link = document.createElement('a');
             link.href = url;
             link.download = `Timesheet_${currentReportData.period.start_date}_to_${currentReportData.period.end_date}.xlsx`;
@@ -1463,5 +1936,3 @@
     }
 </script>
 @endpush
-
-    .

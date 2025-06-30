@@ -71,8 +71,7 @@ class TimeLogController extends Controller
         $request->validate([
             'session_id' => 'required|exists:time_logs,session_id',
             'time' => 'required|date_format:H:i',
-            'work_description' => 'required|string|max:1000',
-            'project_name' => 'nullable|string|max:255'
+            'work_description' => 'required|string|max:1000'
         ]);
 
         $session = TimeLog::where('session_id', $request->session_id)->first();
@@ -85,7 +84,7 @@ class TimeLogController extends Controller
         }
 
         // Create clock-out datetime in Toronto timezone
-        $clockOutDate = $session->clock_in->setTimezone('America/Toronto')->format('Y-m-d');
+        $clockOutDate = $session->clock_in->copy()->setTimezone('America/Toronto')->format('Y-m-d');
         $clockOut = Carbon::createFromFormat('Y-m-d H:i', $clockOutDate . ' ' . $request->time, 'America/Toronto')
                          ->setTimezone('UTC'); // Convert to UTC for storage
 
@@ -114,7 +113,7 @@ class TimeLogController extends Controller
         $session->completeSession(
             $clockOut,
             $request->work_description,
-            $request->project_name
+            null
         );
 
         return response()->json([
@@ -167,19 +166,46 @@ class TimeLogController extends Controller
     }
 
     /**
-     * Get work history
+     * Get work history with pagination
      */
     public function getHistory(Request $request)
     {
-        $perPage = $request->get('per_page', 50);
+        $perPage = $request->get('per_page', 15);
+        $page = $request->get('page', 1);
         
         $logs = TimeLog::completed()
                        ->orderBy('clock_in', 'desc')
-                       ->paginate($perPage);
+                       ->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json([
             'success' => true,
-            'data' => $logs
+            'data' => [
+                'items' => $logs->items(),
+                'pagination' => [
+                    'current_page' => $logs->currentPage(),
+                    'last_page' => $logs->lastPage(),
+                    'per_page' => $logs->perPage(),
+                    'total' => $logs->total(),
+                    'from' => $logs->firstItem(),
+                    'to' => $logs->lastItem(),
+                    'has_more_pages' => $logs->hasMorePages(),
+                    'prev_page_url' => $logs->previousPageUrl(),
+                    'next_page_url' => $logs->nextPageUrl()
+                ]
+            ]
+        ]);
+    }
+
+    /**
+     * Get a single time log entry
+     */
+    public function getLog($id)
+    {
+        $log = TimeLog::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $log
         ]);
     }
 
@@ -206,15 +232,18 @@ class TimeLogController extends Controller
             'date' => 'required|date',
             'clock_in_time' => 'required|date_format:H:i',
             'clock_out_time' => 'required|date_format:H:i',
-            'work_description' => 'required|string|max:1000',
-            'project_name' => 'nullable|string|max:255'
+            'work_description' => 'required|string|max:1000'
         ]);
 
         $log = TimeLog::findOrFail($id);
 
-        $clockIn = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->clock_in_time);
-        $clockOut = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->clock_out_time);
+        // Create clock-in and clock-out datetimes in Toronto timezone, then convert to UTC
+        $clockIn = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->clock_in_time, 'America/Toronto')
+                        ->setTimezone('UTC');
+        $clockOut = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->clock_out_time, 'America/Toronto')
+                         ->setTimezone('UTC');
 
+        // Handle overnight sessions
         if ($clockOut->lt($clockIn)) {
             $clockOut->addDay();
         }
@@ -224,7 +253,14 @@ class TimeLogController extends Controller
         if ($totalMinutes <= 0) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid time range'
+                'message' => 'Clock out time must be after clock in time'
+            ], 422);
+        }
+
+        if ($totalMinutes > (24 * 60)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Session cannot exceed 24 hours'
             ], 422);
         }
 
@@ -233,7 +269,7 @@ class TimeLogController extends Controller
             'clock_out' => $clockOut,
             'total_minutes' => $totalMinutes,
             'work_description' => $request->work_description,
-            'project_name' => $request->project_name
+            'project_name' => null
         ]);
 
         return response()->json([
@@ -244,21 +280,22 @@ class TimeLogController extends Controller
     }
 
     /**
-     * Generate 2-week report
+     * Generate custom date range report
      */
     public function generateReport(Request $request)
     {
         $request->validate([
-            'end_date' => 'required|date'
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date'
         ]);
 
+        $startDate = $request->start_date;
         $endDate = $request->end_date;
+        
         $logs = TimeLog::completed()
-                       ->twoWeekPeriod($endDate)
+                       ->byDateRange($startDate, $endDate)
                        ->orderBy('clock_in')
                        ->get();
-
-        $startDate = Carbon::parse($endDate)->subDays(13)->format('Y-m-d');
         $totalHours = TimeLog::calculateTotalHours($logs);
         $totalMinutes = TimeLog::calculateTotalMinutes($logs);
 
@@ -293,12 +330,15 @@ class TimeLogController extends Controller
     public function exportExcel(Request $request)
     {
         $request->validate([
-            'end_date' => 'required|date'
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date'
         ]);
 
+        $startDate = $request->start_date;
         $endDate = $request->end_date;
+        
         $logs = TimeLog::completed()
-                       ->twoWeekPeriod($endDate)
+                       ->byDateRange($startDate, $endDate)
                        ->orderBy('clock_in')
                        ->get();
 
@@ -308,8 +348,6 @@ class TimeLogController extends Controller
                 'message' => 'No data found for the selected period'
             ], 404);
         }
-
-        $startDate = Carbon::parse($endDate)->subDays(13)->format('Y-m-d');
         $filename = "Timesheet_{$startDate}_to_{$endDate}.xlsx";
 
         return Excel::download(new TimeLogExport($logs, $startDate, $endDate), $filename);
