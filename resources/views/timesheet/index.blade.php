@@ -1284,12 +1284,21 @@
         // Update utils.getCurrentDateTime to use Toronto timezone
         window.utils.getCurrentDateTime = function() {
             const now = new Date();
-            // Convert to Toronto timezone
+            // Convert to Toronto timezone and format properly
             const torontoTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Toronto"}));
             
+            // Format date as YYYY-MM-DD
+            const year = torontoTime.getFullYear();
+            const month = String(torontoTime.getMonth() + 1).padStart(2, '0');
+            const day = String(torontoTime.getDate()).padStart(2, '0');
+            
+            // Format time as HH:MM
+            const hours = String(torontoTime.getHours()).padStart(2, '0');
+            const minutes = String(torontoTime.getMinutes()).padStart(2, '0');
+            
             return {
-                date: torontoTime.toISOString().split('T')[0],
-                time: torontoTime.toTimeString().slice(0, 5)
+                date: `${year}-${month}-${day}`,
+                time: `${hours}:${minutes}`
             };
         };
         
@@ -1457,11 +1466,17 @@
         timerInterval = setInterval(() => {
             if (!currentActiveSession) return;
             
+            // Parse the start time properly (it's stored in UTC)
             const startTime = new Date(currentActiveSession.clock_in);
             const now = new Date();
+            
+            // Calculate difference in minutes
             const diffMinutes = Math.floor((now - startTime) / (1000 * 60));
             
-            const formattedTime = utils.formatTime(diffMinutes);
+            // Ensure we don't show negative durations (in case of clock sync issues)
+            const safeDiffMinutes = Math.max(0, diffMinutes);
+            
+            const formattedTime = utils.formatTime(safeDiffMinutes);
             document.getElementById('session-duration-display').textContent = formattedTime;
             document.getElementById('current-session-duration').textContent = 'Duration: ' + formattedTime;
         }, 1000);
