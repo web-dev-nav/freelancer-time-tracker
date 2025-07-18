@@ -1,6 +1,10 @@
 # Freelancer Time Tracker
 
 A Laravel-based time tracking application for freelancers to log hours, track projects, and export timesheets.
+<img width="1920" height="911" alt="captureit_7-17-2025_at_23-47-55" src="https://github.com/user-attachments/assets/62759f0f-429d-4c0f-8b35-07a54acb1332" />
+<img width="1920" height="911" alt="captureit_7-17-2025_at_23-48-14" src="https://github.com/user-attachments/assets/b91ea2f4-770e-4f5e-98b1-2176cb0ea777" />
+<img width="1920" height="1759" alt="captureit_7-17-2025_at_23-48-25" src="https://github.com/user-attachments/assets/e3b07261-8dcb-4f14-99d1-9069ba0fe43a" />
+<img width="1920" height="1516" alt="captureit_7-17-2025_at_23-48-45" src="https://github.com/user-attachments/assets/248fa1ba-c14f-4b19-b5d6-58a0c1e859ae" />
 
 ## Features
 
