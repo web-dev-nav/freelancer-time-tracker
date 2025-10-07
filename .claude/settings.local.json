@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(php artisan:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(awk:*)",
+      "Read(//tmp/**)",
+      "Bash(for:*)",
+      "Bash(done)",
+      "Bash(tree:*)"
     ],
     "deny": []
   }

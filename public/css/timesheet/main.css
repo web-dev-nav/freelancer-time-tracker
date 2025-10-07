@@ -1,0 +1,45 @@
+/**
+ * Timesheet Main Stylesheet
+ *
+ * This file imports all modular CSS components for the timesheet application.
+ * Import order matters - base styles should come before components.
+ *
+ * Usage:
+ * <link rel="stylesheet" href="{{ asset('css/timesheet/main.css') }}">
+ */
+
+/* ============================================
+   Base Styles & Variables
+   ============================================ */
+@import url('variables.css');
+
+
+/* ============================================
+   Layout & Structure
+   ============================================ */
+@import url('layout.css');
+
+
+/* ============================================
+   Navigation Components
+   ============================================ */
+@import url('navigation.css');
+
+
+/* ============================================
+   Feature Components (alphabetically ordered)
+   ============================================ */
+@import url('dashboard.css');
+@import url('forms.css');
+@import url('history.css');
+@import url('modals.css');
+@import url('project-selector.css');
+@import url('projects.css');
+@import url('reports.css');
+@import url('tracker.css');
+
+
+/* ============================================
+   Utilities (imported last to ensure override)
+   ============================================ */
+@import url('utilities.css');

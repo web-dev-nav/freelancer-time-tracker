@@ -1,0 +1,58 @@
+/**
+ * Layout Styles
+ *
+ * Contains main layout structures, containers, and grid systems
+ * used throughout the timesheet application.
+ */
+
+/* ============================================
+   Tab Content Layout
+   ============================================ */
+
+.tab-content {
+    display: none;
+    padding: 24px;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+
+/* ============================================
+   Dashboard Grid Layout
+   ============================================ */
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 24px;
+}
+
+
+/* ============================================
+   Form Layouts
+   ============================================ */
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 32px;
+}
+
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}

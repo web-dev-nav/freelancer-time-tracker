@@ -121,6 +121,13 @@ class TimeLog extends Model
         return $query->where('project_id', $projectId);
     }
 
+    public function scopeActiveProjects($query)
+    {
+        return $query->whereHas('project', function($q) {
+            $q->where('status', 'active');
+        });
+    }
+
     // Static methods
     public static function getActiveSession()
     {

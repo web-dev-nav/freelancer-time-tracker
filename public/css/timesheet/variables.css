@@ -1,0 +1,79 @@
+/**
+ * CSS Custom Properties (Variables)
+ *
+ * This file contains all CSS variables used throughout the timesheet application.
+ * These variables are already defined in the main layout but are documented here
+ * for reference and can be used to override or extend the theme.
+ */
+
+/* ============================================
+   Color Variables
+   ============================================ */
+
+/* Primary brand colors */
+/* --primary-color: #8b5cf6; */
+/* --primary-dark: #7c3aed; */
+
+/* Neutral colors */
+/* --secondary-color: #374151; */
+/* --dark-color: #111827; */
+/* --darker-color: #0f172a; */
+/* --light-color: #1f2937; */
+/* --lighter-color: #374151; */
+/* --border-color: #4b5563; */
+
+/* Semantic colors */
+/* --success-color: #10b981; */
+/* --warning-color: #f59e0b; */
+/* --danger-color: #ef4444; */
+
+/* Text colors */
+/* --text-primary: #f9fafb; */
+/* --text-secondary: #d1d5db; */
+
+
+/* ============================================
+   Shadow Variables
+   ============================================ */
+
+/* --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.2); */
+/* --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3); */
+
+
+/* ============================================
+   Spacing Variables
+   ============================================ */
+
+:root {
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 12px;
+    --spacing-lg: 16px;
+    --spacing-xl: 20px;
+    --spacing-2xl: 24px;
+    --spacing-3xl: 32px;
+}
+
+
+/* ============================================
+   Transition Variables
+   ============================================ */
+
+:root {
+    --transition-fast: all 0.2s ease;
+    --transition-normal: all 0.3s ease;
+    --transition-slow: all 0.5s ease;
+}
+
+
+/* ============================================
+   Border Radius Variables
+   ============================================ */
+
+:root {
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 50%;
+}

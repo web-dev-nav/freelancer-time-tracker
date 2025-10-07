@@ -181,9 +181,11 @@ class TimeLogController extends Controller
 
         $query = TimeLog::with('project')->completed();
 
-        // Filter by project if specified
+        // Filter by project if specified, otherwise only show active projects
         if ($projectId) {
             $query->byProject($projectId);
+        } else {
+            $query->activeProjects();
         }
 
         $logs = $query->orderBy('clock_in', 'desc')
@@ -308,9 +310,11 @@ class TimeLogController extends Controller
 
         $query = TimeLog::with('project')->completed()->byDateRange($startDate, $endDate);
 
-        // Filter by project if specified
+        // Filter by project if specified, otherwise only show active projects
         if ($projectId) {
             $query->byProject($projectId);
+        } else {
+            $query->activeProjects();
         }
 
         $logs = $query->orderBy('clock_in')->get();
@@ -372,9 +376,11 @@ class TimeLogController extends Controller
 
         $query = TimeLog::with('project')->completed()->byDateRange($startDate, $endDate);
 
-        // Filter by project if specified
+        // Filter by project if specified, otherwise only show active projects
         if ($projectId) {
             $query->byProject($projectId);
+        } else {
+            $query->activeProjects();
         }
 
         $logs = $query->orderBy('clock_in')->get();
@@ -406,6 +412,9 @@ class TimeLogController extends Controller
         $baseQuery = TimeLog::completed();
         if ($projectId) {
             $baseQuery->byProject($projectId);
+        } else {
+            // Only show active projects when no specific project is selected
+            $baseQuery->activeProjects();
         }
 
         // Today stats - clone the base query for each operation

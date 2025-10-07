@@ -1,0 +1,173 @@
+/**
+ * History Styles
+ *
+ * Contains styles for the time log history view including
+ * the history table, pagination, and filters.
+ */
+
+/* ============================================
+   History Container
+   ============================================ */
+
+.history-container {
+    background: var(--light-color);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.history-header {
+    padding: 24px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.history-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+
+/* ============================================
+   History Table
+   ============================================ */
+
+.history-table-container {
+    overflow-x: auto;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.history-table th,
+.history-table td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.history-table th {
+    background: var(--secondary-color);
+    font-weight: 600;
+    color: var(--text-primary);
+    position: sticky;
+    top: 0;
+}
+
+.history-table tbody tr:hover {
+    background: var(--secondary-color);
+}
+
+
+/* ============================================
+   Pagination
+   ============================================ */
+
+.pagination-container {
+    padding: 20px 24px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.pagination-info {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.pagination-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.pagination-btn {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    background: var(--secondary-color);
+    color: var(--text-primary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: var(--lighter-color);
+    transform: translateY(-1px);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.pagination-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.page-size-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.page-size-selector select {
+    padding: 4px 8px;
+    border: 1px solid var(--border-color);
+    background: var(--secondary-color);
+    color: var(--text-primary);
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+
+/* ============================================
+   Description Preview
+   ============================================ */
+
+.description-preview {
+    display: inline;
+}
+
+.description-truncated {
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-weight: 500;
+    text-decoration: none;
+    margin-left: 4px;
+    font-size: 0.875rem;
+}
+
+.description-truncated:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+@media (max-width: 768px) {
+    .pagination-container {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .pagination-controls {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}

@@ -1,0 +1,75 @@
+/**
+ * Project Selector Styles
+ *
+ * Contains styles for the project dropdown selector component
+ * used to filter time tracking by project.
+ */
+
+/* ============================================
+   Project Selector Container
+   ============================================ */
+
+.project-selector-container {
+    margin-bottom: 20px;
+    background: rgba(31, 41, 55, 0.95);
+    border-radius: 12px;
+    padding: 16px 20px;
+    border: 1px solid rgba(75, 85, 99, 0.5);
+}
+
+.project-selector-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.project-selector-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.project-selector-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+
+/* ============================================
+   Project Select Dropdown
+   ============================================ */
+
+.project-select {
+    flex: 1;
+    padding: 10px 16px;
+    background: var(--light-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.project-select:hover {
+    border-color: var(--primary-color);
+}
+
+.project-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.project-select option {
+    background: var(--light-color);
+    color: var(--text-primary);
+    padding: 8px;
+}
