@@ -15,6 +15,7 @@ class TimeLog extends Model
 
     protected $fillable = [
         'session_id',
+        'project_id',
         'status',
         'clock_in',
         'clock_out',
@@ -76,11 +77,17 @@ class TimeLog extends Model
     // Add these accessors to the appends array so they're included in JSON
     protected $appends = [
         'clock_in_date',
-        'clock_in_time', 
+        'clock_in_time',
         'clock_out_time',
         'duration_hours',
         'formatted_duration'
     ];
+
+    // Relationships
+    public function project()
+    {
+        return $this->belongsTo(Project::class);
+    }
 
     // Scopes
     public function scopeActive($query)
@@ -105,8 +112,13 @@ class TimeLog extends Model
     {
         $end = Carbon::parse($endDate)->endOfDay();
         $start = $end->copy()->subDays(13)->startOfDay();
-        
+
         return $query->byDateRange($start, $end);
+    }
+
+    public function scopeByProject($query, $projectId)
+    {
+        return $query->where('project_id', $projectId);
     }
 
     // Static methods
@@ -115,10 +127,11 @@ class TimeLog extends Model
         return static::active()->first();
     }
 
-    public static function createSession($clockIn, $ipAddress = null, $userAgent = null)
+    public static function createSession($clockIn, $projectId = null, $ipAddress = null, $userAgent = null)
     {
         return static::create([
             'clock_in' => $clockIn,
+            'project_id' => $projectId,
             'status' => 'active',
             'ip_address' => $ipAddress,
             'user_agent' => $userAgent
@@ -133,7 +146,7 @@ class TimeLog extends Model
         $this->total_minutes = $this->clock_in->diffInMinutes($clockOut);
         $this->status = 'completed';
         $this->save();
-        
+
         return $this;
     }
 

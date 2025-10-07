@@ -32,7 +32,8 @@ class TimeLogController extends Controller
     {
         $request->validate([
             'date' => 'required|date',
-            'time' => 'required|date_format:H:i'
+            'time' => 'required|date_format:H:i',
+            'project_id' => 'nullable|exists:projects,id'
         ]);
 
         // Check for existing active session
@@ -52,9 +53,13 @@ class TimeLogController extends Controller
         // Create new session
         $session = TimeLog::createSession(
             $clockIn,
+            $request->project_id,
             $request->ip(),
             $request->userAgent()
         );
+
+        // Load project relationship for response
+        $session->load('project');
 
         return response()->json([
             'success' => true,
@@ -172,10 +177,17 @@ class TimeLogController extends Controller
     {
         $perPage = $request->get('per_page', 15);
         $page = $request->get('page', 1);
-        
-        $logs = TimeLog::completed()
-                       ->orderBy('clock_in', 'desc')
-                       ->paginate($perPage, ['*'], 'page', $page);
+        $projectId = $request->get('project_id');
+
+        $query = TimeLog::with('project')->completed();
+
+        // Filter by project if specified
+        if ($projectId) {
+            $query->byProject($projectId);
+        }
+
+        $logs = $query->orderBy('clock_in', 'desc')
+                      ->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json([
             'success' => true,
@@ -286,16 +298,22 @@ class TimeLogController extends Controller
     {
         $request->validate([
             'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date'
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'project_id' => 'nullable|exists:projects,id'
         ]);
 
         $startDate = $request->start_date;
         $endDate = $request->end_date;
-        
-        $logs = TimeLog::completed()
-                       ->byDateRange($startDate, $endDate)
-                       ->orderBy('clock_in')
-                       ->get();
+        $projectId = $request->project_id;
+
+        $query = TimeLog::with('project')->completed()->byDateRange($startDate, $endDate);
+
+        // Filter by project if specified
+        if ($projectId) {
+            $query->byProject($projectId);
+        }
+
+        $logs = $query->orderBy('clock_in')->get();
         $totalHours = TimeLog::calculateTotalHours($logs);
         $totalMinutes = TimeLog::calculateTotalMinutes($logs);
 
@@ -304,11 +322,24 @@ class TimeLogController extends Controller
             return $log->clock_in->format('Y-m-d');
         });
 
+        // Group by project for project breakdown
+        $projectBreakdown = $logs->groupBy('project_id')->map(function($projectLogs) {
+            $project = $projectLogs->first()->project;
+            return [
+                'project_id' => $project->id ?? null,
+                'project_name' => $project->name ?? 'No Project',
+                'project_color' => $project->color ?? '#8b5cf6',
+                'total_hours' => round(TimeLog::calculateTotalHours($projectLogs), 2),
+                'total_sessions' => $projectLogs->count()
+            ];
+        })->values();
+
         return response()->json([
             'success' => true,
             'data' => [
                 'logs' => $logs,
                 'grouped_logs' => $groupedLogs,
+                'project_breakdown' => $projectBreakdown,
                 'period' => [
                     'start_date' => $startDate,
                     'end_date' => $endDate
@@ -331,16 +362,22 @@ class TimeLogController extends Controller
     {
         $request->validate([
             'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date'
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'project_id' => 'nullable|exists:projects,id'
         ]);
 
         $startDate = $request->start_date;
         $endDate = $request->end_date;
-        
-        $logs = TimeLog::completed()
-                       ->byDateRange($startDate, $endDate)
-                       ->orderBy('clock_in')
-                       ->get();
+        $projectId = $request->project_id;
+
+        $query = TimeLog::with('project')->completed()->byDateRange($startDate, $endDate);
+
+        // Filter by project if specified
+        if ($projectId) {
+            $query->byProject($projectId);
+        }
+
+        $logs = $query->orderBy('clock_in')->get();
 
         if ($logs->isEmpty()) {
             return response()->json([
@@ -348,7 +385,9 @@ class TimeLogController extends Controller
                 'message' => 'No data found for the selected period'
             ], 404);
         }
-        $filename = "Timesheet_{$startDate}_to_{$endDate}.xlsx";
+
+        $projectName = $projectId ? '_' . $logs->first()->project->name : '';
+        $filename = "Timesheet{$projectName}_{$startDate}_to_{$endDate}.xlsx";
 
         return Excel::download(new TimeLogExport($logs, $startDate, $endDate), $filename);
     }
@@ -356,26 +395,45 @@ class TimeLogController extends Controller
     /**
      * Get dashboard statistics
      */
-    public function getDashboardStats()
+    public function getDashboardStats(Request $request)
     {
+        $projectId = $request->get('project_id');
         $today = Carbon::today();
         $thisWeek = Carbon::now()->startOfWeek();
         $thisMonth = Carbon::now()->startOfMonth();
 
+        // Build base query
+        $baseQuery = TimeLog::completed();
+        if ($projectId) {
+            $baseQuery->byProject($projectId);
+        }
+
+        // Today stats - clone the base query for each operation
+        $todayHours = (clone $baseQuery)->byDateRange($today, $today)->sum('total_minutes') / 60;
+        $todaySessions = (clone $baseQuery)->byDateRange($today, $today)->count();
+
+        // This week stats
+        $weekHours = (clone $baseQuery)->byDateRange($thisWeek, Carbon::now())->sum('total_minutes') / 60;
+        $weekSessions = (clone $baseQuery)->byDateRange($thisWeek, Carbon::now())->count();
+
+        // This month stats
+        $monthHours = (clone $baseQuery)->byDateRange($thisMonth, Carbon::now())->sum('total_minutes') / 60;
+        $monthSessions = (clone $baseQuery)->byDateRange($thisMonth, Carbon::now())->count();
+
         $stats = [
             'today' => [
-                'hours' => TimeLog::completed()->byDateRange($today, $today)->sum('total_minutes') / 60,
-                'sessions' => TimeLog::completed()->byDateRange($today, $today)->count()
+                'hours' => $todayHours,
+                'sessions' => $todaySessions
             ],
             'this_week' => [
-                'hours' => TimeLog::completed()->byDateRange($thisWeek, Carbon::now())->sum('total_minutes') / 60,
-                'sessions' => TimeLog::completed()->byDateRange($thisWeek, Carbon::now())->count()
+                'hours' => $weekHours,
+                'sessions' => $weekSessions
             ],
             'this_month' => [
-                'hours' => TimeLog::completed()->byDateRange($thisMonth, Carbon::now())->sum('total_minutes') / 60,
-                'sessions' => TimeLog::completed()->byDateRange($thisMonth, Carbon::now())->count()
+                'hours' => $monthHours,
+                'sessions' => $monthSessions
             ],
-            'active_session' => TimeLog::getActiveSession()
+            'active_session' => TimeLog::with('project')->getActiveSession()
         ];
 
         return response()->json([

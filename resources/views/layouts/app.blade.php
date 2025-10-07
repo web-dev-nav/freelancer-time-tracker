@@ -65,10 +65,7 @@
         .app-title {
             font-size: 2rem;
             font-weight: 700;
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: white;
             margin-bottom: 8px;
         }
 

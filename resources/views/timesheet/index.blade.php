@@ -4,6 +4,27 @@
 
 @section('content')
 <div id="timesheet-app">
+    <!-- Project Selector -->
+    <div class="project-selector-container">
+        <div class="project-selector-header">
+            <div class="project-selector-label">
+                <i class="fas fa-briefcase"></i>
+                Current Project:
+            </div>
+            <div class="project-selector-controls">
+                <select id="project-selector" class="project-select">
+                    <option value="">Loading projects...</option>
+                </select>
+                <button class="btn btn-sm btn-primary" onclick="showAddProjectModal()" title="Add New Project">
+                    <i class="fas fa-plus"></i>
+                </button>
+                <button class="btn btn-sm btn-secondary" onclick="showTab('projects')" title="Manage Projects">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Navigation Tabs -->
     <div class="nav-tabs">
         <button class="nav-tab active" data-tab="dashboard">
@@ -21,6 +42,10 @@
         <button class="nav-tab" data-tab="reports">
             <i class="fas fa-chart-bar"></i>
             Reports
+        </button>
+        <button class="nav-tab" data-tab="projects">
+            <i class="fas fa-folder"></i>
+            Projects
         </button>
     </div>
 
@@ -344,6 +369,33 @@
             </div>
         </div>
     </div>
+
+    <!-- Projects Tab -->
+    <div class="tab-content" id="projects-tab">
+        <div class="projects-page">
+            <div class="projects-page-header">
+                <div>
+                    <h2>Manage Projects</h2>
+                    <p class="projects-subtitle">Organize your freelance work by projects</p>
+                </div>
+                <div class="projects-page-actions">
+                    <button class="btn btn-sm btn-secondary" onclick="toggleArchivedProjects()">
+                        <i class="fas fa-archive"></i>
+                        <span id="archive-toggle-text">Show Archived</span>
+                    </button>
+                    <button class="btn btn-primary" onclick="showAddProjectModal()">
+                        <i class="fas fa-plus"></i>
+                        Add New Project
+                    </button>
+                </div>
+            </div>
+
+            <div class="projects-grid" id="projects-grid">
+                <!-- Projects will be loaded here -->
+            </div>
+        </div>
+    </div>
+
 </div>
 @endsection
 
@@ -493,6 +545,78 @@
         <div class="modal-footer">
             <button type="button" class="btn btn-secondary" onclick="hideViewDetailsModal()">
                 Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Project Modal -->
+<div class="modal" id="project-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="project-modal-title">Add New Project</h3>
+            <button class="modal-close" onclick="hideProjectModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form id="project-form" class="modal-body">
+            <input type="hidden" id="project-id">
+
+            <div class="form-group">
+                <label class="form-label" for="project-name">
+                    <i class="fas fa-briefcase"></i>
+                    Project Name *
+                </label>
+                <input type="text" id="project-name" class="form-control" required
+                       placeholder="e.g., Upwork Client - Website Development">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="client-name">
+                    <i class="fas fa-user"></i>
+                    Client/Organization Name
+                </label>
+                <input type="text" id="client-name" class="form-control"
+                       placeholder="e.g., ABC Corporation">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="project-color">
+                        <i class="fas fa-palette"></i>
+                        Project Color
+                    </label>
+                    <input type="color" id="project-color" class="form-control" value="#8b5cf6">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="hourly-rate">
+                        <i class="fas fa-dollar-sign"></i>
+                        Hourly Rate (optional)
+                    </label>
+                    <input type="number" id="hourly-rate" class="form-control" step="0.01" min="0"
+                           placeholder="25.00">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="project-description">
+                    <i class="fas fa-align-left"></i>
+                    Description/Notes
+                </label>
+                <textarea id="project-description" class="form-control" rows="3"
+                         placeholder="Add any notes about this project..."></textarea>
+            </div>
+        </form>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="hideProjectModal()">
+                Cancel
+            </button>
+            <button type="submit" form="project-form" class="btn btn-primary">
+                <i class="fas fa-save"></i>
+                Save Project
             </button>
         </div>
     </div>
@@ -1222,6 +1346,222 @@
     .text-danger { color: var(--danger-color); }
 
     .hidden { display: none !important; }
+
+    /* Project Selector Styles */
+    .project-selector-container {
+        margin-bottom: 20px;
+        background: rgba(31, 41, 55, 0.95);
+        border-radius: 12px;
+        padding: 16px 20px;
+        border: 1px solid rgba(75, 85, 99, 0.5);
+    }
+
+    .project-selector-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .project-selector-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        white-space: nowrap;
+    }
+
+    .project-selector-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+    }
+
+    .project-select {
+        flex: 1;
+        padding: 10px 16px;
+        background: var(--light-color);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .project-select:hover {
+        border-color: var(--primary-color);
+    }
+
+    .project-select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    }
+
+    .project-select option {
+        background: var(--light-color);
+        color: var(--text-primary);
+        padding: 8px;
+    }
+
+    /* Projects Page Styles */
+    .projects-page {
+        padding: 24px;
+    }
+
+    .projects-page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 24px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .projects-page-header h2 {
+        font-size: 1.75rem;
+        color: var(--text-primary);
+        margin: 0 0 8px 0;
+    }
+
+    .projects-subtitle {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        margin: 0;
+    }
+
+    .projects-page-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .projects-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 20px;
+    }
+
+    .project-card {
+        background: var(--light-color);
+        border-radius: 12px;
+        padding: 20px;
+        border-left: 4px solid;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .project-card:hover {
+        transform: translateY(-4px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .project-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .project-info h3 {
+        font-size: 1.1rem;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+    }
+
+    .project-client {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .project-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .project-actions .btn {
+        padding: 6px 10px;
+        font-size: 0.875rem;
+        cursor: pointer;
+        position: relative;
+        z-index: 10;
+    }
+
+    .project-actions .btn:hover {
+        transform: scale(1.05);
+    }
+
+    .project-stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(75, 85, 99, 0.3);
+    }
+
+    .project-stat {
+        text-align: center;
+    }
+
+    .project-stat-value {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .project-stat-label {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+
+    .project-description {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-top: 8px;
+        line-height: 1.5;
+    }
+
+    .project-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: white;
+    }
+
+    .project-badge.archived {
+        background: var(--lighter-color);
+    }
+
+    .empty-projects {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-secondary);
+    }
+
+    .empty-projects i {
+        font-size: 4rem;
+        opacity: 0.3;
+        margin-bottom: 16px;
+    }
+
+    .empty-projects h3 {
+        font-size: 1.25rem;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+    }
 </style>
 @endpush
 
@@ -1234,6 +1574,8 @@
     let currentPage = 1;
     let currentPerPage = 15;
     let totalPages = 1;
+    let selectedProjectId = null;  // Currently selected project
+    let allProjects = [];          // All active projects
 
     // Initialize Application
     document.addEventListener('DOMContentLoaded', function() {
@@ -1313,8 +1655,7 @@
         
         initializeApp();
         setupEventListeners();
-        loadDashboardStats();
-        checkActiveSession();
+        loadProjectsForSelector();  // Load projects first
     });
 
     function initializeApp() {
@@ -1326,6 +1667,13 @@
     }
 
     function setupEventListeners() {
+        // Project selector change
+        document.getElementById('project-selector').addEventListener('change', function() {
+            selectedProjectId = this.value || null;
+            localStorage.setItem('selectedProjectId', selectedProjectId || '');
+            onProjectChange();
+        });
+
         // Tab navigation
         document.querySelectorAll('.nav-tab').forEach(tab => {
             tab.addEventListener('click', function() {
@@ -1385,13 +1733,18 @@
             loadHistory();
         } else if (tabName === 'dashboard') {
             loadDashboardStats();
+        } else if (tabName === 'projects') {
+            loadProjects();
         }
     }
 
     // Dashboard Functions
     async function loadDashboardStats() {
         try {
-            const response = await window.api.request('/api/timesheet/dashboard-stats');
+            const url = selectedProjectId
+                ? `/api/timesheet/dashboard-stats?project_id=${selectedProjectId}`
+                : '/api/timesheet/dashboard-stats';
+            const response = await window.api.request(url);
             dashboardStats = response.stats;
             updateDashboardDisplay();
         } catch (error) {
@@ -1499,12 +1852,18 @@
             return;
         }
 
+        if (!selectedProjectId) {
+            window.notify.error('Please select a project first');
+            return;
+        }
+
         try {
             const response = await window.api.request('/api/timesheet/clock-in', {
                 method: 'POST',
                 body: JSON.stringify({
                     date: date,
-                    time: time
+                    time: time,
+                    project_id: selectedProjectId
                 })
             });
 
@@ -1622,8 +1981,11 @@
             if (perPage) currentPerPage = perPage;
             
             tbody.innerHTML = '<tr><td colspan="7" class="text-center"><div class="loading"><div class="spinner"></div>Loading history...</div></td></tr>';
-            
-            const response = await window.api.request(`/api/timesheet/history?page=${currentPage}&per_page=${currentPerPage}`);
+
+            const url = selectedProjectId
+                ? `/api/timesheet/history?page=${currentPage}&per_page=${currentPerPage}&project_id=${selectedProjectId}`
+                : `/api/timesheet/history?page=${currentPage}&per_page=${currentPerPage}`;
+            const response = await window.api.request(url);
             
             if (response.success && response.data.items.length > 0) {
                 tbody.innerHTML = '';
@@ -2003,7 +2365,10 @@
         }
 
         try {
-            const response = await window.api.request(`/api/timesheet/report?start_date=${startDate}&end_date=${endDate}`);
+            const url = selectedProjectId
+                ? `/api/timesheet/report?start_date=${startDate}&end_date=${endDate}&project_id=${selectedProjectId}`
+                : `/api/timesheet/report?start_date=${startDate}&end_date=${endDate}`;
+            const response = await window.api.request(url);
 
             if (response.success && response.data.logs.length > 0) {
                 currentReportData = response.data;
@@ -2124,7 +2489,9 @@
         const endDate = document.getElementById('report-end-date').value;
 
         try {
-            const url = `/api/timesheet/export-excel?start_date=${startDate}&end_date=${endDate}`;
+            const url = selectedProjectId
+                ? `/api/timesheet/export-excel?start_date=${startDate}&end_date=${endDate}&project_id=${selectedProjectId}`
+                : `/api/timesheet/export-excel?start_date=${startDate}&end_date=${endDate}`;
             const link = document.createElement('a');
             link.href = url;
             link.download = `Timesheet_${currentReportData.period.start_date}_to_${currentReportData.period.end_date}.xlsx`;
@@ -2136,6 +2503,324 @@
         } catch (error) {
             window.notify.error('Failed to export Excel: ' + error.message);
         }
+    }
+
+    // ====================
+    // PROJECT SELECTOR & MANAGEMENT
+    // ====================
+
+    let currentProjects = [];
+    let showArchived = false;
+
+    // Load projects for the selector dropdown
+    async function loadProjectsForSelector() {
+        try {
+            const response = await window.api.request('/api/projects/active');
+
+            if (response.success) {
+                allProjects = response.data;
+                updateProjectSelector();
+
+                // Restore last selected project or select first one
+                const savedProjectId = localStorage.getItem('selectedProjectId');
+                if (savedProjectId && allProjects.find(p => p.id == savedProjectId)) {
+                    selectedProjectId = savedProjectId;
+                } else if (allProjects.length > 0) {
+                    selectedProjectId = allProjects[0].id.toString();
+                }
+
+                document.getElementById('project-selector').value = selectedProjectId || '';
+
+                // Load initial data for selected project
+                if (selectedProjectId) {
+                    onProjectChange();
+                } else {
+                    // Show message to create first project
+                    showAddProjectModal();
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load projects:', error);
+            window.notify.error('Failed to load projects. Please refresh the page.');
+        }
+    }
+
+    function updateProjectSelector() {
+        const selector = document.getElementById('project-selector');
+
+        if (allProjects.length === 0) {
+            selector.innerHTML = '<option value="">No projects - Create one!</option>';
+            return;
+        }
+
+        selector.innerHTML = allProjects.map(project => `
+            <option value="${project.id}">${project.name}${project.client_name ? ' (' + project.client_name + ')' : ''}</option>
+        `).join('');
+    }
+
+    // Called when project selection changes
+    function onProjectChange() {
+        // Reload all data for the new project
+        loadDashboardStats();
+        checkActiveSession();
+
+        // Reload current tab data
+        const activeTab = document.querySelector('.nav-tab.active');
+        if (activeTab) {
+            const tabName = activeTab.getAttribute('data-tab');
+            if (tabName === 'history') {
+                currentPage = 1;
+                loadHistory();
+            }
+        }
+    }
+
+    async function loadProjects() {
+        try {
+            const status = showArchived ? 'archived' : 'active';
+            const response = await window.api.request(`/api/projects?status=${status}`);
+
+            if (response.success) {
+                currentProjects = response.data;
+                displayProjects();
+            }
+        } catch (error) {
+            window.notify.error('Failed to load projects: ' + error.message);
+        }
+    }
+
+    function displayProjects() {
+        const grid = document.getElementById('projects-grid');
+
+        if (currentProjects.length === 0) {
+            grid.innerHTML = `
+                <div class="empty-projects">
+                    <i class="fas fa-folder-open"></i>
+                    <h3>No ${showArchived ? 'Archived ' : ''}Projects</h3>
+                    <p>${showArchived ? 'You have no archived projects.' : 'Get started by creating your first project!'}</p>
+                </div>
+            `;
+            return;
+        }
+
+        grid.innerHTML = currentProjects.map(project => `
+            <div class="project-card" style="border-left-color: ${project.color};">
+                <div class="project-card-header">
+                    <div class="project-info">
+                        <h3>${project.name}</h3>
+                        ${project.client_name ? `
+                            <div class="project-client">
+                                <i class="fas fa-building"></i>
+                                ${project.client_name}
+                            </div>
+                        ` : ''}
+                    </div>
+                    <div class="project-actions">
+                        ${project.status === 'active' ? `
+                            <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); editProject(${project.id})" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="event.stopPropagation(); archiveProject(${project.id})" title="Archive">
+                                <i class="fas fa-archive"></i>
+                            </button>
+                        ` : `
+                            <button class="btn btn-sm btn-success" onclick="event.stopPropagation(); activateProject(${project.id})" title="Activate">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        `}
+                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deleteProject(${project.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+
+                ${project.description ? `
+                    <div class="project-description">${project.description}</div>
+                ` : ''}
+
+                ${project.status === 'archived' ? `
+                    <div style="margin-top: 12px;">
+                        <span class="project-badge archived">
+                            <i class="fas fa-archive"></i>
+                            Archived
+                        </span>
+                    </div>
+                ` : ''}
+
+                <div class="project-stats">
+                    <div class="project-stat">
+                        <div class="project-stat-value">${utils.formatTime(Math.round((project.total_hours || 0) * 60))}</div>
+                        <div class="project-stat-label">Total Hours</div>
+                    </div>
+                    <div class="project-stat">
+                        <div class="project-stat-value">${project.total_sessions || 0}</div>
+                        <div class="project-stat-label">Sessions</div>
+                    </div>
+                    ${project.hourly_rate ? `
+                        <div class="project-stat">
+                            <div class="project-stat-value">$${parseFloat(project.hourly_rate).toFixed(2)}/hr</div>
+                            <div class="project-stat-label">Rate</div>
+                        </div>
+                        <div class="project-stat">
+                            <div class="project-stat-value">$${((project.total_hours || 0) * project.hourly_rate).toFixed(2)}</div>
+                            <div class="project-stat-label">Earnings</div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function showAddProjectModal() {
+        document.getElementById('project-modal-title').textContent = 'Add New Project';
+        document.getElementById('project-id').value = '';
+        document.getElementById('project-form').reset();
+        document.getElementById('project-color').value = '#8b5cf6';
+        document.getElementById('project-modal').classList.add('show');
+        document.getElementById('modal-overlay').classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+
+    async function editProject(projectId) {
+        try {
+            const response = await window.api.request(`/api/projects/${projectId}`);
+
+            if (response.success) {
+                const project = response.data;
+                document.getElementById('project-modal-title').textContent = 'Edit Project';
+                document.getElementById('project-id').value = project.id;
+                document.getElementById('project-name').value = project.name;
+                document.getElementById('client-name').value = project.client_name || '';
+                document.getElementById('project-color').value = project.color;
+                document.getElementById('hourly-rate').value = project.hourly_rate || '';
+                document.getElementById('project-description').value = project.description || '';
+                document.getElementById('project-modal').classList.add('show');
+                document.getElementById('modal-overlay').classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+        } catch (error) {
+            window.notify.error('Failed to load project: ' + error.message);
+        }
+    }
+
+    function hideProjectModal() {
+        document.getElementById('project-modal').classList.remove('show');
+        document.getElementById('modal-overlay').classList.remove('show');
+        document.body.style.overflow = 'auto';
+    }
+
+    document.getElementById('project-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const projectId = document.getElementById('project-id').value;
+        const data = {
+            name: document.getElementById('project-name').value,
+            client_name: document.getElementById('client-name').value || null,
+            color: document.getElementById('project-color').value,
+            hourly_rate: document.getElementById('hourly-rate').value || null,
+            description: document.getElementById('project-description').value || null
+        };
+
+        try {
+            const url = projectId ? `/api/projects/${projectId}` : '/api/projects';
+            const method = projectId ? 'PUT' : 'POST';
+
+            const response = await window.api.request(url, {
+                method,
+                body: JSON.stringify(data)
+            });
+
+            if (response.success) {
+                window.notify.success(projectId ? 'Project updated successfully!' : 'Project created successfully!');
+                hideProjectModal();
+                loadProjectsForSelector();  // Refresh the selector
+
+                // If this was a new project and we had no projects before, select it
+                if (!projectId && !selectedProjectId) {
+                    selectedProjectId = response.data.id.toString();
+                    localStorage.setItem('selectedProjectId', selectedProjectId);
+                }
+
+                // If we're on the projects tab, reload it
+                const activeTab = document.querySelector('.nav-tab.active');
+                if (activeTab && activeTab.getAttribute('data-tab') === 'projects') {
+                    loadProjects();
+                }
+            }
+        } catch (error) {
+            window.notify.error('Failed to save project: ' + error.message);
+        }
+    });
+
+    async function archiveProject(projectId) {
+        if (!confirm('Are you sure you want to archive this project? You can always activate it later.')) {
+            return;
+        }
+
+        try {
+            const response = await window.api.request(`/api/projects/${projectId}/archive`, {
+                method: 'POST'
+            });
+
+            if (response.success) {
+                window.notify.success('Project archived successfully!');
+                loadProjectsForSelector();
+                const activeTab = document.querySelector('.nav-tab.active');
+                if (activeTab && activeTab.getAttribute('data-tab') === 'projects') {
+                    loadProjects();
+                }
+            }
+        } catch (error) {
+            window.notify.error('Failed to archive project: ' + error.message);
+        }
+    }
+
+    async function activateProject(projectId) {
+        try {
+            const response = await window.api.request(`/api/projects/${projectId}/activate`, {
+                method: 'POST'
+            });
+
+            if (response.success) {
+                window.notify.success('Project activated successfully!');
+                loadProjectsForSelector();
+                const activeTab = document.querySelector('.nav-tab.active');
+                if (activeTab && activeTab.getAttribute('data-tab') === 'projects') {
+                    loadProjects();
+                }
+            }
+        } catch (error) {
+            window.notify.error('Failed to activate project: ' + error.message);
+        }
+    }
+
+    async function deleteProject(projectId) {
+        if (!confirm('Are you sure you want to delete this project? This action cannot be undone. (Projects with time logs cannot be deleted)')) {
+            return;
+        }
+
+        try {
+            const response = await window.api.request(`/api/projects/${projectId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.success) {
+                window.notify.success('Project deleted successfully!');
+                loadProjectsForSelector();
+                const activeTab = document.querySelector('.nav-tab.active');
+                if (activeTab && activeTab.getAttribute('data-tab') === 'projects') {
+                    loadProjects();
+                }
+            }
+        } catch (error) {
+            window.notify.error(error.message || 'Failed to delete project');
+        }
+    }
+
+    function toggleArchivedProjects() {
+        showArchived = !showArchived;
+        document.getElementById('archive-toggle-text').textContent = showArchived ? 'Show Active' : 'Show Archived';
+        loadProjects();
     }
 </script>
 @endpush
