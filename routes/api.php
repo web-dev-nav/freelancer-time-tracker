@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\TimeLogController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\DatabaseBackupController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -21,7 +22,11 @@ Route::prefix('projects')->name('projects.api.')->group(function () {
     Route::post('/{id}/activate', [ProjectController::class, 'activate'])->name('activate');
     Route::delete('/{id}', [ProjectController::class, 'destroy'])->name('destroy');
     Route::get('/{id}/stats', [ProjectController::class, 'stats'])->name('stats');
+    Route::get('/{id}/backup', [ProjectController::class, 'backup'])->name('backup');
 });
+
+// Database backup route
+Route::get('/database/backup', [DatabaseBackupController::class, 'download'])->name('database.backup');
 
 // Time tracking API routes
 Route::prefix('timesheet')->name('timesheet.api.')->group(function () {

@@ -128,6 +128,9 @@ export function displayProjects() {
                     ` : ''}
                 </div>
                 <div class="project-actions">
+                    <button class="btn btn-sm btn-info" onclick="event.stopPropagation(); backupProject(${project.id})" title="Backup Database">
+                        <i class="fas fa-download"></i>
+                    </button>
                     ${project.status === 'active' ? `
                         <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); editProject(${project.id})" title="Edit">
                             <i class="fas fa-edit"></i>
@@ -362,4 +365,43 @@ export function toggleArchivedProjects() {
     State.setShowArchived(!State.showArchived);
     document.getElementById('archive-toggle-text').textContent = State.showArchived ? 'Show Active' : 'Show Archived';
     loadProjects();
+}
+
+/**
+ * Backup a project's database (project + time logs)
+ * @param {number} projectId - Project ID
+ */
+export async function backupProject(projectId) {
+    try {
+        // Create a download link and trigger it
+        const link = document.createElement('a');
+        link.href = `/api/projects/${projectId}/backup`;
+        link.download = `project-${projectId}-backup-${new Date().toISOString().split('T')[0]}.sql`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        window.notify.success('Project backup downloaded successfully!');
+    } catch (error) {
+        window.notify.error('Failed to backup project: ' + error.message);
+    }
+}
+
+/**
+ * Backup entire database (all tables and data)
+ */
+export async function backupDatabase() {
+    try {
+        // Create a download link and trigger it
+        const link = document.createElement('a');
+        link.href = `/api/database/backup`;
+        link.download = `database-full-${new Date().toISOString().split('T')[0]}.sql`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        window.notify.success('Full database backup downloaded successfully!');
+    } catch (error) {
+        window.notify.error('Failed to backup database: ' + error.message);
+    }
 }

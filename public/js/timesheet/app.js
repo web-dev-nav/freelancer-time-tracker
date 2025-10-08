@@ -11,8 +11,12 @@ import { loadDashboardStats, checkActiveSession } from './dashboard.js';
 import { clockIn, clockOut } from './tracker.js';
 import { loadHistory, updateLog, hideEditLogModal } from './history.js';
 import { generateReport } from './reports.js';
-import { loadProjectsForSelector, onProjectChange, loadProjects, saveProject } from './projects.js';
+import { loadProjectsForSelector, onProjectChange, loadProjects, saveProject, backupProject, backupDatabase } from './projects.js';
 import { hideClockOutModal } from './tracker.js';
+
+// Make backup functions globally accessible
+window.backupProject = backupProject;
+window.backupDatabase = backupDatabase;
 
 /**
  * Initialize the application on DOM content loaded
