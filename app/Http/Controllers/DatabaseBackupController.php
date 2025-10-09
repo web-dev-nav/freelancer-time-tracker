@@ -5,9 +5,81 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Storage;
 
 class DatabaseBackupController extends Controller
 {
+    /**
+     * List all backup files
+     */
+    public function index()
+    {
+        $backups = [];
+        $files = Storage::disk('local')->files('backups');
+
+        foreach ($files as $file) {
+            if (pathinfo($file, PATHINFO_EXTENSION) === 'sql') {
+                $backups[] = [
+                    'filename' => basename($file),
+                    'path' => $file,
+                    'size' => Storage::disk('local')->size($file),
+                    'created_at' => Storage::disk('local')->lastModified($file),
+                    'formatted_size' => $this->formatBytes(Storage::disk('local')->size($file)),
+                    'formatted_date' => date('Y-m-d H:i:s', Storage::disk('local')->lastModified($file))
+                ];
+            }
+        }
+
+        // Sort by date descending (newest first)
+        usort($backups, function($a, $b) {
+            return $b['created_at'] - $a['created_at'];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $backups
+        ]);
+    }
+
+    /**
+     * Download a specific backup file
+     */
+    public function downloadFile($filename)
+    {
+        $path = 'backups/' . $filename;
+
+        if (!Storage::disk('local')->exists($path)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Backup file not found'
+            ], 404);
+        }
+
+        return Storage::disk('local')->download($path);
+    }
+
+    /**
+     * Delete a backup file
+     */
+    public function deleteFile($filename)
+    {
+        $path = 'backups/' . $filename;
+
+        if (!Storage::disk('local')->exists($path)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Backup file not found'
+            ], 404);
+        }
+
+        Storage::disk('local')->delete($path);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Backup deleted successfully'
+        ]);
+    }
+
     /**
      * Download complete database backup
      */
@@ -56,6 +128,9 @@ class DatabaseBackupController extends Controller
             'database-full-%s-backup.sql',
             now()->format('Y-m-d_His')
         );
+
+        // Save backup to storage
+        Storage::disk('local')->put('backups/' . $filename, $sql);
 
         return response($sql, 200)
             ->header('Content-Type', 'application/sql')
@@ -128,6 +203,9 @@ class DatabaseBackupController extends Controller
             'database-full-%s-backup.sql',
             now()->format('Y-m-d_His')
         );
+
+        // Save backup to storage
+        Storage::disk('local')->put('backups/' . $filename, $sql);
 
         return response($sql, 200)
             ->header('Content-Type', 'application/sql')
@@ -231,6 +309,9 @@ class DatabaseBackupController extends Controller
             now()->format('Y-m-d_His')
         );
 
+        // Save backup to storage
+        Storage::disk('local')->put('backups/' . $filename, $sql);
+
         return response($sql, 200)
             ->header('Content-Type', 'application/sql')
             ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
@@ -252,5 +333,21 @@ class DatabaseBackupController extends Controller
         // Escape single quotes and wrap in quotes
         $escaped = str_replace("'", "''", $value);
         return "'{$escaped}'";
+    }
+
+    /**
+     * Format bytes to human readable size
+     */
+    private function formatBytes($bytes, $precision = 2)
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+
+        $bytes /= pow(1024, $pow);
+
+        return round($bytes, $precision) . ' ' . $units[$pow];
     }
 }

@@ -8,10 +8,6 @@
                 <p class="projects-subtitle">Organize your freelance work by projects</p>
             </div>
             <div class="projects-page-actions">
-                <button class="btn btn-sm btn-info" onclick="backupDatabase()" title="Backup Entire Database">
-                    <i class="fas fa-database"></i>
-                    Backup Database
-                </button>
                 <button class="btn btn-sm btn-secondary" onclick="toggleArchivedProjects()">
                     <i class="fas fa-archive"></i>
                     <span id="archive-toggle-text">Show Archived</span>

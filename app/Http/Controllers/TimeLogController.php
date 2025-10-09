@@ -142,7 +142,8 @@ class TimeLogController extends Controller
             ], 404);
         }
 
-        $session->cancelSession();
+        // Delete the session instead of marking it as cancelled
+        $session->delete();
 
         return response()->json([
             'success' => true,
@@ -429,6 +430,12 @@ class TimeLogController extends Controller
         $monthHours = (clone $baseQuery)->byDateRange($thisMonth, Carbon::now())->sum('total_minutes') / 60;
         $monthSessions = (clone $baseQuery)->byDateRange($thisMonth, Carbon::now())->count();
 
+        // Get active session with project relationship
+        $activeSession = TimeLog::getActiveSession();
+        if ($activeSession) {
+            $activeSession->load('project');
+        }
+
         $stats = [
             'today' => [
                 'hours' => $todayHours,
@@ -442,7 +449,7 @@ class TimeLogController extends Controller
                 'hours' => $monthHours,
                 'sessions' => $monthSessions
             ],
-            'active_session' => TimeLog::with('project')->getActiveSession()
+            'active_session' => $activeSession
         ];
 
         return response()->json([

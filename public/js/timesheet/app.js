@@ -12,11 +12,20 @@ import { clockIn, clockOut } from './tracker.js';
 import { loadHistory, updateLog, hideEditLogModal } from './history.js';
 import { generateReport } from './reports.js';
 import { loadProjectsForSelector, onProjectChange, loadProjects, saveProject, backupProject, backupDatabase } from './projects.js';
+import { loadBackups, createFullBackup, downloadBackup, deleteBackup, refreshBackupList, showProjectBackupSelector, hideProjectBackupSelector, createProjectBackup } from './backups.js';
 import { hideClockOutModal } from './tracker.js';
 
 // Make backup functions globally accessible
 window.backupProject = backupProject;
 window.backupDatabase = backupDatabase;
+window.loadBackups = loadBackups;
+window.createFullBackup = createFullBackup;
+window.downloadBackup = downloadBackup;
+window.deleteBackup = deleteBackup;
+window.refreshBackupList = refreshBackupList;
+window.showProjectBackupSelector = showProjectBackupSelector;
+window.hideProjectBackupSelector = hideProjectBackupSelector;
+window.createProjectBackup = createProjectBackup;
 
 /**
  * Initialize the application on DOM content loaded
@@ -107,6 +116,8 @@ export function showTab(tabName) {
         loadDashboardStats();
     } else if (tabName === 'projects') {
         loadProjects();
+    } else if (tabName === 'backups') {
+        loadBackups();
     }
 }
 

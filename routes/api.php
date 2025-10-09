@@ -25,7 +25,15 @@ Route::prefix('projects')->name('projects.api.')->group(function () {
     Route::get('/{id}/backup', [ProjectController::class, 'backup'])->name('backup');
 });
 
-// Database backup route
+// Database backup routes
+Route::prefix('backups')->name('backups.')->group(function () {
+    Route::get('/', [DatabaseBackupController::class, 'index'])->name('index');
+    Route::get('/create', [DatabaseBackupController::class, 'download'])->name('create');
+    Route::get('/{filename}', [DatabaseBackupController::class, 'downloadFile'])->name('download');
+    Route::delete('/{filename}', [DatabaseBackupController::class, 'deleteFile'])->name('delete');
+});
+
+// Legacy database backup route (for compatibility)
 Route::get('/database/backup', [DatabaseBackupController::class, 'download'])->name('database.backup');
 
 // Time tracking API routes

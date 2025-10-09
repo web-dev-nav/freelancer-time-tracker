@@ -30,6 +30,7 @@ class ProjectController extends Controller
             $project->setAttribute('total_hours', $project->total_hours);
             $project->setAttribute('total_sessions', $project->total_sessions);
             $project->setAttribute('total_earnings', $project->total_earnings);
+            $project->setAttribute('has_time_logs', $project->timeLogs()->count() > 0);
         });
 
         return response()->json([
@@ -227,17 +228,22 @@ class ProjectController extends Controller
         // Generate SQL dump
         $sql = $this->generateSqlBackup($project, $timeLogs);
 
-        // Generate filename
+        // Generate filename with timestamp for uniqueness
         $filename = sprintf(
-            'project-%s-%s-backup.sql',
+            'project-%s-%s-%s-backup.sql',
             $project->id,
-            now()->format('Y-m-d')
+            \Illuminate\Support\Str::slug($project->name),
+            now()->format('Y-m-d_His')
         );
 
-        // Return as downloadable file
-        return response($sql, 200)
-            ->header('Content-Type', 'application/sql')
-            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+        // Save backup to storage
+        \Illuminate\Support\Facades\Storage::disk('local')->put('backups/' . $filename, $sql);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Project backup created successfully',
+            'filename' => $filename
+        ]);
     }
 
     /**

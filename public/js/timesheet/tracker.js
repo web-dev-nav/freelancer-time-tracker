@@ -152,6 +152,14 @@ export async function cancelActiveSession() {
             window.notify.error(response.message);
         }
     } catch (error) {
-        window.notify.error('Failed to cancel session: ' + error.message);
+        // If there's no active session found, still clear the UI state
+        if (error.message.includes('No active session found')) {
+            State.setCurrentActiveSession(null);
+            hideActiveSessionUI();
+            loadDashboardStats();
+            window.notify.info('No active session to cancel. Refreshing display...');
+        } else {
+            window.notify.error('Failed to cancel session: ' + error.message);
+        }
     }
 }

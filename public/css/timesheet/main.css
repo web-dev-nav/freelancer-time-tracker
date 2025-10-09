@@ -29,6 +29,7 @@
 /* ============================================
    Feature Components (alphabetically ordered)
    ============================================ */
+@import url('backups.css');
 @import url('dashboard.css');
 @import url('forms.css');
 @import url('history.css');

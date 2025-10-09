@@ -20,6 +20,16 @@ export async function loadDashboardStats() {
         const response = await window.api.request(url);
         State.setDashboardStats(response.stats);
         updateDashboardDisplay();
+
+        // Update active session state and UI
+        if (response.stats.active_session) {
+            State.setCurrentActiveSession(response.stats.active_session);
+            showActiveSessionUI();
+            startSessionTimer();
+        } else {
+            State.setCurrentActiveSession(null);
+            hideActiveSessionUI();
+        }
     } catch (error) {
         console.error('Failed to load dashboard stats:', error);
     }
@@ -68,11 +78,20 @@ export async function checkActiveSession() {
 export function showActiveSessionUI() {
     // Update dashboard
     const sessionCard = document.getElementById('active-session-card');
-    sessionCard.classList.remove('hidden');
+    if (sessionCard) {
+        sessionCard.classList.remove('hidden');
+    }
 
-    // Update tracker
-    document.getElementById('clock-in-section').classList.add('hidden');
-    document.getElementById('active-session-display').classList.remove('hidden');
+    // Update tracker tab elements (if they exist)
+    const clockInSection = document.getElementById('clock-in-section');
+    const activeSessionDisplay = document.getElementById('active-session-display');
+
+    if (clockInSection) {
+        clockInSection.classList.add('hidden');
+    }
+    if (activeSessionDisplay) {
+        activeSessionDisplay.classList.remove('hidden');
+    }
 
     updateActiveSessionDisplay();
 }
@@ -81,9 +100,20 @@ export function showActiveSessionUI() {
  * Hide the active session UI elements
  */
 export function hideActiveSessionUI() {
-    document.getElementById('active-session-card').classList.add('hidden');
-    document.getElementById('clock-in-section').classList.remove('hidden');
-    document.getElementById('active-session-display').classList.add('hidden');
+    const sessionCard = document.getElementById('active-session-card');
+    const clockInSection = document.getElementById('clock-in-section');
+    const activeSessionDisplay = document.getElementById('active-session-display');
+
+    if (sessionCard) {
+        sessionCard.classList.add('hidden');
+    }
+    if (clockInSection) {
+        clockInSection.classList.remove('hidden');
+    }
+    if (activeSessionDisplay) {
+        activeSessionDisplay.classList.add('hidden');
+    }
+
     stopSessionTimer();
 }
 
@@ -96,10 +126,15 @@ export function updateActiveSessionDisplay() {
     const startTime = new Date(State.currentActiveSession.clock_in);
     const startDisplay = Utils.formatDateTimeForDisplay(State.currentActiveSession.clock_in);
 
-    document.getElementById('session-start-display').textContent =
-        `${startDisplay.date} at ${startDisplay.time}`;
-    document.getElementById('current-session-start').textContent =
-        `Started at ${startDisplay.time}`;
+    const sessionStartDisplay = document.getElementById('session-start-display');
+    const currentSessionStart = document.getElementById('current-session-start');
+
+    if (sessionStartDisplay) {
+        sessionStartDisplay.textContent = `${startDisplay.date} at ${startDisplay.time}`;
+    }
+    if (currentSessionStart) {
+        currentSessionStart.textContent = `Started at ${startDisplay.time}`;
+    }
 }
 
 /**
@@ -122,8 +157,16 @@ export function startSessionTimer() {
         const safeDiffMinutes = Math.max(0, diffMinutes);
 
         const formattedTime = window.utils.formatTime(safeDiffMinutes);
-        document.getElementById('session-duration-display').textContent = formattedTime;
-        document.getElementById('current-session-duration').textContent = 'Duration: ' + formattedTime;
+
+        const sessionDurationDisplay = document.getElementById('session-duration-display');
+        const currentSessionDuration = document.getElementById('current-session-duration');
+
+        if (sessionDurationDisplay) {
+            sessionDurationDisplay.textContent = formattedTime;
+        }
+        if (currentSessionDuration) {
+            currentSessionDuration.textContent = 'Duration: ' + formattedTime;
+        }
     }, 1000);
 
     State.setTimerInterval(interval);

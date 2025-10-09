@@ -128,9 +128,6 @@ export function displayProjects() {
                     ` : ''}
                 </div>
                 <div class="project-actions">
-                    <button class="btn btn-sm btn-info" onclick="event.stopPropagation(); backupProject(${project.id})" title="Backup Database">
-                        <i class="fas fa-download"></i>
-                    </button>
                     ${project.status === 'active' ? `
                         <button class="btn btn-sm btn-secondary" onclick="event.stopPropagation(); editProject(${project.id})" title="Edit">
                             <i class="fas fa-edit"></i>
@@ -143,9 +140,11 @@ export function displayProjects() {
                             <i class="fas fa-check"></i>
                         </button>
                     `}
-                    <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deleteProject(${project.id})" title="Delete">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    ${!project.has_time_logs ? `
+                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deleteProject(${project.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    ` : ''}
                 </div>
             </div>
 

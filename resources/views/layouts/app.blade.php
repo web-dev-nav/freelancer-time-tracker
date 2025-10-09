@@ -305,6 +305,9 @@
         </main>
     </div>
 
+    {{-- Modals Stack (renders outside main-content) --}}
+    @stack('modals')
+
     <!-- Scripts -->
     <script>
         // Global CSRF token
@@ -356,25 +359,29 @@
                     <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
                     ${message}
                 `;
-                
+
                 const container = document.querySelector('.main-content');
                 container.insertBefore(alert, container.firstChild);
-                
+
                 setTimeout(() => {
                     alert.remove();
                 }, 5000);
             },
-            
+
             success(message) {
                 this.show(message, 'success');
             },
-            
+
             error(message) {
                 this.show(message, 'error');
             },
-            
+
             warning(message) {
                 this.show(message, 'warning');
+            },
+
+            info(message) {
+                this.show(message, 'warning'); // Use warning style for info
             }
         };
 
