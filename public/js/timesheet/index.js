@@ -13,6 +13,7 @@ import * as Tracker from './tracker.js';
 import * as History from './history.js';
 import * as Reports from './reports.js';
 import * as Projects from './projects.js';
+import * as Backups from './backups.js';
 import * as App from './app.js';
 
 // ====================
@@ -51,6 +52,16 @@ window.activateProject = Projects.activateProject;
 window.deleteProject = Projects.deleteProject;
 window.toggleArchivedProjects = Projects.toggleArchivedProjects;
 
+// Backup functions (called from HTML)
+window.loadBackups = Backups.loadBackups;
+window.createFullBackup = Backups.createFullBackup;
+window.downloadBackup = Backups.downloadBackup;
+window.deleteBackup = Backups.deleteBackup;
+window.refreshBackupList = Backups.refreshBackupList;
+window.showProjectBackupSelector = Backups.showProjectBackupSelector;
+window.hideProjectBackupSelector = Backups.hideProjectBackupSelector;
+window.createProjectBackup = Backups.createProjectBackup;
+
 // App functions (called from HTML)
 window.showTab = App.showTab;
 
@@ -66,5 +77,6 @@ export {
     History,
     Reports,
     Projects,
+    Backups,
     App
 };

@@ -46,7 +46,7 @@
         </div>
 
         <!-- Active Session Card -->
-        <div class="active-session-card" id="active-session-card">
+        <div class="active-session-card hidden" id="active-session-card">
             <div class="session-header">
                 <h3>
                     <i class="fas fa-play-circle text-success"></i>

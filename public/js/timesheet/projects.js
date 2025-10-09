@@ -6,7 +6,7 @@
  */
 
 import * as State from './state.js';
-import { loadDashboardStats, checkActiveSession } from './dashboard.js';
+import { loadDashboardStats } from './dashboard.js';
 import { loadHistory } from './history.js';
 
 /**
@@ -65,15 +65,14 @@ export function updateProjectSelector() {
  * Reloads all data for the newly selected project
  */
 export function onProjectChange() {
-    // Reload all data for the new project
-    loadDashboardStats();
-    checkActiveSession();
-
     // Reload current tab data
     const activeTab = document.querySelector('.nav-tab.active');
     if (activeTab) {
         const tabName = activeTab.getAttribute('data-tab');
-        if (tabName === 'history') {
+        if (tabName === 'dashboard') {
+            // Load stats which includes active session check
+            loadDashboardStats();
+        } else if (tabName === 'history') {
             State.setCurrentPage(1);
             loadHistory();
         }

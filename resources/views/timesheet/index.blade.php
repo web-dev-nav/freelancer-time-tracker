@@ -41,5 +41,5 @@
 @endpush
 
 @push('scripts')
-    <script type="module" src="{{ asset('js/timesheet/index.js') }}"></script>
+    <script type="module" src="{{ asset('js/timesheet/index.js') }}?v={{ time() }}"></script>
 @endpush

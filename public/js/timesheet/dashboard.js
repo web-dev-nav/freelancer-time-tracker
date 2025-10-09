@@ -59,16 +59,37 @@ export function updateDashboardDisplay() {
  */
 export async function checkActiveSession() {
     try {
-        const response = await window.api.request('/api/timesheet/active-session');
-        if (response.success) {
-            State.setCurrentActiveSession(response.session);
-            showActiveSessionUI();
-            startSessionTimer();
-        } else {
+        const response = await fetch('/api/timesheet/active-session', {
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': window.csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+                State.setCurrentActiveSession(data.session);
+                showActiveSessionUI();
+                startSessionTimer();
+                return;
+            }
+        }
+
+        // No active session (404 or any other status)
+        State.setCurrentActiveSession(null);
+        // Only try to update UI if the dashboard tab exists
+        if (document.getElementById('active-session-card')) {
             hideActiveSessionUI();
         }
     } catch (error) {
-        hideActiveSessionUI();
+        // Network error or parsing error - just clear the state silently
+        State.setCurrentActiveSession(null);
+        if (document.getElementById('active-session-card')) {
+            hideActiveSessionUI();
+        }
     }
 }
 
@@ -100,10 +121,12 @@ export function showActiveSessionUI() {
  * Hide the active session UI elements
  */
 export function hideActiveSessionUI() {
+    // Safely get elements - they might not exist if dashboard isn't loaded yet
     const sessionCard = document.getElementById('active-session-card');
     const clockInSection = document.getElementById('clock-in-section');
     const activeSessionDisplay = document.getElementById('active-session-display');
 
+    // Only manipulate if element exists
     if (sessionCard) {
         sessionCard.classList.add('hidden');
     }
