@@ -24,6 +24,7 @@ import * as App from './app.js';
 window.clockIn = Tracker.clockIn;
 window.quickClockIn = Tracker.quickClockIn;
 window.showClockOutModal = Tracker.showClockOutModal;
+window.hideClockOutModal = Tracker.hideClockOutModal;
 window.clockOut = Tracker.clockOut;
 window.cancelActiveSession = Tracker.cancelActiveSession;
 
