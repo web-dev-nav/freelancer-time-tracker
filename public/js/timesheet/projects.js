@@ -213,6 +213,7 @@ export async function editProject(projectId) {
             document.getElementById('client-name').value = project.client_name || '';
             document.getElementById('project-color').value = project.color;
             document.getElementById('hourly-rate').value = project.hourly_rate || '';
+            document.getElementById('has-tax').checked = project.has_tax || false;
             document.getElementById('project-description').value = project.description || '';
             document.getElementById('project-modal').classList.add('show');
             document.getElementById('modal-overlay').classList.add('show');
@@ -245,6 +246,7 @@ export async function saveProject(e) {
         client_name: document.getElementById('client-name').value || null,
         color: document.getElementById('project-color').value,
         hourly_rate: document.getElementById('hourly-rate').value || null,
+        has_tax: document.getElementById('has-tax').checked,
         description: document.getElementById('project-description').value || null
     };
 

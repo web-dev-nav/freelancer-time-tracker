@@ -14,12 +14,14 @@ class Project extends Model
         'client_name',
         'color',
         'hourly_rate',
+        'has_tax',
         'status',
         'description'
     ];
 
     protected $casts = [
         'hourly_rate' => 'decimal:2',
+        'has_tax' => 'boolean',
     ];
 
     // Relationships
@@ -60,7 +62,14 @@ class Project extends Model
         if (!$this->hourly_rate) {
             return null;
         }
-        return $this->total_hours * $this->hourly_rate;
+        $earnings = $this->total_hours * $this->hourly_rate;
+
+        // Apply 13% tax if enabled
+        if ($this->has_tax) {
+            $earnings = $earnings * 1.13;
+        }
+
+        return $earnings;
     }
 
     // Methods

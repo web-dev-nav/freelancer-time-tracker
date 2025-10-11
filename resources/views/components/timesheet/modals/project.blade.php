@@ -50,6 +50,16 @@
             </div>
 
             <div class="form-group">
+                <label class="form-label checkbox-label">
+                    <input type="checkbox" id="has-tax" class="form-checkbox">
+                    <span>
+                        <i class="fas fa-receipt"></i>
+                        Include 13% Tax
+                    </span>
+                </label>
+            </div>
+
+            <div class="form-group">
                 <label class="form-label" for="project-description">
                     <i class="fas fa-align-left"></i>
                     Description/Notes

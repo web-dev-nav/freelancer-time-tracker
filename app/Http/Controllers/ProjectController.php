@@ -80,6 +80,7 @@ class ProjectController extends Controller
             'client_name' => 'nullable|string|max:255',
             'color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'hourly_rate' => 'nullable|numeric|min:0',
+            'has_tax' => 'nullable|boolean',
             'description' => 'nullable|string|max:1000'
         ]);
 
@@ -88,6 +89,7 @@ class ProjectController extends Controller
             'client_name' => $request->client_name,
             'color' => $request->color ?? '#8b5cf6',
             'hourly_rate' => $request->hourly_rate,
+            'has_tax' => $request->has_tax ?? false,
             'description' => $request->description,
             'status' => 'active'
         ]);
@@ -109,6 +111,7 @@ class ProjectController extends Controller
             'client_name' => 'nullable|string|max:255',
             'color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'hourly_rate' => 'nullable|numeric|min:0',
+            'has_tax' => 'nullable|boolean',
             'description' => 'nullable|string|max:1000',
             'status' => 'nullable|in:active,archived'
         ]);
@@ -120,6 +123,7 @@ class ProjectController extends Controller
             'client_name' => $request->client_name,
             'color' => $request->color ?? $project->color,
             'hourly_rate' => $request->hourly_rate,
+            'has_tax' => $request->has_tax ?? $project->has_tax,
             'description' => $request->description,
             'status' => $request->status ?? $project->status
         ]);
