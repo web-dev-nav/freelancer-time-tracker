@@ -192,6 +192,29 @@ export function changePageSize(newSize) {
 }
 
 /**
+ * Create a new entry
+ */
+export function createNewEntry() {
+    // Clear the form and set to create mode
+    document.getElementById('edit-log-id').value = '';
+
+    // Set default values - current date and current time
+    const now = new Date();
+    const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
+
+    document.getElementById('edit-clock-in-date').value = now.toISOString().split('T')[0];
+    document.getElementById('edit-clock-in-time').value = currentTime;
+    document.getElementById('edit-clock-out-time').value = currentTime;
+    document.getElementById('edit-work-description').value = '';
+
+    // Store the currently selected project for the new entry
+    document.getElementById('edit-log-id').setAttribute('data-create-project-id', State.selectedProjectId || '');
+
+    // Show the modal
+    showEditLogModal();
+}
+
+/**
  * Edit a log entry
  * @param {number} id - Log entry ID
  */
@@ -252,7 +275,7 @@ export function hideEditLogModal() {
 }
 
 /**
- * Update a log entry
+ * Update or create a log entry
  */
 export async function updateLog() {
     const logId = document.getElementById('edit-log-id').value;
@@ -267,26 +290,45 @@ export async function updateLog() {
     }
 
     try {
-        const response = await window.api.request(`/api/timesheet/logs/${logId}`, {
-            method: 'PUT',
-            body: JSON.stringify({
-                date: date,
-                clock_in_time: clockInTime,
-                clock_out_time: clockOutTime,
-                work_description: description
-            })
+        // If logId is empty, create new entry; otherwise update existing
+        const url = logId ? `/api/timesheet/logs/${logId}` : '/api/timesheet/logs';
+        const method = logId ? 'PUT' : 'POST';
+
+        // Get project ID for new entries
+        const projectId = logId ? null : (document.getElementById('edit-log-id').getAttribute('data-create-project-id') || null);
+
+        console.log('Submitting log:', { url, method, logId, date, clockInTime, clockOutTime, projectId });
+
+        const requestBody = {
+            date: date,
+            clock_in_time: clockInTime,
+            clock_out_time: clockOutTime,
+            work_description: description
+        };
+
+        // Add project_id only for new entries
+        if (!logId && projectId) {
+            requestBody.project_id = projectId;
+        }
+
+        const response = await window.api.request(url, {
+            method: method,
+            body: JSON.stringify(requestBody)
         });
+
+        console.log('Response:', response);
 
         if (response.success) {
             hideEditLogModal();
             loadHistory(State.currentPage); // Reload current page
             loadDashboardStats(); // Refresh dashboard stats
-            window.notify.success('Entry updated successfully');
+            window.notify.success(logId ? 'Entry updated successfully' : 'Entry created successfully');
         } else {
             window.notify.error(response.message);
         }
     } catch (error) {
-        window.notify.error('Failed to update entry: ' + error.message);
+        console.error('Error submitting log:', error);
+        window.notify.error(logId ? 'Failed to update entry: ' + error.message : 'Failed to create entry: ' + error.message);
     }
 }
 

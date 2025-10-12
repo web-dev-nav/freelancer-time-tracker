@@ -33,9 +33,6 @@ export async function loadProjectsForSelector() {
             // Load initial data for selected project
             if (State.selectedProjectId) {
                 onProjectChange();
-            } else {
-                // Show message to create first project
-                showAddProjectModal();
             }
         }
     } catch (error) {

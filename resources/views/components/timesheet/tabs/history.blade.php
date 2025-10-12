@@ -5,6 +5,10 @@
         <div class="history-header">
             <h2>Work History</h2>
             <div class="history-actions">
+                <button class="btn btn-primary" onclick="createNewEntry()" style="margin-right: 8px;">
+                    <i class="fas fa-plus"></i>
+                    Create New Entry
+                </button>
                 <button class="btn btn-secondary" onclick="loadHistory()">
                     <i class="fas fa-sync"></i>
                     Refresh

@@ -76,7 +76,7 @@ class TimeLogController extends Controller
         $request->validate([
             'session_id' => 'required|exists:time_logs,session_id',
             'time' => 'required|date_format:H:i',
-            'work_description' => 'required|string|max:1000'
+            'work_description' => 'required|string'
         ]);
 
         $session = TimeLog::where('session_id', $request->session_id)->first();
@@ -212,6 +212,63 @@ class TimeLogController extends Controller
     }
 
     /**
+     * Create a new time log entry
+     */
+    public function createLog(Request $request)
+    {
+        $request->validate([
+            'date' => 'required|date',
+            'clock_in_time' => 'required|date_format:H:i',
+            'clock_out_time' => 'required|date_format:H:i',
+            'work_description' => 'required|string',
+            'project_id' => 'nullable|exists:projects,id'
+        ]);
+
+        // Create clock-in and clock-out datetimes in Toronto timezone, then convert to UTC
+        $clockIn = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->clock_in_time, 'America/Toronto')
+                        ->setTimezone('UTC');
+        $clockOut = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->clock_out_time, 'America/Toronto')
+                         ->setTimezone('UTC');
+
+        // Handle overnight sessions
+        if ($clockOut->lt($clockIn)) {
+            $clockOut->addDay();
+        }
+
+        $totalMinutes = $clockIn->diffInMinutes($clockOut);
+
+        if ($totalMinutes <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Clock out time must be after clock in time'
+            ], 422);
+        }
+
+        if ($totalMinutes > (24 * 60)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Session cannot exceed 24 hours'
+            ], 422);
+        }
+
+        $log = TimeLog::create([
+            'session_id' => \Illuminate\Support\Str::uuid(),
+            'clock_in' => $clockIn,
+            'clock_out' => $clockOut,
+            'total_minutes' => $totalMinutes,
+            'work_description' => $request->work_description,
+            'project_id' => $request->project_id,
+            'status' => 'completed'
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Time log created successfully',
+            'data' => $log->fresh()->load('project')
+        ]);
+    }
+
+    /**
      * Get a single time log entry
      */
     public function getLog($id)
@@ -247,7 +304,7 @@ class TimeLogController extends Controller
             'date' => 'required|date',
             'clock_in_time' => 'required|date_format:H:i',
             'clock_out_time' => 'required|date_format:H:i',
-            'work_description' => 'required|string|max:1000'
+            'work_description' => 'required|string'
         ]);
 
         $log = TimeLog::findOrFail($id);

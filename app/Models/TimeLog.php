@@ -123,8 +123,10 @@ class TimeLog extends Model
 
     public function scopeActiveProjects($query)
     {
-        return $query->whereHas('project', function($q) {
-            $q->where('status', 'active');
+        return $query->where(function($q) {
+            $q->whereHas('project', function($subQ) {
+                $subQ->where('status', 'active');
+            })->orWhereNull('project_id');
         });
     }
 

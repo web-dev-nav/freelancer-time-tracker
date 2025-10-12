@@ -30,6 +30,7 @@ window.cancelActiveSession = Tracker.cancelActiveSession;
 
 // History functions (called from HTML)
 window.loadHistory = History.loadHistory;
+window.createNewEntry = History.createNewEntry;
 window.editLog = History.editLog;
 window.deleteLog = History.deleteLog;
 window.viewDetails = History.viewDetails;

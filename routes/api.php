@@ -47,6 +47,7 @@ Route::prefix('timesheet')->name('timesheet.api.')->group(function () {
 
     // History and CRUD
     Route::get('/history', [TimeLogController::class, 'getHistory'])->name('history');
+    Route::post('/logs', [TimeLogController::class, 'createLog'])->name('create-log');
     Route::get('/logs/{id}', [TimeLogController::class, 'getLog'])->name('get-log');
     Route::put('/logs/{id}', [TimeLogController::class, 'updateLog'])->name('update-log');
     Route::delete('/logs/{id}', [TimeLogController::class, 'deleteLog'])->name('delete-log');
