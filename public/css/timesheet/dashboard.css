@@ -13,6 +13,8 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 16px;
+    width: 100%;
+    max-width: 100%;
 }
 
 .stat-card {
@@ -24,6 +26,9 @@
     align-items: center;
     gap: 16px;
     box-shadow: var(--shadow);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .stat-icon {
@@ -53,6 +58,9 @@
     border-radius: 12px;
     box-shadow: var(--shadow);
     border: 1px solid var(--border-color);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .session-header {
@@ -125,6 +133,9 @@
     border-radius: 12px;
     box-shadow: var(--shadow);
     border: 1px solid var(--border-color);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .section-title {
@@ -169,11 +180,15 @@
     .stats-container {
         grid-template-columns: 1fr;
         gap: 12px;
+        width: 100%;
+        max-width: 100%;
     }
 
     .stat-card {
         padding: 16px;
         border-radius: 10px;
+        width: 100%;
+        max-width: 100%;
     }
 
     .stat-icon {
@@ -191,6 +206,8 @@
     .active-session-card {
         padding: 16px;
         border-radius: 10px;
+        width: 100%;
+        max-width: 100%;
     }
 
     .session-header {
@@ -231,6 +248,8 @@
     .quick-actions {
         padding: 16px;
         border-radius: 10px;
+        width: 100%;
+        max-width: 100%;
     }
 
     .section-title {
@@ -246,6 +265,9 @@
         padding: 12px 14px;
         font-size: 0.875rem;
         border-radius: 8px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     .action-btn i {
