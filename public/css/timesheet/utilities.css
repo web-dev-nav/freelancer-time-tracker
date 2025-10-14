@@ -208,3 +208,75 @@
 .overflow-y-auto {
     overflow-y: auto;
 }
+
+
+/* ============================================
+   Mobile-Specific Utilities
+   ============================================ */
+
+@media (max-width: 768px) {
+    .mobile-hidden {
+        display: none !important;
+    }
+
+    .mobile-visible {
+        display: block !important;
+    }
+
+    .mobile-text-center {
+        text-align: center !important;
+    }
+
+    .mobile-w-100 {
+        width: 100% !important;
+    }
+
+    .mobile-flex-column {
+        flex-direction: column !important;
+    }
+
+    .mobile-gap-2 {
+        gap: 8px !important;
+    }
+
+    .mobile-p-2 {
+        padding: 8px !important;
+    }
+
+    .mobile-m-2 {
+        margin: 8px !important;
+    }
+}
+
+/* Prevent text selection on buttons (better mobile UX) */
+button, .btn {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Smooth scrolling */
+* {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent zoom on input focus (iOS) */
+@media (max-width: 768px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="search"],
+    input[type="date"],
+    input[type="time"],
+    input[type="datetime-local"],
+    textarea,
+    select {
+        font-size: 16px !important;
+    }
+}

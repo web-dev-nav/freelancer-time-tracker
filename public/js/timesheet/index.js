@@ -5,8 +5,6 @@
  * for compatibility with existing HTML onclick attributes and inline event handlers.
  */
 
-console.log('INDEX.JS LOADING - START');
-
 // Import all modules
 import * as State from './state.js';
 import * as Utils from './utils.js';
@@ -42,15 +40,6 @@ window.hideEditLogModal = History.hideEditLogModal;
 window.showEditLogModal = History.showEditLogModal;
 window.updateLog = History.updateLog;
 
-// Verify functions are properly exported
-console.log('Timesheet modules loaded successfully');
-console.log('History functions available:', {
-    createNewEntry: typeof window.createNewEntry,
-    editLog: typeof window.editLog,
-    loadHistory: typeof window.loadHistory,
-    hideEditLogModal: typeof window.hideEditLogModal,
-    updateLog: typeof window.updateLog
-});
 
 // Reports functions (called from HTML)
 window.selectThisWeek = Reports.selectThisWeek;
@@ -86,8 +75,6 @@ window.showTab = App.showTab;
 // Setup Event Listeners for History Buttons
 // ====================
 
-console.log('Setting up history button event listeners...');
-
 // Wait for DOM to be ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', setupHistoryButtonListeners);
@@ -96,8 +83,6 @@ if (document.readyState === 'loading') {
 }
 
 function setupHistoryButtonListeners() {
-    console.log('setupHistoryButtonListeners called, readyState:', document.readyState);
-
     // Use event delegation on document body to catch all clicks
     document.body.addEventListener('click', function(e) {
         const target = e.target;
@@ -105,13 +90,10 @@ function setupHistoryButtonListeners() {
         // Check if clicked element or any parent is the create-new-entry button
         const createBtn = target.closest('#create-new-entry-btn');
         if (createBtn) {
-            console.log('Create New Entry button clicked via delegation!');
             e.preventDefault();
             e.stopPropagation();
             if (typeof window.createNewEntry === 'function') {
                 window.createNewEntry();
-            } else {
-                console.error('window.createNewEntry is not a function!', typeof window.createNewEntry);
             }
             return;
         }
@@ -119,13 +101,10 @@ function setupHistoryButtonListeners() {
         // Check if clicked element or any parent is the refresh button
         const refreshBtn = target.closest('#refresh-history-btn');
         if (refreshBtn) {
-            console.log('Refresh History button clicked via delegation!');
             e.preventDefault();
             e.stopPropagation();
             if (typeof window.loadHistory === 'function') {
                 window.loadHistory();
-            } else {
-                console.error('window.loadHistory is not a function!', typeof window.loadHistory);
             }
             return;
         }
@@ -133,7 +112,6 @@ function setupHistoryButtonListeners() {
         // Check if clicked on modal close button (X button)
         const modalClose = target.closest('.modal-close');
         if (modalClose) {
-            console.log('Modal close button (X) clicked!');
             e.preventDefault();
             e.stopPropagation();
 
@@ -158,7 +136,6 @@ function setupHistoryButtonListeners() {
             const editModal = target.closest('#edit-log-modal');
 
             if (modalFooter && editModal) {
-                console.log('Cancel button clicked in edit modal!');
                 e.preventDefault();
                 e.stopPropagation();
                 if (typeof window.hideEditLogModal === 'function') {
@@ -168,8 +145,6 @@ function setupHistoryButtonListeners() {
             }
         }
     }, true); // Use capture phase
-
-    console.log('History button listeners set up successfully');
 }
 
 // ====================

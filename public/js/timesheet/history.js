@@ -195,50 +195,31 @@ export function changePageSize(newSize) {
  * Create a new entry
  */
 export function createNewEntry() {
-    console.log('createNewEntry called - START');
+    // Clear the form and set to create mode
+    const editLogId = document.getElementById('edit-log-id');
+    if (!editLogId) return;
 
-    try {
-        // Clear the form and set to create mode
-        const editLogId = document.getElementById('edit-log-id');
-        if (!editLogId) {
-            console.error('edit-log-id element not found');
-            return;
-        }
-        editLogId.value = '';
-        console.log('Form cleared');
+    editLogId.value = '';
 
-        // Set default values - current date and current time
-        const now = new Date();
-        const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
+    // Set default values - current date and current time
+    const now = new Date();
+    const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
 
-        const dateField = document.getElementById('edit-clock-in-date');
-        const clockInField = document.getElementById('edit-clock-in-time');
-        const clockOutField = document.getElementById('edit-clock-out-time');
-        const descField = document.getElementById('edit-work-description');
+    const dateField = document.getElementById('edit-clock-in-date');
+    const clockInField = document.getElementById('edit-clock-in-time');
+    const clockOutField = document.getElementById('edit-clock-out-time');
+    const descField = document.getElementById('edit-work-description');
 
-        if (dateField) dateField.value = now.toISOString().split('T')[0];
-        if (clockInField) clockInField.value = currentTime;
-        if (clockOutField) clockOutField.value = currentTime;
-        if (descField) descField.value = '';
+    if (dateField) dateField.value = now.toISOString().split('T')[0];
+    if (clockInField) clockInField.value = currentTime;
+    if (clockOutField) clockOutField.value = currentTime;
+    if (descField) descField.value = '';
 
-        console.log('Form fields populated:', {
-            date: dateField?.value,
-            clockIn: clockInField?.value,
-            clockOut: clockOutField?.value
-        });
+    // Store the currently selected project for the new entry
+    editLogId.setAttribute('data-create-project-id', State.selectedProjectId || '');
 
-        // Store the currently selected project for the new entry
-        editLogId.setAttribute('data-create-project-id', State.selectedProjectId || '');
-        console.log('Project ID set:', State.selectedProjectId);
-
-        // Show the modal
-        console.log('Calling showEditLogModal...');
-        showEditLogModal();
-        console.log('createNewEntry called - END');
-    } catch (error) {
-        console.error('Error in createNewEntry:', error);
-        alert('Error opening create entry form: ' + error.message);
-    }
+    // Show the modal
+    showEditLogModal();
 }
 
 /**
@@ -284,51 +265,22 @@ export async function editLog(id) {
  * Show the edit log modal
  */
 export function showEditLogModal() {
-    console.log('showEditLogModal called');
-
     const modal = document.getElementById('edit-log-modal');
     const overlay = document.getElementById('modal-overlay');
 
-    console.log('Modal elements:', {
-        modal: modal,
-        overlay: overlay,
-        modalDisplay: modal?.style.display,
-        modalClasses: modal?.className,
-        overlayDisplay: overlay?.style.display,
-        overlayClasses: overlay?.className
-    });
-
-    if (!modal) {
-        console.error('edit-log-modal not found!');
-        alert('Modal element not found. Please refresh the page.');
-        return;
-    }
-
-    if (!overlay) {
-        console.error('modal-overlay not found!');
-        alert('Modal overlay not found. Please refresh the page.');
-        return;
-    }
+    if (!modal || !overlay) return;
 
     modal.classList.add('show');
     overlay.classList.add('show');
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed'; // Prevent scroll on mobile
     document.body.style.width = '100%';
-
-    console.log('Modal shown. Classes after:', {
-        modalClasses: modal.className,
-        overlayClasses: overlay.className,
-        bodyOverflow: document.body.style.overflow
-    });
 }
 
 /**
  * Hide the edit log modal
  */
 export function hideEditLogModal() {
-    console.log('hideEditLogModal called');
-
     const modal = document.getElementById('edit-log-modal');
     const overlay = document.getElementById('modal-overlay');
 
@@ -342,8 +294,6 @@ export function hideEditLogModal() {
     // Clear form
     const form = document.getElementById('edit-log-form');
     if (form) form.reset();
-
-    console.log('Modal hidden');
 }
 
 /**

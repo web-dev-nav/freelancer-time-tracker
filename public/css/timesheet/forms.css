@@ -169,3 +169,71 @@ input[type="color"].form-control {
     background: var(--secondary-color);
     color: var(--text-primary);
 }
+
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+@media (max-width: 768px) {
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-label {
+        font-size: 0.813rem;
+        margin-bottom: 6px;
+    }
+
+    .form-control {
+        padding: 12px 14px;
+        font-size: 16px; /* Prevent iOS zoom on focus */
+        border-radius: 8px;
+    }
+
+    textarea.form-control {
+        min-height: 100px;
+    }
+
+    .btn {
+        padding: 12px 20px;
+        font-size: 0.875rem;
+        width: auto;
+        min-height: 44px; /* Touch-friendly size */
+    }
+
+    .btn i {
+        font-size: 1rem;
+    }
+
+    .btn-sm {
+        padding: 8px 14px;
+        font-size: 0.813rem;
+        min-height: 36px;
+    }
+
+    .btn-lg {
+        padding: 14px 24px;
+        font-size: 1rem;
+        min-height: 48px;
+    }
+
+    /* Make form inputs touch-friendly */
+    input[type="date"].form-control,
+    input[type="time"].form-control,
+    input[type="text"].form-control,
+    input[type="email"].form-control,
+    input[type="password"].form-control,
+    input[type="number"].form-control,
+    select.form-control {
+        min-height: 44px;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    /* Better color picker on mobile */
+    input[type="color"].form-control {
+        height: 44px;
+        padding: 4px;
+    }
+}

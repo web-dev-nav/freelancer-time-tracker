@@ -48,11 +48,33 @@
    ============================================ */
 
 @media (max-width: 768px) {
+    .tab-content {
+        padding: 12px;
+    }
+
     .dashboard-grid {
         grid-template-columns: 1fr;
+        gap: 16px;
     }
 
     .form-row {
         grid-template-columns: 1fr;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    .tab-content {
+        padding: 8px;
+    }
+
+    .dashboard-grid {
+        gap: 12px;
+    }
+
+    .form-row {
+        gap: 12px;
+        margin-bottom: 20px;
     }
 }
