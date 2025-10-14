@@ -38,13 +38,18 @@ window.deleteLog = History.deleteLog;
 window.viewDetails = History.viewDetails;
 window.changePageSize = History.changePageSize;
 window.hideViewDetailsModal = History.hideViewDetailsModal;
+window.hideEditLogModal = History.hideEditLogModal;
+window.showEditLogModal = History.showEditLogModal;
+window.updateLog = History.updateLog;
 
 // Verify functions are properly exported
 console.log('Timesheet modules loaded successfully');
 console.log('History functions available:', {
     createNewEntry: typeof window.createNewEntry,
     editLog: typeof window.editLog,
-    loadHistory: typeof window.loadHistory
+    loadHistory: typeof window.loadHistory,
+    hideEditLogModal: typeof window.hideEditLogModal,
+    updateLog: typeof window.updateLog
 });
 
 // Reports functions (called from HTML)
@@ -123,6 +128,44 @@ function setupHistoryButtonListeners() {
                 console.error('window.loadHistory is not a function!', typeof window.loadHistory);
             }
             return;
+        }
+
+        // Check if clicked on modal close button (X button)
+        const modalClose = target.closest('.modal-close');
+        if (modalClose) {
+            console.log('Modal close button (X) clicked!');
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Check which modal it belongs to
+            const editModal = target.closest('#edit-log-modal');
+            const viewModal = target.closest('#view-details-modal');
+            const clockOutModal = target.closest('#clock-out-modal');
+
+            if (editModal && typeof window.hideEditLogModal === 'function') {
+                window.hideEditLogModal();
+            } else if (viewModal && typeof window.hideViewDetailsModal === 'function') {
+                window.hideViewDetailsModal();
+            } else if (clockOutModal && typeof window.hideClockOutModal === 'function') {
+                window.hideClockOutModal();
+            }
+            return;
+        }
+
+        // Check if clicked on Cancel button in edit modal footer
+        if (target.matches('.btn-secondary') || target.closest('.btn-secondary')) {
+            const modalFooter = target.closest('.modal-footer');
+            const editModal = target.closest('#edit-log-modal');
+
+            if (modalFooter && editModal) {
+                console.log('Cancel button clicked in edit modal!');
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof window.hideEditLogModal === 'function') {
+                    window.hideEditLogModal();
+                }
+                return;
+            }
         }
     }, true); // Use capture phase
 
