@@ -77,27 +77,22 @@ export function setupEventListeners() {
     // Project form
     document.getElementById('project-form').addEventListener('submit', saveProject);
 
-    // History actions
-    const createNewEntryBtn = document.getElementById('create-new-entry-btn');
-    const refreshHistoryBtn = document.getElementById('refresh-history-btn');
-
-    console.log('History buttons found:', {
-        createNewEntryBtn: createNewEntryBtn,
-        refreshHistoryBtn: refreshHistoryBtn
-    });
-
-    if (createNewEntryBtn) {
-        createNewEntryBtn.addEventListener('click', function() {
-            console.log('Create New Entry button clicked');
+    // History actions - Using event delegation for reliability
+    document.addEventListener('click', function(e) {
+        // Create New Entry button
+        if (e.target.id === 'create-new-entry-btn' || e.target.closest('#create-new-entry-btn')) {
+            console.log('Create New Entry button clicked via delegation');
+            e.preventDefault();
             createNewEntry();
-        });
-    } else {
-        console.error('Create New Entry button not found!');
-    }
+        }
 
-    if (refreshHistoryBtn) {
-        refreshHistoryBtn.addEventListener('click', () => loadHistory());
-    }
+        // Refresh History button
+        if (e.target.id === 'refresh-history-btn' || e.target.closest('#refresh-history-btn')) {
+            console.log('Refresh History button clicked via delegation');
+            e.preventDefault();
+            loadHistory();
+        }
+    });
 }
 
 /**

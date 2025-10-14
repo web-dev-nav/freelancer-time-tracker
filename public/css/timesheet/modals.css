@@ -20,10 +20,39 @@
     width: 90%;
     max-height: 90vh;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
 }
 
 .modal.show {
-    display: block;
+    display: block !important;
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -45%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+/* Mobile-specific modal styles */
+@media (max-width: 768px) {
+    .modal {
+        width: 95%;
+        max-height: 85vh;
+        top: 50%;
+    }
+
+    .modal-body {
+        padding: 16px;
+        max-height: calc(85vh - 140px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 }
 
 .modal-content {
@@ -96,10 +125,21 @@
     height: 100%;
     background: rgba(0, 0, 0, 0.7);
     z-index: 1000;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .modal-overlay.show {
-    display: block;
+    display: block !important;
+    animation: overlayFadeIn 0.3s ease-out;
+}
+
+@keyframes overlayFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 

@@ -39,14 +39,12 @@ window.viewDetails = History.viewDetails;
 window.changePageSize = History.changePageSize;
 window.hideViewDetailsModal = History.hideViewDetailsModal;
 
-// Debug: Verify functions are available
-console.log('INDEX.JS - History module:', History);
-console.log('INDEX.JS - createNewEntry function:', History.createNewEntry);
-console.log('INDEX.JS - Window functions after assignment:', {
+// Verify functions are properly exported
+console.log('Timesheet modules loaded successfully');
+console.log('History functions available:', {
     createNewEntry: typeof window.createNewEntry,
     editLog: typeof window.editLog,
-    loadHistory: typeof window.loadHistory,
-    actualCreateNewEntry: window.createNewEntry
+    loadHistory: typeof window.loadHistory
 });
 
 // Reports functions (called from HTML)

@@ -195,23 +195,50 @@ export function changePageSize(newSize) {
  * Create a new entry
  */
 export function createNewEntry() {
-    // Clear the form and set to create mode
-    document.getElementById('edit-log-id').value = '';
+    console.log('createNewEntry called - START');
 
-    // Set default values - current date and current time
-    const now = new Date();
-    const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
+    try {
+        // Clear the form and set to create mode
+        const editLogId = document.getElementById('edit-log-id');
+        if (!editLogId) {
+            console.error('edit-log-id element not found');
+            return;
+        }
+        editLogId.value = '';
+        console.log('Form cleared');
 
-    document.getElementById('edit-clock-in-date').value = now.toISOString().split('T')[0];
-    document.getElementById('edit-clock-in-time').value = currentTime;
-    document.getElementById('edit-clock-out-time').value = currentTime;
-    document.getElementById('edit-work-description').value = '';
+        // Set default values - current date and current time
+        const now = new Date();
+        const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
 
-    // Store the currently selected project for the new entry
-    document.getElementById('edit-log-id').setAttribute('data-create-project-id', State.selectedProjectId || '');
+        const dateField = document.getElementById('edit-clock-in-date');
+        const clockInField = document.getElementById('edit-clock-in-time');
+        const clockOutField = document.getElementById('edit-clock-out-time');
+        const descField = document.getElementById('edit-work-description');
 
-    // Show the modal
-    showEditLogModal();
+        if (dateField) dateField.value = now.toISOString().split('T')[0];
+        if (clockInField) clockInField.value = currentTime;
+        if (clockOutField) clockOutField.value = currentTime;
+        if (descField) descField.value = '';
+
+        console.log('Form fields populated:', {
+            date: dateField?.value,
+            clockIn: clockInField?.value,
+            clockOut: clockOutField?.value
+        });
+
+        // Store the currently selected project for the new entry
+        editLogId.setAttribute('data-create-project-id', State.selectedProjectId || '');
+        console.log('Project ID set:', State.selectedProjectId);
+
+        // Show the modal
+        console.log('Calling showEditLogModal...');
+        showEditLogModal();
+        console.log('createNewEntry called - END');
+    } catch (error) {
+        console.error('Error in createNewEntry:', error);
+        alert('Error opening create entry form: ' + error.message);
+    }
 }
 
 /**
@@ -257,21 +284,66 @@ export async function editLog(id) {
  * Show the edit log modal
  */
 export function showEditLogModal() {
-    document.getElementById('edit-log-modal').classList.add('show');
-    document.getElementById('modal-overlay').classList.add('show');
+    console.log('showEditLogModal called');
+
+    const modal = document.getElementById('edit-log-modal');
+    const overlay = document.getElementById('modal-overlay');
+
+    console.log('Modal elements:', {
+        modal: modal,
+        overlay: overlay,
+        modalDisplay: modal?.style.display,
+        modalClasses: modal?.className,
+        overlayDisplay: overlay?.style.display,
+        overlayClasses: overlay?.className
+    });
+
+    if (!modal) {
+        console.error('edit-log-modal not found!');
+        alert('Modal element not found. Please refresh the page.');
+        return;
+    }
+
+    if (!overlay) {
+        console.error('modal-overlay not found!');
+        alert('Modal overlay not found. Please refresh the page.');
+        return;
+    }
+
+    modal.classList.add('show');
+    overlay.classList.add('show');
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed'; // Prevent scroll on mobile
+    document.body.style.width = '100%';
+
+    console.log('Modal shown. Classes after:', {
+        modalClasses: modal.className,
+        overlayClasses: overlay.className,
+        bodyOverflow: document.body.style.overflow
+    });
 }
 
 /**
  * Hide the edit log modal
  */
 export function hideEditLogModal() {
-    document.getElementById('edit-log-modal').classList.remove('show');
-    document.getElementById('modal-overlay').classList.remove('show');
-    document.body.style.overflow = 'auto';
+    console.log('hideEditLogModal called');
+
+    const modal = document.getElementById('edit-log-modal');
+    const overlay = document.getElementById('modal-overlay');
+
+    if (modal) modal.classList.remove('show');
+    if (overlay) overlay.classList.remove('show');
+
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.width = '';
 
     // Clear form
-    document.getElementById('edit-log-form').reset();
+    const form = document.getElementById('edit-log-form');
+    if (form) form.reset();
+
+    console.log('Modal hidden');
 }
 
 /**
