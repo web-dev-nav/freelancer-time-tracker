@@ -5,6 +5,8 @@
  * for compatibility with existing HTML onclick attributes and inline event handlers.
  */
 
+console.log('INDEX.JS LOADING - START');
+
 // Import all modules
 import * as State from './state.js';
 import * as Utils from './utils.js';
@@ -38,10 +40,13 @@ window.changePageSize = History.changePageSize;
 window.hideViewDetailsModal = History.hideViewDetailsModal;
 
 // Debug: Verify functions are available
-console.log('History functions loaded:', {
+console.log('INDEX.JS - History module:', History);
+console.log('INDEX.JS - createNewEntry function:', History.createNewEntry);
+console.log('INDEX.JS - Window functions after assignment:', {
     createNewEntry: typeof window.createNewEntry,
     editLog: typeof window.editLog,
-    loadHistory: typeof window.loadHistory
+    loadHistory: typeof window.loadHistory,
+    actualCreateNewEntry: window.createNewEntry
 });
 
 // Reports functions (called from HTML)

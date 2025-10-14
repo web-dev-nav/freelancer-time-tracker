@@ -5,11 +5,11 @@
         <div class="history-header">
             <h2>Work History</h2>
             <div class="history-actions">
-                <button class="btn btn-primary" id="create-new-entry-btn" style="margin-right: 8px;">
+                <button class="btn btn-primary" id="create-new-entry-btn" onclick="window.createNewEntry()" style="margin-right: 8px;">
                     <i class="fas fa-plus"></i>
                     Create New Entry
                 </button>
-                <button class="btn btn-secondary" id="refresh-history-btn">
+                <button class="btn btn-secondary" id="refresh-history-btn" onclick="window.loadHistory()">
                     <i class="fas fa-sync"></i>
                     Refresh
                 </button>

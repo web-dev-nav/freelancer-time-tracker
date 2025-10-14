@@ -78,8 +78,26 @@ export function setupEventListeners() {
     document.getElementById('project-form').addEventListener('submit', saveProject);
 
     // History actions
-    document.getElementById('create-new-entry-btn').addEventListener('click', createNewEntry);
-    document.getElementById('refresh-history-btn').addEventListener('click', () => loadHistory());
+    const createNewEntryBtn = document.getElementById('create-new-entry-btn');
+    const refreshHistoryBtn = document.getElementById('refresh-history-btn');
+
+    console.log('History buttons found:', {
+        createNewEntryBtn: createNewEntryBtn,
+        refreshHistoryBtn: refreshHistoryBtn
+    });
+
+    if (createNewEntryBtn) {
+        createNewEntryBtn.addEventListener('click', function() {
+            console.log('Create New Entry button clicked');
+            createNewEntry();
+        });
+    } else {
+        console.error('Create New Entry button not found!');
+    }
+
+    if (refreshHistoryBtn) {
+        refreshHistoryBtn.addEventListener('click', () => loadHistory());
+    }
 }
 
 /**
