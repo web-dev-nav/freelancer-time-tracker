@@ -78,6 +78,58 @@ window.createProjectBackup = Backups.createProjectBackup;
 window.showTab = App.showTab;
 
 // ====================
+// Setup Event Listeners for History Buttons
+// ====================
+
+console.log('Setting up history button event listeners...');
+
+// Wait for DOM to be ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupHistoryButtonListeners);
+} else {
+    setupHistoryButtonListeners();
+}
+
+function setupHistoryButtonListeners() {
+    console.log('setupHistoryButtonListeners called, readyState:', document.readyState);
+
+    // Use event delegation on document body to catch all clicks
+    document.body.addEventListener('click', function(e) {
+        const target = e.target;
+
+        // Check if clicked element or any parent is the create-new-entry button
+        const createBtn = target.closest('#create-new-entry-btn');
+        if (createBtn) {
+            console.log('Create New Entry button clicked via delegation!');
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof window.createNewEntry === 'function') {
+                window.createNewEntry();
+            } else {
+                console.error('window.createNewEntry is not a function!', typeof window.createNewEntry);
+            }
+            return;
+        }
+
+        // Check if clicked element or any parent is the refresh button
+        const refreshBtn = target.closest('#refresh-history-btn');
+        if (refreshBtn) {
+            console.log('Refresh History button clicked via delegation!');
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof window.loadHistory === 'function') {
+                window.loadHistory();
+            } else {
+                console.error('window.loadHistory is not a function!', typeof window.loadHistory);
+            }
+            return;
+        }
+    }, true); // Use capture phase
+
+    console.log('History button listeners set up successfully');
+}
+
+// ====================
 // Module Exports (for ES6 imports)
 // ====================
 

@@ -77,22 +77,7 @@ export function setupEventListeners() {
     // Project form
     document.getElementById('project-form').addEventListener('submit', saveProject);
 
-    // History actions - Using event delegation for reliability
-    document.addEventListener('click', function(e) {
-        // Create New Entry button
-        if (e.target.id === 'create-new-entry-btn' || e.target.closest('#create-new-entry-btn')) {
-            console.log('Create New Entry button clicked via delegation');
-            e.preventDefault();
-            createNewEntry();
-        }
-
-        // Refresh History button
-        if (e.target.id === 'refresh-history-btn' || e.target.closest('#refresh-history-btn')) {
-            console.log('Refresh History button clicked via delegation');
-            e.preventDefault();
-            loadHistory();
-        }
-    });
+    // Note: History button event listeners are now set up in index.js for better reliability
 }
 
 /**
