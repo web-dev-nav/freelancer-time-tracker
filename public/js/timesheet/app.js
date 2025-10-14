@@ -9,7 +9,7 @@ import * as State from './state.js';
 import * as Utils from './utils.js';
 import { loadDashboardStats, checkActiveSession } from './dashboard.js';
 import { clockIn, clockOut } from './tracker.js';
-import { loadHistory, updateLog, hideEditLogModal } from './history.js';
+import { loadHistory, updateLog, hideEditLogModal, createNewEntry } from './history.js';
 import { generateReport } from './reports.js';
 import { loadProjectsForSelector, onProjectChange, loadProjects, saveProject, backupProject, backupDatabase } from './projects.js';
 import { hideClockOutModal } from './tracker.js';
@@ -76,6 +76,10 @@ export function setupEventListeners() {
 
     // Project form
     document.getElementById('project-form').addEventListener('submit', saveProject);
+
+    // History actions
+    document.getElementById('create-new-entry-btn').addEventListener('click', createNewEntry);
+    document.getElementById('refresh-history-btn').addEventListener('click', () => loadHistory());
 }
 
 /**

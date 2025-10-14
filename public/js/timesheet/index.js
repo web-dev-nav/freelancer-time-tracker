@@ -37,6 +37,13 @@ window.viewDetails = History.viewDetails;
 window.changePageSize = History.changePageSize;
 window.hideViewDetailsModal = History.hideViewDetailsModal;
 
+// Debug: Verify functions are available
+console.log('History functions loaded:', {
+    createNewEntry: typeof window.createNewEntry,
+    editLog: typeof window.editLog,
+    loadHistory: typeof window.loadHistory
+});
+
 // Reports functions (called from HTML)
 window.selectThisWeek = Reports.selectThisWeek;
 window.selectLastWeek = Reports.selectLastWeek;
