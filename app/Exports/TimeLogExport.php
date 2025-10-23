@@ -45,18 +45,18 @@ class TimeLogExport implements FromArray, WithHeadings, WithStyles, WithColumnWi
         $data[] = [''];
         $data[] = [''];
 
-        // Group logs by date
+        // Group logs by date (using Toronto timezone)
         $groupedLogs = $this->logs->groupBy(function($log) {
-            return $log->clock_in->format('Y-m-d');
+            return $log->clock_in->setTimezone('America/Toronto')->format('Y-m-d');
         });
 
         foreach ($groupedLogs as $date => $dailyLogs) {
             $dayTotal = $dailyLogs->sum('total_minutes');
             $dayHours = round($dayTotal / 60, 2);
             
-            // Date header with better formatting
+            // Date header with better formatting (using Toronto timezone)
             $data[] = [
-                strtoupper($dailyLogs->first()->clock_in->format('l, F j, Y')),
+                strtoupper($dailyLogs->first()->clock_in->setTimezone('America/Toronto')->format('l, F j, Y')),
                 '',
                 '',
                 "Daily Total: {$dayHours} hrs"

@@ -47,17 +47,17 @@ class TimeLog extends Model
     // Accessors for formatted display
     public function getClockInDateAttribute()
     {
-        return $this->clock_in ? $this->clock_in->format('Y-m-d') : null;
+        return $this->clock_in ? $this->clock_in->setTimezone('America/Toronto')->format('Y-m-d') : null;
     }
 
     public function getClockInTimeAttribute()
     {
-        return $this->clock_in ? $this->clock_in->format('H:i') : null;
+        return $this->clock_in ? $this->clock_in->setTimezone('America/Toronto')->format('H:i') : null;
     }
 
     public function getClockOutTimeAttribute()
     {
-        return $this->clock_out ? $this->clock_out->format('H:i') : null;
+        return $this->clock_out ? $this->clock_out->setTimezone('America/Toronto')->format('H:i') : null;
     }
 
     public function getDurationHoursAttribute()
