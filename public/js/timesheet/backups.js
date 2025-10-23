@@ -2,22 +2,30 @@
  * Backups Module
  *
  * Handles backup management including listing, creating, downloading,
- * and deleting backup files.
+ * and deleting backup files with pagination support.
  */
+
+// Pagination state
+let currentPage = 1;
+let perPage = 10;
+let totalPages = 1;
 
 /**
- * Load all backups from the server
+ * Load backups from the server with pagination
  */
-export async function loadBackups() {
+export async function loadBackups(page = 1) {
     try {
-        const response = await window.api.request('/api/backups');
+        currentPage = page;
+        const response = await window.api.request(`/api/backups?page=${page}&per_page=${perPage}`);
 
         if (response.success) {
-            displayBackups(response.data);
+            displayBackups(response.data, response.pagination);
         }
 
-        // Load projects for the backup selector
-        await loadProjectsForBackup();
+        // Load projects for the backup selector (only on first load)
+        if (page === 1) {
+            await loadProjectsForBackup();
+        }
     } catch (error) {
         window.notify.error('Failed to load backups: ' + error.message);
     }
@@ -51,12 +59,12 @@ async function loadProjectsForBackup() {
 }
 
 /**
- * Display backups in the backups list
+ * Display backups in the backups list with pagination
  */
-function displayBackups(backups) {
+function displayBackups(backups, pagination) {
     const list = document.getElementById('backups-list');
 
-    if (backups.length === 0) {
+    if (backups.length === 0 && pagination.current_page === 1) {
         list.innerHTML = `
             <div class="empty-backups">
                 <i class="fas fa-database"></i>
@@ -67,7 +75,12 @@ function displayBackups(backups) {
         return;
     }
 
-    list.innerHTML = backups.map(backup => `
+    // Store pagination info
+    totalPages = pagination.total_pages;
+    currentPage = pagination.current_page;
+
+    // Build backup items HTML
+    const backupsHtml = backups.map(backup => `
         <div class="backup-item">
             <div class="backup-info">
                 <div class="backup-filename">
@@ -97,6 +110,115 @@ function displayBackups(backups) {
             </div>
         </div>
     `).join('');
+
+    // Build pagination HTML
+    const paginationHtml = buildPaginationHtml(pagination);
+
+    list.innerHTML = backupsHtml + paginationHtml;
+}
+
+/**
+ * Build pagination controls HTML
+ */
+function buildPaginationHtml(pagination) {
+    if (pagination.total_pages <= 1) {
+        return '';
+    }
+
+    const { current_page, total_pages, total } = pagination;
+
+    let paginationHtml = '<div class="backup-pagination">';
+
+    // Pagination info
+    paginationHtml += `<div class="pagination-info">Showing page ${current_page} of ${total_pages} (${total} total backups)</div>`;
+
+    // Pagination buttons
+    paginationHtml += '<div class="pagination-controls">';
+
+    // First page button
+    if (current_page > 1) {
+        paginationHtml += `<button class="btn btn-sm btn-secondary" onclick="loadBackups(1)" title="First Page">
+            <i class="fas fa-angle-double-left"></i>
+        </button>`;
+    }
+
+    // Previous page button
+    if (current_page > 1) {
+        paginationHtml += `<button class="btn btn-sm btn-secondary" onclick="loadBackups(${current_page - 1})" title="Previous Page">
+            <i class="fas fa-angle-left"></i> Previous
+        </button>`;
+    }
+
+    // Page numbers
+    const pageNumbers = getPageNumbers(current_page, total_pages);
+    pageNumbers.forEach(pageNum => {
+        if (pageNum === '...') {
+            paginationHtml += `<span class="pagination-ellipsis">...</span>`;
+        } else {
+            const activeClass = pageNum === current_page ? 'btn-primary' : 'btn-secondary';
+            paginationHtml += `<button class="btn btn-sm ${activeClass}" onclick="loadBackups(${pageNum})">${pageNum}</button>`;
+        }
+    });
+
+    // Next page button
+    if (current_page < total_pages) {
+        paginationHtml += `<button class="btn btn-sm btn-secondary" onclick="loadBackups(${current_page + 1})" title="Next Page">
+            Next <i class="fas fa-angle-right"></i>
+        </button>`;
+    }
+
+    // Last page button
+    if (current_page < total_pages) {
+        paginationHtml += `<button class="btn btn-sm btn-secondary" onclick="loadBackups(${total_pages})" title="Last Page">
+            <i class="fas fa-angle-double-right"></i>
+        </button>`;
+    }
+
+    paginationHtml += '</div></div>';
+
+    return paginationHtml;
+}
+
+/**
+ * Get page numbers to display in pagination
+ */
+function getPageNumbers(currentPage, totalPages) {
+    const pages = [];
+    const maxVisible = 5; // Maximum number of page buttons to show
+
+    if (totalPages <= maxVisible) {
+        // Show all pages if total is small
+        for (let i = 1; i <= totalPages; i++) {
+            pages.push(i);
+        }
+    } else {
+        // Always show first page
+        pages.push(1);
+
+        // Calculate range around current page
+        let startPage = Math.max(2, currentPage - 1);
+        let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+        // Add ellipsis if needed
+        if (startPage > 2) {
+            pages.push('...');
+        }
+
+        // Add pages around current page
+        for (let i = startPage; i <= endPage; i++) {
+            pages.push(i);
+        }
+
+        // Add ellipsis if needed
+        if (endPage < totalPages - 1) {
+            pages.push('...');
+        }
+
+        // Always show last page
+        pages.push(totalPages);
+    }
+
+    return pages;
 }
 
 /**

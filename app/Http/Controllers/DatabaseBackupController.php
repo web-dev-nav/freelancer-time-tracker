@@ -10,9 +10,9 @@ use Illuminate\Support\Facades\Storage;
 class DatabaseBackupController extends Controller
 {
     /**
-     * List all backup files
+     * List all backup files with pagination
      */
-    public function index()
+    public function index(Request $request)
     {
         $backups = [];
         $files = Storage::disk('local')->files('backups');
@@ -35,9 +35,26 @@ class DatabaseBackupController extends Controller
             return $b['created_at'] - $a['created_at'];
         });
 
+        // Pagination
+        $perPage = $request->get('per_page', 10); // Default 10 items per page
+        $page = $request->get('page', 1);
+        $total = count($backups);
+        $totalPages = ceil($total / $perPage);
+
+        // Slice the array for pagination
+        $offset = ($page - 1) * $perPage;
+        $paginatedBackups = array_slice($backups, $offset, $perPage);
+
         return response()->json([
             'success' => true,
-            'data' => $backups
+            'data' => $paginatedBackups,
+            'pagination' => [
+                'current_page' => (int) $page,
+                'per_page' => (int) $perPage,
+                'total' => $total,
+                'total_pages' => $totalPages,
+                'has_more' => $page < $totalPages
+            ]
         ]);
     }
 
