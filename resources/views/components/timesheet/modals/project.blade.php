@@ -4,9 +4,15 @@
     <div class="modal-content">
         <div class="modal-header">
             <h3 id="project-modal-title">Add New Project</h3>
-            <button class="modal-close" onclick="hideProjectModal()">
-                <i class="fas fa-times"></i>
-            </button>
+            <div class="modal-header-actions">
+                <button type="button" class="btn btn-secondary" onclick="showSettingsModal()">
+                    <i class="fas fa-cog"></i>
+                    Settings
+                </button>
+                <button class="modal-close" onclick="hideProjectModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
         </div>
 
         <form id="project-form" class="modal-body">
@@ -28,6 +34,24 @@
                 </label>
                 <input type="text" id="client-name" class="form-control"
                        placeholder="e.g., ABC Corporation">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="client-email">
+                    <i class="fas fa-envelope"></i>
+                    Client Email (for invoices)
+                </label>
+                <input type="email" id="client-email" class="form-control"
+                       placeholder="e.g., billing@abccorp.com">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="client-address">
+                    <i class="fas fa-map-marker-alt"></i>
+                    Client Address (for invoices)
+                </label>
+                <textarea id="client-address" class="form-control" rows="3"
+                         placeholder="e.g., 123 Main St&#10;City, State ZIP&#10;Country"></textarea>
             </div>
 
             <div class="form-row">

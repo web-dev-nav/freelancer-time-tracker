@@ -1,0 +1,61 @@
+{{-- Send Invoice Modal Component --}}
+{{-- Modal for sending invoice via email --}}
+<div class="modal" id="send-invoice-modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Send Invoice</h3>
+            <button class="modal-close" onclick="hideSendInvoiceModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form id="send-invoice-form" class="modal-body">
+            <input type="hidden" id="send-invoice-id">
+
+            <div class="form-group">
+                <label class="form-label" for="send-invoice-email">
+                    <i class="fas fa-envelope"></i>
+                    Recipient Email *
+                </label>
+                <input type="email" id="send-invoice-email" class="form-control" required
+                       placeholder="client@example.com">
+                <small style="color: var(--text-secondary); display: block; margin-top: 4px;">
+                    Invoice PDF will be attached to this email
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="send-invoice-subject">
+                    <i class="fas fa-heading"></i>
+                    Email Subject
+                </label>
+                <input type="text" id="send-invoice-subject" class="form-control"
+                       placeholder="Invoice #INV-2025-01-0001 from Freelancer Time Tracker">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="send-invoice-message">
+                    <i class="fas fa-comment"></i>
+                    Email Message
+                </label>
+                <textarea id="send-invoice-message" class="form-control" rows="6"
+                         placeholder="Please find attached invoice for your review..."></textarea>
+            </div>
+
+            <div class="alert alert-warning" style="margin: 0;">
+                <i class="fas fa-info-circle"></i>
+                <strong>Note:</strong> The invoice will be automatically marked as "Sent" after sending the email.
+            </div>
+        </form>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="hideSendInvoiceModal()">
+                Cancel
+            </button>
+            <button type="submit" form="send-invoice-form" class="btn btn-success">
+                <i class="fas fa-paper-plane"></i>
+                Send Invoice
+            </button>
+        </div>
+    </div>
+</div>

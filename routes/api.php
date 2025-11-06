@@ -3,6 +3,8 @@
 use App\Http\Controllers\TimeLogController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\DatabaseBackupController;
+use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\SettingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -56,4 +58,36 @@ Route::prefix('timesheet')->name('timesheet.api.')->group(function () {
     Route::get('/report', [TimeLogController::class, 'generateReport'])->name('report');
     Route::get('/dashboard-stats', [TimeLogController::class, 'getDashboardStats'])->name('dashboard-stats');
     Route::get('/export-excel', [TimeLogController::class, 'exportExcel'])->name('export-excel');
+});
+
+// Invoice management API routes
+Route::prefix('invoices')->name('invoices.api.')->group(function () {
+    // List and statistics
+    Route::get('/', [InvoiceController::class, 'index'])->name('index');
+    Route::get('/stats', [InvoiceController::class, 'stats'])->name('stats');
+    Route::get('/unbilled-logs', [InvoiceController::class, 'getUnbilledLogs'])->name('unbilled-logs');
+
+    // CRUD operations
+    Route::post('/', [InvoiceController::class, 'store'])->name('store');
+    Route::get('/{id}', [InvoiceController::class, 'show'])->name('show');
+    Route::put('/{id}', [InvoiceController::class, 'update'])->name('update');
+    Route::delete('/{id}', [InvoiceController::class, 'destroy'])->name('destroy');
+
+    // Invoice items
+    Route::post('/{id}/items', [InvoiceController::class, 'addItem'])->name('add-item');
+    Route::delete('/{id}/items/{itemId}', [InvoiceController::class, 'removeItem'])->name('remove-item');
+
+    // Actions
+    Route::post('/{id}/send-email', [InvoiceController::class, 'sendEmail'])->name('send-email');
+    Route::post('/{id}/mark-as-paid', [InvoiceController::class, 'markAsPaid'])->name('mark-as-paid');
+
+    // PDF generation
+    Route::get('/{id}/pdf/download', [InvoiceController::class, 'downloadPdf'])->name('pdf-download');
+    Route::get('/{id}/pdf/preview', [InvoiceController::class, 'previewPdf'])->name('pdf-preview');
+});
+
+// Application settings routes
+Route::prefix('settings')->name('settings.api.')->group(function () {
+    Route::get('/', [SettingController::class, 'index'])->name('index');
+    Route::post('/', [SettingController::class, 'update'])->name('update');
 });

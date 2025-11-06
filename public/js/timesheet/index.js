@@ -13,7 +13,9 @@ import * as Tracker from './tracker.js';
 import * as History from './history.js';
 import * as Reports from './reports.js';
 import * as Projects from './projects.js';
+import * as Invoices from './invoices.js';
 import * as Backups from './backups.js';
+import { showSettingsModal, hideSettingsModal } from './settings.js';
 import * as App from './app.js';
 
 // ====================
@@ -58,6 +60,31 @@ window.activateProject = Projects.activateProject;
 window.deleteProject = Projects.deleteProject;
 window.toggleArchivedProjects = Projects.toggleArchivedProjects;
 
+// Invoice functions (called from HTML)
+window.loadInvoices = Invoices.loadInvoices;
+window.showCreateInvoiceModal = Invoices.showCreateInvoiceModal;
+window.hideCreateInvoiceModal = Invoices.hideCreateInvoiceModal;
+window.createInvoice = Invoices.createInvoice;
+window.handleCreateInvoiceProjectChange = Invoices.handleCreateInvoiceProjectChange;
+window.showSendInvoiceModal = Invoices.showSendInvoiceModal;
+window.hideSendInvoiceModal = Invoices.hideSendInvoiceModal;
+window.sendInvoice = Invoices.sendInvoice;
+window.downloadInvoicePDF = Invoices.downloadInvoicePDF;
+window.previewInvoicePDF = Invoices.previewInvoicePDF;
+window.markInvoiceAsPaid = Invoices.markInvoiceAsPaid;
+window.deleteInvoice = Invoices.deleteInvoice;
+window.showEditInvoiceModal = Invoices.showEditInvoiceModal;
+window.hideEditInvoiceModal = Invoices.hideEditInvoiceModal;
+window.saveInvoiceChanges = Invoices.saveInvoiceChanges;
+window.showAddItemModal = Invoices.showAddItemModal;
+window.hideAddItemModal = Invoices.hideAddItemModal;
+window.calculateItemAmount = Invoices.calculateItemAmount;
+window.deleteInvoiceItem = Invoices.deleteInvoiceItem;
+
+// Settings functions
+window.showSettingsModal = showSettingsModal;
+window.hideSettingsModal = hideSettingsModal;
+
 // Backup functions (called from HTML)
 window.loadBackups = Backups.loadBackups;
 window.createFullBackup = Backups.createFullBackup;
@@ -83,6 +110,54 @@ if (document.readyState === 'loading') {
 }
 
 function setupHistoryButtonListeners() {
+    // Note: Form submit handlers for invoices are now attached when modals open
+    // to prevent duplicate submissions
+
+    // Add ESC key handler to close modals
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' || e.keyCode === 27) {
+            // Find which modal is currently open and close it
+            const openEditModal = document.querySelector('#edit-log-modal.show');
+            const openViewModal = document.querySelector('#view-details-modal.show');
+            const openClockOutModal = document.querySelector('#clock-out-modal.show');
+            const openProjectModal = document.querySelector('#project-modal.show');
+            const openCreateInvoiceModal = document.querySelector('#create-invoice-modal.show');
+            const openSendInvoiceModal = document.querySelector('#send-invoice-modal.show');
+            const openEditInvoiceModal = document.querySelector('#edit-invoice-modal.show');
+            const openAddItemModal = document.querySelector('#add-item-modal.show');
+            const openSettingsModal = document.querySelector('#settings-modal.show');
+
+            if (openEditModal && typeof window.hideEditLogModal === 'function') {
+                e.preventDefault();
+                window.hideEditLogModal();
+            } else if (openViewModal && typeof window.hideViewDetailsModal === 'function') {
+                e.preventDefault();
+                window.hideViewDetailsModal();
+            } else if (openClockOutModal && typeof window.hideClockOutModal === 'function') {
+                e.preventDefault();
+                window.hideClockOutModal();
+            } else if (openProjectModal && typeof window.hideProjectModal === 'function') {
+                e.preventDefault();
+                window.hideProjectModal();
+            } else if (openAddItemModal && typeof window.hideAddItemModal === 'function') {
+                e.preventDefault();
+                window.hideAddItemModal();
+            } else if (openEditInvoiceModal && typeof window.hideEditInvoiceModal === 'function') {
+                e.preventDefault();
+                window.hideEditInvoiceModal();
+            } else if (openCreateInvoiceModal && typeof window.hideCreateInvoiceModal === 'function') {
+                e.preventDefault();
+                window.hideCreateInvoiceModal();
+            } else if (openSendInvoiceModal && typeof window.hideSendInvoiceModal === 'function') {
+                e.preventDefault();
+                window.hideSendInvoiceModal();
+            } else if (openSettingsModal && typeof window.hideSettingsModal === 'function') {
+                e.preventDefault();
+                window.hideSettingsModal();
+            }
+        }
+    });
+
     // Use event delegation on document body to catch all clicks
     document.body.addEventListener('click', function(e) {
         const target = e.target;
@@ -119,6 +194,12 @@ function setupHistoryButtonListeners() {
             const editModal = target.closest('#edit-log-modal');
             const viewModal = target.closest('#view-details-modal');
             const clockOutModal = target.closest('#clock-out-modal');
+            const projectModal = target.closest('#project-modal');
+            const createInvoiceModal = target.closest('#create-invoice-modal');
+            const sendInvoiceModal = target.closest('#send-invoice-modal');
+            const editInvoiceModal = target.closest('#edit-invoice-modal');
+            const addItemModal = target.closest('#add-item-modal');
+            const settingsModal = target.closest('#settings-modal');
 
             if (editModal && typeof window.hideEditLogModal === 'function') {
                 window.hideEditLogModal();
@@ -126,23 +207,117 @@ function setupHistoryButtonListeners() {
                 window.hideViewDetailsModal();
             } else if (clockOutModal && typeof window.hideClockOutModal === 'function') {
                 window.hideClockOutModal();
+            } else if (projectModal && typeof window.hideProjectModal === 'function') {
+                window.hideProjectModal();
+            } else if (addItemModal && typeof window.hideAddItemModal === 'function') {
+                window.hideAddItemModal();
+            } else if (editInvoiceModal && typeof window.hideEditInvoiceModal === 'function') {
+                window.hideEditInvoiceModal();
+            } else if (createInvoiceModal && typeof window.hideCreateInvoiceModal === 'function') {
+                window.hideCreateInvoiceModal();
+            } else if (sendInvoiceModal && typeof window.hideSendInvoiceModal === 'function') {
+                window.hideSendInvoiceModal();
+            } else if (settingsModal && typeof window.hideSettingsModal === 'function') {
+                window.hideSettingsModal();
             }
             return;
         }
 
-        // Check if clicked on Cancel button in edit modal footer
+        // Check if clicked on Cancel button in modal footer
         if (target.matches('.btn-secondary') || target.closest('.btn-secondary')) {
             const modalFooter = target.closest('.modal-footer');
-            const editModal = target.closest('#edit-log-modal');
 
-            if (modalFooter && editModal) {
-                e.preventDefault();
-                e.stopPropagation();
-                if (typeof window.hideEditLogModal === 'function') {
+            if (modalFooter) {
+                const editModal = target.closest('#edit-log-modal');
+                const viewModal = target.closest('#view-details-modal');
+                const clockOutModal = target.closest('#clock-out-modal');
+                const projectModal = target.closest('#project-modal');
+                const createInvoiceModal = target.closest('#create-invoice-modal');
+                const sendInvoiceModal = target.closest('#send-invoice-modal');
+                const editInvoiceModal = target.closest('#edit-invoice-modal');
+                const addItemModal = target.closest('#add-item-modal');
+
+                if (editModal && typeof window.hideEditLogModal === 'function') {
+                    e.preventDefault();
+                    e.stopPropagation();
                     window.hideEditLogModal();
+                    return;
+                } else if (viewModal && typeof window.hideViewDetailsModal === 'function') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.hideViewDetailsModal();
+                    return;
+                } else if (clockOutModal && typeof window.hideClockOutModal === 'function') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.hideClockOutModal();
+                    return;
+                } else if (projectModal && typeof window.hideProjectModal === 'function') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.hideProjectModal();
+                    return;
+                } else if (addItemModal && typeof window.hideAddItemModal === 'function') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.hideAddItemModal();
+                    return;
+                } else if (editInvoiceModal && typeof window.hideEditInvoiceModal === 'function') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.hideEditInvoiceModal();
+                    return;
+                } else if (createInvoiceModal && typeof window.hideCreateInvoiceModal === 'function') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.hideCreateInvoiceModal();
+                    return;
+                } else if (sendInvoiceModal && typeof window.hideSendInvoiceModal === 'function') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.hideSendInvoiceModal();
+                    return;
                 }
-                return;
             }
+        }
+
+        // Check if clicked on modal overlay (background)
+        const modalOverlay = target.closest('#modal-overlay');
+        if (modalOverlay && target.id === 'modal-overlay') {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Find which modal is currently open and close it
+            const openEditModal = document.querySelector('#edit-log-modal.show');
+            const openViewModal = document.querySelector('#view-details-modal.show');
+            const openClockOutModal = document.querySelector('#clock-out-modal.show');
+            const openProjectModal = document.querySelector('#project-modal.show');
+            const openCreateInvoiceModal = document.querySelector('#create-invoice-modal.show');
+            const openSendInvoiceModal = document.querySelector('#send-invoice-modal.show');
+            const openEditInvoiceModal = document.querySelector('#edit-invoice-modal.show');
+            const openAddItemModal = document.querySelector('#add-item-modal.show');
+            const openSettingsModal = document.querySelector('#settings-modal.show');
+
+            if (openEditModal && typeof window.hideEditLogModal === 'function') {
+                window.hideEditLogModal();
+            } else if (openViewModal && typeof window.hideViewDetailsModal === 'function') {
+                window.hideViewDetailsModal();
+            } else if (openClockOutModal && typeof window.hideClockOutModal === 'function') {
+                window.hideClockOutModal();
+            } else if (openProjectModal && typeof window.hideProjectModal === 'function') {
+                window.hideProjectModal();
+            } else if (openAddItemModal && typeof window.hideAddItemModal === 'function') {
+                window.hideAddItemModal();
+            } else if (openEditInvoiceModal && typeof window.hideEditInvoiceModal === 'function') {
+                window.hideEditInvoiceModal();
+            } else if (openCreateInvoiceModal && typeof window.hideCreateInvoiceModal === 'function') {
+                window.hideCreateInvoiceModal();
+            } else if (openSendInvoiceModal && typeof window.hideSendInvoiceModal === 'function') {
+                window.hideSendInvoiceModal();
+            } else if (openSettingsModal && typeof window.hideSettingsModal === 'function') {
+                window.hideSettingsModal();
+            }
+            return;
         }
     }, true); // Use capture phase
 }
@@ -159,6 +334,7 @@ export {
     History,
     Reports,
     Projects,
+    Invoices,
     Backups,
     App
 };

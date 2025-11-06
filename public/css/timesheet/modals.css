@@ -82,6 +82,12 @@
         font-size: 1rem;
     }
 
+    .modal-header-actions {
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
     .modal-close {
         font-size: 1.5rem;
         padding: 8px;
@@ -156,6 +162,12 @@
 .modal-header h3 {
     margin: 0;
     font-size: 1.125rem;
+}
+
+.modal-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .modal-close {

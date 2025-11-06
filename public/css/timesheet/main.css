@@ -33,10 +33,12 @@
 @import url('dashboard.css');
 @import url('forms.css');
 @import url('history.css');
+@import url('invoices.css');
 @import url('modals.css');
 @import url('project-selector.css');
 @import url('projects.css');
 @import url('reports.css');
+@import url('settings.css');
 @import url('tracker.css');
 
 

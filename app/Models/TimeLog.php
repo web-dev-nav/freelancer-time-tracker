@@ -89,6 +89,11 @@ class TimeLog extends Model
         return $this->belongsTo(Project::class);
     }
 
+    public function invoiceItem()
+    {
+        return $this->hasOne(InvoiceItem::class);
+    }
+
     // Scopes
     public function scopeActive($query)
     {

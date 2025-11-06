@@ -8,6 +8,7 @@
 import * as State from './state.js';
 import { loadDashboardStats } from './dashboard.js';
 import { loadHistory } from './history.js';
+import { loadInvoices } from './invoices.js';
 
 /**
  * Load active projects for the selector dropdown
@@ -72,6 +73,8 @@ export function onProjectChange() {
         } else if (tabName === 'history') {
             State.setCurrentPage(1);
             loadHistory();
+        } else if (tabName === 'invoices') {
+            loadInvoices();
         }
     }
 }
@@ -208,6 +211,8 @@ export async function editProject(projectId) {
             document.getElementById('project-id').value = project.id;
             document.getElementById('project-name').value = project.name;
             document.getElementById('client-name').value = project.client_name || '';
+            document.getElementById('client-email').value = project.client_email || '';
+            document.getElementById('client-address').value = project.client_address || '';
             document.getElementById('project-color').value = project.color;
             document.getElementById('hourly-rate').value = project.hourly_rate || '';
             document.getElementById('has-tax').checked = project.has_tax || false;
@@ -241,6 +246,8 @@ export async function saveProject(e) {
     const data = {
         name: document.getElementById('project-name').value,
         client_name: document.getElementById('client-name').value || null,
+        client_email: document.getElementById('client-email').value || null,
+        client_address: document.getElementById('client-address').value || null,
         color: document.getElementById('project-color').value,
         hourly_rate: document.getElementById('hourly-rate').value || null,
         has_tax: document.getElementById('has-tax').checked,

@@ -44,7 +44,18 @@ class ProjectController extends Controller
      */
     public function active()
     {
-        $projects = Project::active()->orderBy('name')->get(['id', 'name', 'client_name', 'color']);
+        $projects = Project::active()
+            ->orderBy('name')
+            ->get([
+                'id',
+                'name',
+                'client_name',
+                'client_email',
+                'client_address',
+                'color',
+                'hourly_rate',
+                'has_tax',
+            ]);
 
         return response()->json([
             'success' => true,
@@ -78,6 +89,8 @@ class ProjectController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'client_name' => 'nullable|string|max:255',
+            'client_email' => 'nullable|email|max:255',
+            'client_address' => 'nullable|string|max:2000',
             'color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'hourly_rate' => 'nullable|numeric|min:0',
             'has_tax' => 'nullable|boolean',
@@ -87,6 +100,8 @@ class ProjectController extends Controller
         $project = Project::create([
             'name' => $request->name,
             'client_name' => $request->client_name,
+            'client_email' => $request->client_email,
+            'client_address' => $request->client_address,
             'color' => $request->color ?? '#8b5cf6',
             'hourly_rate' => $request->hourly_rate,
             'has_tax' => $request->has_tax ?? false,
@@ -109,6 +124,8 @@ class ProjectController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'client_name' => 'nullable|string|max:255',
+            'client_email' => 'nullable|email|max:255',
+            'client_address' => 'nullable|string|max:2000',
             'color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'hourly_rate' => 'nullable|numeric|min:0',
             'has_tax' => 'nullable|boolean',
@@ -121,6 +138,8 @@ class ProjectController extends Controller
         $project->update([
             'name' => $request->name,
             'client_name' => $request->client_name,
+            'client_email' => $request->client_email,
+            'client_address' => $request->client_address,
             'color' => $request->color ?? $project->color,
             'hourly_rate' => $request->hourly_rate,
             'has_tax' => $request->has_tax ?? $project->has_tax,

@@ -1,0 +1,92 @@
+/**
+ * Settings Modal Styles
+ */
+
+#settings-modal .modal-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.settings-intro {
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.settings-form .form-group {
+    margin: 0;
+}
+
+.settings-form .form-label {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.settings-form textarea.form-control {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.form-hint {
+    display: block;
+    margin-top: 6px;
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+.settings-divider {
+    border: none;
+    border-top: 1px solid var(--border-color);
+}
+
+.smtp-settings-grid {
+    display: none;
+    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.settings-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.settings-loading {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.settings-loading i {
+    color: var(--primary-color);
+}
+
+@media (max-width: 768px) {
+    #settings-modal .modal-content {
+        width: 95%;
+    }
+
+    .smtp-settings-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .settings-actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .settings-actions .btn {
+        width: 100%;
+    }
+}

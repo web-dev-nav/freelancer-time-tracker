@@ -12,6 +12,8 @@ import { clockIn, clockOut } from './tracker.js';
 import { loadHistory, updateLog, hideEditLogModal, createNewEntry } from './history.js';
 import { generateReport } from './reports.js';
 import { loadProjectsForSelector, onProjectChange, loadProjects, saveProject, backupProject, backupDatabase } from './projects.js';
+import { loadInvoices } from './invoices.js';
+import { loadBackups } from './backups.js';
 import { hideClockOutModal } from './tracker.js';
 
 /**
@@ -69,9 +71,12 @@ export function setupEventListeners() {
     });
 
     // Modal overlay
-    document.getElementById('modal-overlay').addEventListener('click', function(e) {
+    document.getElementById('modal-overlay').addEventListener('click', function() {
         hideClockOutModal();
         hideEditLogModal();
+        if (typeof window.hideSettingsModal === 'function') {
+            window.hideSettingsModal();
+        }
     });
 
     // Project form
@@ -105,6 +110,8 @@ export function showTab(tabName) {
         loadDashboardStats(); // This already handles active session
     } else if (tabName === 'projects') {
         loadProjects();
+    } else if (tabName === 'invoices') {
+        loadInvoices();
     } else if (tabName === 'backups') {
         loadBackups();
     }

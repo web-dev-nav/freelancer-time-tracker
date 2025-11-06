@@ -12,6 +12,8 @@ class Project extends Model
     protected $fillable = [
         'name',
         'client_name',
+        'client_email',
+        'client_address',
         'color',
         'hourly_rate',
         'has_tax',
@@ -28,6 +30,11 @@ class Project extends Model
     public function timeLogs()
     {
         return $this->hasMany(TimeLog::class);
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
     }
 
     // Scopes

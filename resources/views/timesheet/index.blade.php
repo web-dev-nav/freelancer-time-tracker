@@ -19,6 +19,7 @@
     @include('components.timesheet.tabs.history')
     @include('components.timesheet.tabs.reports')
     @include('components.timesheet.tabs.projects')
+    @include('components.timesheet.tabs.invoices')
     @include('components.timesheet.tabs.backups')
 
     {{-- Hidden form for clock-in (used by Quick Clock In) --}}
@@ -35,6 +36,11 @@
 @include('components.timesheet.modals.edit-log')
 @include('components.timesheet.modals.view-details')
 @include('components.timesheet.modals.project')
+@include('components.timesheet.modals.create-invoice')
+@include('components.timesheet.modals.send-invoice')
+@include('components.timesheet.modals.edit-invoice')
+@include('components.timesheet.modals.add-invoice-item')
+@include('components.timesheet.modals.settings')
 
 {{-- Modal Overlay --}}
 <div id="modal-overlay" class="modal-overlay"></div>
