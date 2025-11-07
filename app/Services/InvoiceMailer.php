@@ -99,7 +99,7 @@ class InvoiceMailer
      */
     public function getEmailSettings(): array
     {
-        return Setting::getValues([
+        $settings = Setting::getValues([
             'email_mailer',
             'email_smtp_host',
             'email_smtp_port',
@@ -118,6 +118,12 @@ class InvoiceMailer
             'email_from_address' => config('mail.from.address'),
             'email_from_name' => config('mail.from.name'),
         ]);
+
+        \Log::info('Retrieved email settings from database', [
+            'email_mailer' => $settings['email_mailer']
+        ]);
+
+        return $settings;
     }
 
     /**
@@ -130,6 +136,12 @@ class InvoiceMailer
     {
         $mailer = config('mail.default');
         $selectedMailer = $emailSettings['email_mailer'] ?? 'default';
+
+        \Log::info('Preparing mailer configuration', [
+            'selected_mailer' => $selectedMailer,
+            'default_mailer' => $mailer,
+            'email_settings' => $emailSettings
+        ]);
 
         if ($selectedMailer === 'smtp' && !empty($emailSettings['email_smtp_host'])) {
             $dynamicMailer = 'settings_smtp';
@@ -145,9 +157,19 @@ class InvoiceMailer
             ]);
 
             $mailer = $dynamicMailer;
+            \Log::info('Using custom SMTP mailer');
         } elseif ($selectedMailer === 'mail') {
             $mailer = 'sendmail';
+            \Log::info('Using PHP mail() function via sendmail transport');
+        } else {
+            \Log::info('Using default mailer from .env', ['mailer' => $mailer]);
         }
+
+        \Log::info('Final mailer configuration', [
+            'mailer' => $mailer,
+            'from_address' => $emailSettings['email_from_address'] ?? config('mail.from.address'),
+            'from_name' => $emailSettings['email_from_name'] ?? config('mail.from.name')
+        ]);
 
         return [
             'mailer' => $mailer,

@@ -667,6 +667,7 @@ export function hideSendInvoiceModal() {
     document.getElementById('modal-overlay').classList.remove('show');
     document.body.style.overflow = 'auto';
     document.getElementById('send-invoice-form').reset();
+    hideInvoiceMessage();
     currentInvoice = null;
 }
 
@@ -688,21 +689,72 @@ export async function sendInvoice(e) {
     };
 
     try {
+        hideInvoiceMessage();
         const response = await window.api.request(`/api/invoices/${invoiceId}/send-email`, {
             method: 'POST',
             body: JSON.stringify(data)
         });
 
-        if (response) {
-            hideSendInvoiceModal();
+        if (response && response.success) {
+            showInvoiceMessage('success', 'Invoice sent successfully!');
             loadInvoices();
-            // Show success message AFTER closing modal and reloading
+
+            // Auto-close modal after 2 seconds on success
             setTimeout(() => {
-                window.notify.success('Invoice sent successfully!');
-            }, 100);
+                hideSendInvoiceModal();
+            }, 2000);
+        } else {
+            showInvoiceMessage('error', response?.message || 'Failed to send invoice');
         }
     } catch (error) {
-        window.notify.error('Failed to send invoice: ' + error.message);
+        showInvoiceMessage('error', 'Failed to send invoice: ' + error.message);
+    }
+}
+
+/**
+ * Show message in the send invoice modal.
+ * @param {string} type - 'success' or 'error'
+ * @param {string} message - The message text
+ */
+function showInvoiceMessage(type, message) {
+    const messageEl = document.getElementById('send-invoice-message-alert');
+    const iconEl = document.getElementById('send-invoice-message-icon');
+    const textEl = document.getElementById('send-invoice-message-text');
+
+    if (!messageEl || !iconEl || !textEl) return;
+
+    // Set message text
+    textEl.textContent = message;
+
+    // Set icon and colors based on type
+    if (type === 'success') {
+        messageEl.style.backgroundColor = '#d1fae5';
+        messageEl.style.border = '2px solid #10b981';
+        messageEl.style.color = '#065f46';
+        iconEl.className = 'fas fa-check-circle';
+        iconEl.style.color = '#10b981';
+    } else if (type === 'error') {
+        messageEl.style.backgroundColor = '#fee2e2';
+        messageEl.style.border = '2px solid #ef4444';
+        messageEl.style.color = '#991b1b';
+        iconEl.className = 'fas fa-exclamation-circle';
+        iconEl.style.color = '#ef4444';
+    }
+
+    // Show the message with flex display
+    messageEl.style.display = 'flex';
+
+    // Scroll the message into view
+    messageEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+/**
+ * Hide the message in the send invoice modal.
+ */
+function hideInvoiceMessage() {
+    const messageEl = document.getElementById('send-invoice-message-alert');
+    if (messageEl) {
+        messageEl.style.display = 'none';
     }
 }
 

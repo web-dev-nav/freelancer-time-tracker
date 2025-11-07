@@ -754,7 +754,7 @@ class InvoiceController extends Controller
      */
     protected function getEmailSettings(): array
     {
-        return Setting::getValues([
+        $settings = Setting::getValues([
             'email_mailer',
             'email_smtp_host',
             'email_smtp_port',
@@ -773,6 +773,12 @@ class InvoiceController extends Controller
             'email_from_address' => config('mail.from.address'),
             'email_from_name' => config('mail.from.name'),
         ]);
+
+        \Log::info('Retrieved email settings from database (InvoiceController)', [
+            'email_mailer' => $settings['email_mailer']
+        ]);
+
+        return $settings;
     }
 
     /**
@@ -785,6 +791,12 @@ class InvoiceController extends Controller
     {
         $mailer = config('mail.default');
         $selectedMailer = $emailSettings['email_mailer'] ?? 'default';
+
+        \Log::info('Preparing mailer configuration (InvoiceController)', [
+            'selected_mailer' => $selectedMailer,
+            'default_mailer' => $mailer,
+            'email_settings' => $emailSettings
+        ]);
 
         if ($selectedMailer === 'smtp' && !empty($emailSettings['email_smtp_host'])) {
             $dynamicMailer = 'settings_smtp';
@@ -800,9 +812,19 @@ class InvoiceController extends Controller
             ]);
 
             $mailer = $dynamicMailer;
+            \Log::info('Using custom SMTP mailer (InvoiceController)');
         } elseif ($selectedMailer === 'mail') {
             $mailer = 'sendmail';
+            \Log::info('Using PHP mail() function via sendmail transport (InvoiceController)');
+        } else {
+            \Log::info('Using default mailer from .env (InvoiceController)', ['mailer' => $mailer]);
         }
+
+        \Log::info('Final mailer configuration (InvoiceController)', [
+            'mailer' => $mailer,
+            'from_address' => $emailSettings['email_from_address'] ?? config('mail.from.address'),
+            'from_name' => $emailSettings['email_from_name'] ?? config('mail.from.name')
+        ]);
 
         return [
             'mailer' => $mailer,

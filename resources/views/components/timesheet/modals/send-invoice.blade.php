@@ -49,6 +49,12 @@
                 <i class="fas fa-info-circle"></i>
                 <strong>Note:</strong> The invoice will be automatically marked as "Sent" after sending the email.
             </div>
+
+            <!-- Success/Error Message Alert -->
+            <div id="send-invoice-message-alert" style="display: none; margin: 20px 0 0 0; padding: 15px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; align-items: center; gap: 12px;">
+                <i id="send-invoice-message-icon" class="fas" style="font-size: 18px;"></i>
+                <span id="send-invoice-message-text" style="flex: 1;"></span>
+            </div>
         </form>
 
         <div class="modal-footer">

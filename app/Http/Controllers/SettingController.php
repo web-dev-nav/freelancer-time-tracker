@@ -100,7 +100,16 @@ class SettingController extends Controller
                 }
 
                 $sanitized = trim($value);
-                Setting::setValue($key, $sanitized !== '' ? $sanitized : null);
+                $finalValue = $sanitized !== '' ? $sanitized : null;
+                Setting::setValue($key, $finalValue);
+
+                // Log email mailer changes
+                if ($key === 'email_mailer') {
+                    Log::info('Email mailer setting updated', [
+                        'key' => $key,
+                        'value' => $finalValue
+                    ]);
+                }
             }
 
             $data = Setting::getValues($keys, $defaults);
@@ -149,6 +158,11 @@ class SettingController extends Controller
                 'email_from_address' => $validated['email_from_address'] ?? config('mail.from.address'),
                 'email_from_name' => $validated['email_from_name'] ?? config('mail.from.name'),
             ];
+
+            Log::info('Test email settings received', [
+                'email_mailer' => $emailSettings['email_mailer'],
+                'from_address' => $emailSettings['email_from_address']
+            ]);
 
             $mailerConfig = $this->prepareMailerConfiguration($emailSettings);
 
@@ -221,6 +235,41 @@ class SettingController extends Controller
             'from_address' => $emailSettings['email_from_address'] ?? config('mail.from.address'),
             'from_name' => $emailSettings['email_from_name'] ?? config('mail.from.name'),
         ];
+    }
+
+    /**
+     * Debug email configuration - shows what's in database vs what will be used.
+     */
+    public function debugEmail()
+    {
+        $defaults = [
+            'email_mailer'           => 'default',
+            'email_smtp_host'        => null,
+            'email_smtp_port'        => null,
+            'email_smtp_username'    => null,
+            'email_smtp_password'    => null,
+            'email_smtp_encryption'  => null,
+            'email_from_address'     => config('mail.from.address'),
+            'email_from_name'        => config('mail.from.name'),
+        ];
+
+        $keys = array_keys($defaults);
+        $dbSettings = Setting::getValues($keys, $defaults);
+
+        // Check raw database value
+        $rawMailer = Setting::where('key', 'email_mailer')->first();
+
+        return response()->json([
+            'success' => true,
+            'database_settings' => $dbSettings,
+            'raw_email_mailer_record' => $rawMailer,
+            'default_mailer_from_env' => config('mail.default'),
+            'mail_from_env' => [
+                'MAIL_MAILER' => env('MAIL_MAILER'),
+                'MAIL_HOST' => env('MAIL_HOST'),
+                'MAIL_FROM_ADDRESS' => env('MAIL_FROM_ADDRESS'),
+            ],
+        ]);
     }
 
     /**
