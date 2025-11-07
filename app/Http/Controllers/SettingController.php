@@ -74,7 +74,7 @@ class SettingController extends Controller
                 'payment_etransfer_email' => 'nullable|email|max:255',
                 'payment_bank_info'       => 'nullable|string|max:2000',
                 'payment_instructions'    => 'nullable|string|max:2000',
-                'email_mailer'            => 'nullable|in:default,smtp',
+                'email_mailer'            => 'nullable|in:default,mail,smtp',
                 'email_smtp_host'         => 'nullable|string|max:255',
                 'email_smtp_port'         => 'nullable|integer|min:1|max:65535',
                 'email_smtp_username'     => 'nullable|string|max:255',

@@ -129,8 +129,9 @@ class InvoiceMailer
     protected function prepareMailerConfiguration(array $emailSettings): array
     {
         $mailer = config('mail.default');
+        $selectedMailer = $emailSettings['email_mailer'] ?? 'default';
 
-        if (($emailSettings['email_mailer'] ?? 'default') === 'smtp' && !empty($emailSettings['email_smtp_host'])) {
+        if ($selectedMailer === 'smtp' && !empty($emailSettings['email_smtp_host'])) {
             $dynamicMailer = 'settings_smtp';
             Config::set("mail.mailers.{$dynamicMailer}", [
                 'transport' => 'smtp',
@@ -144,6 +145,8 @@ class InvoiceMailer
             ]);
 
             $mailer = $dynamicMailer;
+        } elseif ($selectedMailer === 'mail') {
+            $mailer = 'sendmail';
         }
 
         return [

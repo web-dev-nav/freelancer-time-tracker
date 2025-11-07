@@ -256,11 +256,12 @@
                         Email Delivery Method
                     </label>
                     <select id="email-mailer" class="form-control">
-                        <option value="default">Use Application Defaults</option>
+                        <option value="default">Testing/Log Only (No Email Sent)</option>
+                        <option value="mail">PHP mail() Function</option>
                         <option value="smtp">Custom SMTP</option>
                     </select>
                     <small class="form-hint">
-                        Choose “Custom SMTP” to send invoices through a specific mail server.
+                        Choose "PHP mail() Function" for most shared hosting (Hostinger, cPanel, etc.) or "Custom SMTP" for a specific mail server.
                     </small>
                 </div>
 
