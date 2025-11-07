@@ -232,21 +232,23 @@ function showMessage(type, message) {
     // Set icon and colors based on type
     if (type === 'success') {
         messageEl.style.backgroundColor = '#d1fae5';
-        messageEl.style.borderLeft = '4px solid #10b981';
+        messageEl.style.border = '2px solid #10b981';
         messageEl.style.color = '#065f46';
         iconEl.className = 'fas fa-check-circle';
         iconEl.style.color = '#10b981';
-        iconEl.style.marginRight = '10px';
     } else if (type === 'error') {
         messageEl.style.backgroundColor = '#fee2e2';
-        messageEl.style.borderLeft = '4px solid #ef4444';
+        messageEl.style.border = '2px solid #ef4444';
         messageEl.style.color = '#991b1b';
         iconEl.className = 'fas fa-exclamation-circle';
         iconEl.style.color = '#ef4444';
-        iconEl.style.marginRight = '10px';
     }
 
-    messageEl.style.display = 'block';
+    // Show the message with flex display
+    messageEl.style.display = 'flex';
+
+    // Scroll the message into view
+    messageEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
     // Auto-hide success messages after 5 seconds
     if (type === 'success') {

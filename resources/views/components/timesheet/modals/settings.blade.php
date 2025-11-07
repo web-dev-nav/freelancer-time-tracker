@@ -346,7 +346,7 @@
                     </small>
                 </div>
 
-                <button type="button" class="btn btn-secondary" id="test-email-btn" onclick="sendTestEmail()" style="width: 100%; margin-bottom: 15px;">
+                <button type="button" class="btn btn-secondary" id="test-email-btn" onclick="sendTestEmail()" style="width: 100%; margin-bottom: 20px;">
                     <i class="fas fa-paper-plane"></i>
                     Send Test Email
                 </button>
@@ -356,9 +356,10 @@
                     <span>Working on it...</span>
                 </div>
 
-                <div id="settings-message" class="settings-message" style="display: none; margin: 20px 0; padding: 15px; border-radius: 6px; font-size: 14px;">
-                    <i id="settings-message-icon" class="fas"></i>
-                    <span id="settings-message-text"></span>
+                <!-- Success/Error Message Alert -->
+                <div id="settings-message" style="display: none; margin: 25px 0 20px 0; padding: 15px 20px; border-radius: 8px; font-size: 14px; font-weight: 500; align-items: center; gap: 12px;">
+                    <i id="settings-message-icon" class="fas" style="font-size: 18px;"></i>
+                    <span id="settings-message-text" style="flex: 1;"></span>
                 </div>
 
                 <div class="settings-actions">
