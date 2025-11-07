@@ -20,3 +20,15 @@ Schedule::command('backup:database')
     ->onFailure(function () {
         error_log('Full database backup failed');
     });
+
+// Schedule invoice payment reminders daily at 9:00 AM
+// Checks for unpaid invoices due within 3 days or overdue
+Schedule::command('invoices:send-reminders')
+    ->dailyAt('09:00')
+    ->name('invoice-reminders')
+    ->onSuccess(function () {
+        info('Invoice payment reminders sent successfully');
+    })
+    ->onFailure(function () {
+        error_log('Invoice payment reminders failed');
+    });
