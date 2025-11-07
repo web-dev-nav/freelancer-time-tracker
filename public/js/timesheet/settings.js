@@ -49,6 +49,7 @@ async function saveSettings(e) {
     try {
         isLoading = true;
         setLoadingState(true);
+        hideMessage();
 
         const response = await window.api.request('/api/settings', {
             method: 'POST',
@@ -57,13 +58,13 @@ async function saveSettings(e) {
 
         if (response.success) {
             applySettingsToForm(response.data || {});
-            window.notify.success('Settings saved successfully!');
+            showMessage('success', 'Settings saved successfully!');
         } else {
-            window.notify.error(response.message || 'Unable to save settings.');
+            showMessage('error', response.message || 'Unable to save settings.');
         }
     } catch (error) {
         console.error('Failed to save settings:', error);
-        window.notify.error('Failed to save settings. Please try again.');
+        showMessage('error', 'Failed to save settings. Please try again.');
     } finally {
         isLoading = false;
         setLoadingState(false);
@@ -99,6 +100,7 @@ export function hideSettingsModal() {
     if (!modal || !overlay) return;
 
     setLoadingState(false);
+    hideMessage();
 
     if (modal.classList.contains('show')) {
         modal.classList.remove('show');
@@ -211,3 +213,114 @@ function toggleSmtpFields() {
     const isSmtp = mailerSelect.value === 'smtp';
     smtpSection.style.display = isSmtp ? 'grid' : 'none';
 }
+
+/**
+ * Show message in the modal.
+ * @param {string} type - 'success' or 'error'
+ * @param {string} message - The message text
+ */
+function showMessage(type, message) {
+    const messageEl = document.getElementById('settings-message');
+    const iconEl = document.getElementById('settings-message-icon');
+    const textEl = document.getElementById('settings-message-text');
+
+    if (!messageEl || !iconEl || !textEl) return;
+
+    // Set message text
+    textEl.textContent = message;
+
+    // Set icon and colors based on type
+    if (type === 'success') {
+        messageEl.style.backgroundColor = '#d1fae5';
+        messageEl.style.borderLeft = '4px solid #10b981';
+        messageEl.style.color = '#065f46';
+        iconEl.className = 'fas fa-check-circle';
+        iconEl.style.color = '#10b981';
+        iconEl.style.marginRight = '10px';
+    } else if (type === 'error') {
+        messageEl.style.backgroundColor = '#fee2e2';
+        messageEl.style.borderLeft = '4px solid #ef4444';
+        messageEl.style.color = '#991b1b';
+        iconEl.className = 'fas fa-exclamation-circle';
+        iconEl.style.color = '#ef4444';
+        iconEl.style.marginRight = '10px';
+    }
+
+    messageEl.style.display = 'block';
+
+    // Auto-hide success messages after 5 seconds
+    if (type === 'success') {
+        setTimeout(() => {
+            hideMessage();
+        }, 5000);
+    }
+}
+
+/**
+ * Hide the message in the modal.
+ */
+function hideMessage() {
+    const messageEl = document.getElementById('settings-message');
+    if (messageEl) {
+        messageEl.style.display = 'none';
+    }
+}
+
+/**
+ * Send a test email to verify email configuration.
+ */
+async function sendTestEmail() {
+    if (isLoading) return;
+
+    const testEmailAddress = document.getElementById('test-email-address')?.value?.trim();
+
+    if (!testEmailAddress) {
+        showMessage('error', 'Please enter an email address to send the test email to.');
+        return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(testEmailAddress)) {
+        showMessage('error', 'Please enter a valid email address.');
+        return;
+    }
+
+    const payload = {
+        test_email: testEmailAddress,
+        email_mailer: document.getElementById('email-mailer')?.value || 'default',
+        email_smtp_host: document.getElementById('email-smtp-host')?.value?.trim() || null,
+        email_smtp_port: document.getElementById('email-smtp-port')?.value?.trim() || null,
+        email_smtp_username: document.getElementById('email-smtp-username')?.value?.trim() || null,
+        email_smtp_password: document.getElementById('email-smtp-password')?.value?.trim() || null,
+        email_smtp_encryption: document.getElementById('email-smtp-encryption')?.value || null,
+        email_from_address: document.getElementById('email-from-address')?.value?.trim() || null,
+        email_from_name: document.getElementById('email-from-name')?.value?.trim() || null,
+    };
+
+    try {
+        isLoading = true;
+        setLoadingState(true);
+        hideMessage();
+
+        const response = await window.api.request('/api/settings/test-email', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+
+        if (response.success) {
+            showMessage('success', response.message || 'Test email sent! Check your inbox and spam folder.');
+        } else {
+            showMessage('error', response.message || 'Failed to send test email.');
+        }
+    } catch (error) {
+        console.error('Test email failed:', error);
+        showMessage('error', 'Failed to send test email: ' + (error.message || 'Unknown error'));
+    } finally {
+        isLoading = false;
+        setLoadingState(false);
+    }
+}
+
+// Make sendTestEmail available globally for onclick handler
+window.sendTestEmail = sendTestEmail;

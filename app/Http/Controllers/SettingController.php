@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class SettingController extends Controller
 {
@@ -116,5 +119,185 @@ class SettingController extends Controller
                 'data' => $defaults,
             ]);
         }
+    }
+
+    /**
+     * Send a test email to verify email configuration.
+     */
+    public function testEmail(Request $request)
+    {
+        $validated = $request->validate([
+            'test_email' => 'required|email',
+            'email_mailer' => 'nullable|in:default,mail,smtp',
+            'email_smtp_host' => 'nullable|string|max:255',
+            'email_smtp_port' => 'nullable|integer|min:1|max:65535',
+            'email_smtp_username' => 'nullable|string|max:255',
+            'email_smtp_password' => 'nullable|string|max:255',
+            'email_smtp_encryption' => 'nullable|in:tls,ssl,starttls',
+            'email_from_address' => 'nullable|email|max:255',
+            'email_from_name' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $emailSettings = [
+                'email_mailer' => $validated['email_mailer'] ?? 'default',
+                'email_smtp_host' => $validated['email_smtp_host'] ?? null,
+                'email_smtp_port' => $validated['email_smtp_port'] ?? null,
+                'email_smtp_username' => $validated['email_smtp_username'] ?? null,
+                'email_smtp_password' => $validated['email_smtp_password'] ?? null,
+                'email_smtp_encryption' => $validated['email_smtp_encryption'] ?? null,
+                'email_from_address' => $validated['email_from_address'] ?? config('mail.from.address'),
+                'email_from_name' => $validated['email_from_name'] ?? config('mail.from.name'),
+            ];
+
+            $mailerConfig = $this->prepareMailerConfiguration($emailSettings);
+
+            // Send test email
+            Mail::mailer($mailerConfig['mailer'])->send([], [], function ($message) use ($validated, $mailerConfig) {
+                $message->to($validated['test_email'])
+                    ->subject('Test Email from ' . config('app.name'))
+                    ->html($this->getTestEmailHtml());
+
+                if ($mailerConfig['from_address']) {
+                    $message->from(
+                        $mailerConfig['from_address'],
+                        $mailerConfig['from_name'] ?: $mailerConfig['from_address']
+                    );
+                }
+            });
+
+            Log::info('Test email sent successfully', [
+                'to' => $validated['test_email'],
+                'mailer' => $mailerConfig['mailer'],
+                'from' => $mailerConfig['from_address'],
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Test email sent successfully! Check your inbox (and spam folder).',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Test email failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send test email: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Prepare mailer configuration.
+     */
+    protected function prepareMailerConfiguration(array $emailSettings): array
+    {
+        $mailer = config('mail.default');
+        $selectedMailer = $emailSettings['email_mailer'] ?? 'default';
+
+        if ($selectedMailer === 'smtp' && !empty($emailSettings['email_smtp_host'])) {
+            $dynamicMailer = 'settings_smtp';
+            Config::set("mail.mailers.{$dynamicMailer}", [
+                'transport' => 'smtp',
+                'host' => $emailSettings['email_smtp_host'],
+                'port' => (int) ($emailSettings['email_smtp_port'] ?? 587),
+                'encryption' => $emailSettings['email_smtp_encryption'] ?: null,
+                'username' => $emailSettings['email_smtp_username'],
+                'password' => $emailSettings['email_smtp_password'],
+                'timeout' => null,
+                'auth_mode' => null,
+            ]);
+
+            $mailer = $dynamicMailer;
+        } elseif ($selectedMailer === 'mail') {
+            $mailer = 'sendmail';
+        }
+
+        return [
+            'mailer' => $mailer,
+            'from_address' => $emailSettings['email_from_address'] ?? config('mail.from.address'),
+            'from_name' => $emailSettings['email_from_name'] ?? config('mail.from.name'),
+        ];
+    }
+
+    /**
+     * Generate HTML for test email.
+     */
+    protected function getTestEmailHtml(): string
+    {
+        $appName = config('app.name');
+        return '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #f9f9f9;
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        h1 {
+            color: #8b5cf6;
+            margin-top: 0;
+        }
+        .success {
+            background: #d1fae5;
+            border-left: 4px solid #10b981;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info {
+            background: #e0e7ff;
+            border-left: 4px solid #6366f1;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        ul {
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✅ Email Configuration Test</h1>
+
+        <div class="success">
+            <strong>Success!</strong> Your email configuration is working correctly.
+        </div>
+
+        <p>This is a test email from <strong>' . htmlspecialchars($appName) . '</strong>.</p>
+
+        <div class="info">
+            <strong>What this means:</strong>
+            <ul>
+                <li>Your email server is properly configured</li>
+                <li>Emails are being sent successfully</li>
+                <li>Invoice emails should work correctly</li>
+            </ul>
+        </div>
+
+        <p>If you received this email in your spam folder, please mark it as "Not Spam" to ensure future invoices arrive in your inbox.</p>
+
+        <p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 13px;">
+            Sent from ' . htmlspecialchars($appName) . ' at ' . date('Y-m-d H:i:s') . '
+        </p>
+    </div>
+</body>
+</html>';
     }
 }

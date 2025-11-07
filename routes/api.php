@@ -90,4 +90,5 @@ Route::prefix('invoices')->name('invoices.api.')->group(function () {
 Route::prefix('settings')->name('settings.api.')->group(function () {
     Route::get('/', [SettingController::class, 'index'])->name('index');
     Route::post('/', [SettingController::class, 'update'])->name('update');
+    Route::post('/test-email', [SettingController::class, 'testEmail'])->name('test-email');
 });

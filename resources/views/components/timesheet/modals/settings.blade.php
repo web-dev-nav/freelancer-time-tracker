@@ -265,6 +265,26 @@
                     </small>
                 </div>
 
+                <div class="alert alert-warning" style="margin: 15px 0; background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px; border-radius: 4px;">
+                    <div style="display: flex; align-items: start;">
+                        <i class="fas fa-exclamation-triangle" style="color: #f59e0b; margin-right: 10px; margin-top: 2px;"></i>
+                        <div style="flex: 1;">
+                            <strong style="color: #92400e; display: block; margin-bottom: 8px;">⚠️ Common Issue: mail() Says "Sent" But Email Not Received</strong>
+                            <p style="margin: 0 0 8px 0; color: #92400e; font-size: 13px;">
+                                PHP mail() function often returns "success" even when emails fail to deliver. This is because it only confirms the email was passed to the server, not that it was actually sent.
+                            </p>
+                            <strong style="color: #92400e; display: block; margin-top: 10px; margin-bottom: 5px;">Solutions:</strong>
+                            <ol style="margin: 5px 0 0 15px; color: #92400e; font-size: 13px; line-height: 1.6;">
+                                <li><strong>Critical:</strong> "From Email Address" MUST match your domain (e.g., noreply@yourdomain.com, NOT gmail.com)</li>
+                                <li>Use the <strong>"Send Test Email"</strong> button below to verify</li>
+                                <li>Check spam/junk folder (mark as "Not Spam" if found)</li>
+                                <li>Check server logs at <code style="background: #fde68a; padding: 2px 4px; border-radius: 3px;">storage/logs/laravel.log</code></li>
+                                <li>If mail() doesn't work, switch to <strong>"Custom SMTP"</strong> (recommended: Gmail, SendGrid, Mailgun)</li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="smtp-settings" class="smtp-settings-grid">
                     <div class="form-group">
                         <label class="form-label" for="email-smtp-host">SMTP Host</label>
@@ -309,9 +329,36 @@
                     <input type="text" id="email-from-name" class="form-control" placeholder="My Company Inc.">
                 </div>
 
+                <hr class="settings-divider">
+
+                <h4 style="margin: 20px 0 15px 0; color: #1f2937; font-size: 16px;">
+                    <i class="fas fa-vial"></i> Test Email Configuration
+                </h4>
+
+                <div class="form-group">
+                    <label class="form-label" for="test-email-address">
+                        <i class="fas fa-envelope"></i>
+                        Send Test Email To
+                    </label>
+                    <input type="email" id="test-email-address" class="form-control" placeholder="your@email.com">
+                    <small class="form-hint">
+                        Enter your email address to receive a test email. This will verify your configuration is working.
+                    </small>
+                </div>
+
+                <button type="button" class="btn btn-secondary" id="test-email-btn" onclick="sendTestEmail()" style="width: 100%; margin-bottom: 15px;">
+                    <i class="fas fa-paper-plane"></i>
+                    Send Test Email
+                </button>
+
                 <div id="settings-loading" class="settings-loading">
                     <i class="fas fa-spinner fa-spin"></i>
                     <span>Working on it...</span>
+                </div>
+
+                <div id="settings-message" class="settings-message" style="display: none; margin: 20px 0; padding: 15px; border-radius: 6px; font-size: 14px;">
+                    <i id="settings-message-icon" class="fas"></i>
+                    <span id="settings-message-text"></span>
                 </div>
 
                 <div class="settings-actions">
