@@ -38,8 +38,11 @@
                     <i class="fas fa-comment"></i>
                     Email Message
                 </label>
-                <textarea id="send-invoice-message" class="form-control" rows="6"
-                         placeholder="Please find attached invoice for your review..."></textarea>
+                <textarea id="send-invoice-message" class="form-control" rows="8"
+                         placeholder="Loading..."></textarea>
+                <small style="color: var(--text-secondary); display: block; margin-top: 4px;">
+                    <i class="fas fa-edit"></i> The message is auto-generated based on current month and payment instructions from Settings. You can edit it before sending.
+                </small>
             </div>
 
             <div class="alert alert-warning" style="margin: 0;">

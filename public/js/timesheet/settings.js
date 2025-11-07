@@ -147,6 +147,9 @@ function collectFormValues() {
         invoice_company_name: getValue('invoice-company-name'),
         invoice_company_address: getValue('invoice-company-address'),
         invoice_tax_number: getValue('invoice-tax-number'),
+        payment_etransfer_email: getValue('payment-etransfer-email'),
+        payment_bank_info: getValue('payment-bank-info'),
+        payment_instructions: getValue('payment-instructions'),
         email_mailer: document.getElementById('email-mailer')?.value || 'default',
         email_smtp_host: getValue('email-smtp-host'),
         email_smtp_port: getValue('email-smtp-port'),
@@ -168,6 +171,9 @@ function applySettingsToForm(data) {
     setValue('invoice-company-name', data.invoice_company_name ?? window.utils?.appName ?? '');
     setValue('invoice-company-address', data.invoice_company_address ?? '');
     setValue('invoice-tax-number', data.invoice_tax_number ?? '');
+    setValue('payment-etransfer-email', data.payment_etransfer_email ?? '');
+    setValue('payment-bank-info', data.payment_bank_info ?? '');
+    setValue('payment-instructions', data.payment_instructions ?? '');
     setValue('email-mailer', data.email_mailer ?? 'default');
     setValue('email-smtp-host', data.email_smtp_host ?? '');
     setValue('email-smtp-port', data.email_smtp_port ?? '');

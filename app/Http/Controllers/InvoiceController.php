@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Project;
+use App\Models\Setting;
 use App\Models\TimeLog;
 use App\Services\InvoiceMailer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Carbon\Carbon;
@@ -70,6 +73,11 @@ class InvoiceController extends Controller
             'due_date' => 'required|date|after_or_equal:invoice_date',
             'time_log_ids' => 'array',
             'time_log_ids.*' => 'exists:time_logs,id',
+            'items' => 'array',
+            'items.*.description' => 'required|string',
+            'items.*.work_date' => 'required|date',
+            'items.*.hours' => 'required|numeric|min:0',
+            'items.*.rate' => 'required|numeric|min:0',
             'client_name' => 'nullable|string|max:255',
             'client_email' => 'nullable|email|max:255',
             'client_address' => 'nullable|string',
@@ -127,6 +135,20 @@ class InvoiceController extends Controller
                     $item->work_date = Carbon::parse($timeLog->clock_in)->toDateString();
                     $item->hours = $timeLog->total_minutes / 60;
                     $item->rate = $project->hourly_rate ?? 0;
+                    $item->calculateAmount();
+                }
+            }
+
+            // Add custom items if provided
+            if ($request->has('items') && is_array($request->items)) {
+                foreach ($request->items as $itemData) {
+                    $item = new InvoiceItem();
+                    $item->invoice_id = $invoice->id;
+                    $item->time_log_id = null;
+                    $item->description = $itemData['description'];
+                    $item->work_date = $itemData['work_date'];
+                    $item->hours = $itemData['hours'];
+                    $item->rate = $itemData['rate'];
                     $item->calculateAmount();
                 }
             }
@@ -408,7 +430,14 @@ class InvoiceController extends Controller
         $mailerConfig = $this->prepareMailerConfiguration($emailSettings);
 
         try {
-            // Generate PDF
+            // Mark invoice as sent BEFORE generating PDF
+            if ($invoice->status === 'draft') {
+                $invoice->markAsSent();
+                // Refresh the invoice to get updated status for PDF
+                $invoice->refresh();
+            }
+
+            // Generate PDF with updated status
             $pdf = PDF::loadView('invoices.pdf', [
                 'invoice' => $invoice,
                 'companySettings' => $companySettings,
@@ -420,12 +449,15 @@ class InvoiceController extends Controller
             $subject = $request->subject ?? "Invoice {$invoice->invoice_number} from " . $defaultCompanyName;
             $message = $request->message ?? "Please find attached invoice {$invoice->invoice_number}.";
 
+            // Convert plain text message to HTML for better formatting
+            $htmlMessage = $this->convertToHtmlEmail($message);
+
             // Send email
             Mail::mailer($mailerConfig['mailer'])
-                ->send([], [], function ($mail) use ($recipientEmail, $subject, $message, $pdfContent, $invoice, $mailerConfig) {
+                ->send([], [], function ($mail) use ($recipientEmail, $subject, $htmlMessage, $pdfContent, $invoice, $mailerConfig) {
                     $mail->to($recipientEmail)
                         ->subject($subject)
-                        ->html($message)
+                        ->html($htmlMessage)
                         ->attachData($pdfContent, "invoice-{$invoice->invoice_number}.pdf", [
                             'mime' => 'application/pdf',
                         ]);
@@ -438,14 +470,10 @@ class InvoiceController extends Controller
                     }
                 });
 
-            // Mark invoice as sent
-            if ($invoice->status === 'draft') {
-                $invoice->markAsSent();
-            }
-
             return response()->json([
                 'message' => 'Invoice sent successfully',
-                'invoice' => $invoice
+                'invoice' => $invoice->fresh(),
+                'success' => true
             ]);
 
         } catch (\Exception $e) {
@@ -530,6 +558,172 @@ class InvoiceController extends Controller
     }
 
     /**
+     * Convert plain text email message to HTML format.
+     *
+     * @param string $message
+     * @return string
+     */
+    protected function convertToHtmlEmail(string $message): string
+    {
+        $html = '<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: left;
+        }
+        .email-content {
+            color: #333333;
+            font-size: 14px;
+            text-align: left;
+        }
+        .email-content p {
+            margin: 0 0 12px 0;
+            text-align: left;
+        }
+        .payment-instructions {
+            background-color: #f9f9f9;
+            border-left: 4px solid #8b5cf6;
+            padding: 15px 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .payment-instructions h3 {
+            margin: 0 0 12px 0;
+            color: #8b5cf6;
+            font-size: 16px;
+            text-align: left;
+        }
+        .payment-method {
+            margin: 12px 0 8px 0;
+            padding-left: 0;
+            text-align: left;
+        }
+        .payment-method strong {
+            color: #1f2937;
+            display: block;
+            margin-bottom: 3px;
+            text-align: left;
+        }
+        .payment-detail {
+            margin: 2px 0 2px 20px;
+            color: #6b7280;
+            line-height: 1.5;
+            text-align: left;
+        }
+        .footer {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 13px;
+            text-align: left;
+        }
+        .highlight {
+            color: #8b5cf6;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-content">';
+
+        // Parse the message and format it
+        $lines = explode("\n", $message);
+        $inPaymentInstructions = false;
+        $inPaymentMethod = false;
+
+        foreach ($lines as $line) {
+            $trimmedLine = trim($line);
+
+            // Skip completely empty lines
+            if (empty($trimmedLine)) {
+                continue;
+            }
+
+            // Check if this is the payment instructions header
+            if (stripos($trimmedLine, 'Payment Instructions:') !== false) {
+                $html .= '</div><div class="payment-instructions"><h3>Payment Instructions</h3>';
+                $inPaymentInstructions = true;
+                continue;
+            }
+
+            // Check if this is a numbered payment method
+            if (preg_match('/^(\d+)\.\s+(.+)$/', $trimmedLine, $matches)) {
+                if ($inPaymentMethod) {
+                    $html .= '</div>';
+                }
+                $html .= '<div class="payment-method"><strong>' . $matches[1] . '. ' . htmlspecialchars($matches[2]) . '</strong>';
+                $inPaymentMethod = true;
+                continue;
+            }
+
+            // Check for amount highlight
+            if (preg_match('/total amount \$[\d,]+\.?\d*/i', $trimmedLine)) {
+                $html .= '<p>' . preg_replace('/(\$[\d,]+\.?\d*)/', '<span class="highlight">$1</span>', htmlspecialchars($trimmedLine)) . '</p>';
+                continue;
+            }
+
+            // Check if we're closing payment instructions (closing message detected)
+            if ($inPaymentInstructions && (stripos($trimmedLine, 'If you have any questions') !== false || stripos($trimmedLine, 'Best regards') !== false)) {
+                if ($inPaymentMethod) {
+                    $html .= '</div>';
+                    $inPaymentMethod = false;
+                }
+                $html .= '</div><div class="email-content">';
+                $inPaymentInstructions = false;
+                // Now add the closing line outside the payment block
+                $html .= '<p>' . htmlspecialchars($trimmedLine) . '</p>';
+                continue;
+            }
+
+            // Regular paragraph (outside payment instructions)
+            if (!$inPaymentInstructions) {
+                $html .= '<p>' . htmlspecialchars($trimmedLine) . '</p>';
+                continue;
+            }
+
+            // Payment detail line (inside payment instructions, after a payment method)
+            if ($inPaymentInstructions && $inPaymentMethod) {
+                $html .= '<div class="payment-detail">' . htmlspecialchars($trimmedLine) . '</div>';
+            }
+        }
+
+        if ($inPaymentMethod) {
+            $html .= '</div>';
+        }
+
+        if ($inPaymentInstructions) {
+            $html .= '</div><div class="email-content">';
+        }
+
+        $html .= '
+        </div>
+    </div>
+</body>
+</html>';
+
+        return $html;
+    }
+
+    /**
      * Retrieve shared invoice settings.
      *
      * @return array<string, mixed>
@@ -540,10 +734,16 @@ class InvoiceController extends Controller
             'invoice_company_name',
             'invoice_company_address',
             'invoice_tax_number',
+            'payment_etransfer_email',
+            'payment_bank_info',
+            'payment_instructions',
         ], [
             'invoice_company_name' => config('app.name'),
             'invoice_company_address' => null,
             'invoice_tax_number' => null,
+            'payment_etransfer_email' => null,
+            'payment_bank_info' => null,
+            'payment_instructions' => null,
         ]);
     }
 
@@ -607,4 +807,5 @@ class InvoiceController extends Controller
             'from_name' => $emailSettings['email_from_name'] ?? config('mail.from.name'),
         ];
     }
+
 }

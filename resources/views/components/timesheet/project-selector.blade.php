@@ -11,7 +11,7 @@
             <button class="btn btn-sm btn-primary" onclick="showAddProjectModal()" title="Add New Project">
                 <i class="fas fa-plus"></i>
             </button>
-            <button class="btn btn-sm btn-secondary" onclick="showTab('projects')" title="Manage Projects">
+            <button class="btn btn-sm btn-secondary" onclick="showSettingsModal()" title="Application Settings">
                 <i class="fas fa-cog"></i>
             </button>
         </div>

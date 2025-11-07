@@ -25,8 +25,4 @@
             Backups
         </button>
     </div>
-    <button type="button" class="btn btn-secondary nav-action-button" onclick="showSettingsModal()">
-        <i class="fas fa-cog"></i>
-        <span>Settings</span>
-    </button>
 </div>

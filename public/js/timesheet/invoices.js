@@ -12,6 +12,8 @@ let currentInvoice = null;
 let currentEditingInvoice = null;
 let currentEditingItem = null;
 let createInvoiceProjects = [];
+let createInvoiceItems = []; // Temporary items for create mode
+let createItemIdCounter = 1; // Temporary ID counter for create mode items
 
 /**
  * Format a date string so it can be used in an <input type="date">
@@ -191,11 +193,17 @@ export async function showCreateInvoiceModal() {
 
         resetInvoiceClientFields();
         createInvoiceProjects = [];
+        createInvoiceItems = [];
+        createItemIdCounter = 1;
 
         const selector = document.getElementById('invoice-project-id');
         if (selector) {
             selector.innerHTML = '<option value="">Select a project...</option>';
         }
+
+        // Reset items table and totals
+        displayCreateInvoiceItems();
+        updateCreateInvoiceTotals();
 
         // Load active projects for selector
         const response = await window.api.request('/api/projects/active');
@@ -257,8 +265,20 @@ export function handleCreateInvoiceProjectChange() {
 
     if (project) {
         populateInvoiceClientFields(project);
+        // Update tax rate display based on project
+        const taxRate = project.has_tax ? 13 : 0;
+        const taxRateElem = document.getElementById('create-invoice-tax-rate');
+        if (taxRateElem) {
+            taxRateElem.textContent = taxRate;
+        }
+        updateCreateInvoiceTotals();
     } else {
         resetInvoiceClientFields();
+        const taxRateElem = document.getElementById('create-invoice-tax-rate');
+        if (taxRateElem) {
+            taxRateElem.textContent = '0';
+        }
+        updateCreateInvoiceTotals();
     }
 }
 
@@ -330,7 +350,7 @@ export async function createInvoice(e) {
         return;
     }
 
-    // Time logs are optional - invoice can be created without them
+    // Include invoice items
     const data = {
         project_id: projectId,
         invoice_date: invoiceDate,
@@ -340,7 +360,13 @@ export async function createInvoice(e) {
         client_email: clientEmail || null,
         client_address: clientAddress || null,
         notes: notes || null,
-        description: description || null
+        description: description || null,
+        items: createInvoiceItems.map(item => ({
+            description: item.description,
+            work_date: item.work_date,
+            hours: item.hours,
+            rate: item.rate
+        }))
     };
 
     console.log('Invoice data:', data);
@@ -358,6 +384,236 @@ export async function createInvoice(e) {
         }
     } catch (error) {
         window.notify.error('Failed to create invoice: ' + error.message);
+    }
+}
+
+/**
+ * Display items in the create invoice modal
+ */
+function displayCreateInvoiceItems() {
+    const container = document.getElementById('create-invoice-items-table');
+
+    if (!createInvoiceItems || createInvoiceItems.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state-small">
+                <i class="fas fa-info-circle"></i>
+                <p>No items added yet</p>
+                <p style="font-size: 12px; margin-top: 8px;">Click "Add Item" to add line items to this invoice</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = `
+        <table class="invoice-items-table-element">
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Date</th>
+                    <th>Hours/Qty</th>
+                    <th>Rate</th>
+                    <th>Amount</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${createInvoiceItems.map(item => {
+                    const amount = item.hours * item.rate;
+                    return `
+                        <tr>
+                            <td>${item.description}</td>
+                            <td>${new Date(item.work_date).toLocaleDateString()}</td>
+                            <td>${parseFloat(item.hours).toFixed(2)}</td>
+                            <td>$${parseFloat(item.rate).toFixed(2)}</td>
+                            <td>$${amount.toFixed(2)}</td>
+                            <td>
+                                <button class="btn btn-sm btn-secondary" onclick="editCreateInvoiceItem(${item.tempId})" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteCreateInvoiceItem(${item.tempId})" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('')}
+            </tbody>
+        </table>
+    `;
+}
+
+/**
+ * Update totals in the create invoice modal
+ */
+function updateCreateInvoiceTotals() {
+    const projectSelect = document.getElementById('invoice-project-id');
+    const project = projectSelect ? createInvoiceProjects.find(p => String(p.id) === projectSelect.value) : null;
+    const taxRate = project && project.has_tax ? 13 : 0;
+
+    const subtotal = createInvoiceItems.reduce((sum, item) => sum + (item.hours * item.rate), 0);
+    const taxAmount = subtotal * (taxRate / 100);
+    const total = subtotal + taxAmount;
+
+    document.getElementById('create-invoice-subtotal').textContent = '$' + subtotal.toFixed(2);
+    document.getElementById('create-invoice-tax-rate').textContent = taxRate.toFixed(0);
+    document.getElementById('create-invoice-tax-amount').textContent = '$' + taxAmount.toFixed(2);
+    document.getElementById('create-invoice-total').textContent = '$' + total.toFixed(2);
+}
+
+/**
+ * Show add item modal for create invoice mode
+ */
+export function showAddItemModalForCreate() {
+    const projectId = document.getElementById('invoice-project-id').value;
+    if (!projectId) {
+        window.notify.error('Please select a project first');
+        return;
+    }
+
+    const project = createInvoiceProjects.find(p => String(p.id) === projectId);
+
+    // Attach form submit handler (only once)
+    const form = document.getElementById('add-item-form');
+    if (form && !form.dataset.listenerAttached) {
+        form.addEventListener('submit', saveInvoiceItem);
+        form.dataset.listenerAttached = 'true';
+    }
+
+    // Reset form for new item
+    currentEditingItem = null;
+    document.getElementById('add-item-modal-title').textContent = 'Add Invoice Item';
+    document.getElementById('item-id').value = '';
+    document.getElementById('item-invoice-id').value = 'create';
+    document.getElementById('add-item-form').reset();
+
+    // Set default work date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('item-work-date').value = today;
+
+    // Set default rate from project
+    if (project) {
+        document.getElementById('item-rate').value = parseFloat(project.hourly_rate || 0).toFixed(2);
+    }
+
+    // Show modal
+    document.getElementById('add-item-modal').classList.add('show');
+    document.getElementById('modal-overlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+/**
+ * Edit an item in create invoice mode
+ */
+export function editCreateInvoiceItem(tempId) {
+    const item = createInvoiceItems.find(i => i.tempId === tempId);
+    if (!item) return;
+
+    currentEditingItem = item;
+    document.getElementById('add-item-modal-title').textContent = 'Edit Invoice Item';
+    document.getElementById('item-id').value = tempId;
+    document.getElementById('item-invoice-id').value = 'create';
+    document.getElementById('item-description').value = item.description;
+    document.getElementById('item-work-date').value = item.work_date;
+    document.getElementById('item-hours').value = parseFloat(item.hours).toFixed(2);
+    document.getElementById('item-rate').value = parseFloat(item.rate).toFixed(2);
+    document.getElementById('item-amount').value = (item.hours * item.rate).toFixed(2);
+
+    // Show modal
+    document.getElementById('add-item-modal').classList.add('show');
+    document.getElementById('modal-overlay').classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+/**
+ * Delete an item from create invoice mode
+ */
+export function deleteCreateInvoiceItem(tempId) {
+    if (!confirm('Are you sure you want to delete this item?')) {
+        return;
+    }
+
+    createInvoiceItems = createInvoiceItems.filter(i => i.tempId !== tempId);
+    displayCreateInvoiceItems();
+    updateCreateInvoiceTotals();
+    window.notify.success('Item deleted');
+}
+
+/**
+ * Generate professional email body with payment instructions
+ */
+async function generateInvoiceEmailBody(invoice) {
+    try {
+        // Get settings with payment instructions
+        const settingsResponse = await window.api.request('/api/settings');
+        const settings = settingsResponse.data || {};
+
+        const companyName = invoice.company_name || settings.invoice_company_name || window.utils?.appName || 'Your Company';
+
+        // Calculate current month bill period
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+        const formatDate = (date) => {
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+        };
+
+        const startDate = formatDate(startOfMonth);
+        const endDate = formatDate(endOfMonth);
+        const dueDate = invoice.formatted_due_date || invoice.due_date;
+
+        // Build email body
+        let body = `Thank you for choosing ${companyName}. The invoice for bill period (${startDate} - ${endDate}) is attached.\n\n`;
+        body += `The total amount $${parseFloat(invoice.total).toFixed(2)} will be due on ${dueDate}.\n\n`;
+
+        // Add payment instructions
+        let hasPaymentInfo = false;
+        body += 'Payment Instructions:\n';
+        let instructionNumber = 1;
+
+        // E-Transfer
+        if (settings.payment_etransfer_email) {
+            body += `${instructionNumber}. By Interac e-Transfer\n`;
+            body += `   Send to: ${settings.payment_etransfer_email}\n`;
+            body += `   Reference: Invoice ${invoice.invoice_number}\n\n`;
+            instructionNumber++;
+            hasPaymentInfo = true;
+        }
+
+        // Direct Deposit
+        if (settings.payment_bank_info) {
+            body += `${instructionNumber}. By Direct Deposit\n`;
+            const bankLines = settings.payment_bank_info.split('\n');
+            bankLines.forEach(line => {
+                if (line.trim()) {
+                    body += `   ${line.trim()}\n`;
+                }
+            });
+            body += '\n';
+            instructionNumber++;
+            hasPaymentInfo = true;
+        }
+
+        // Additional instructions
+        if (settings.payment_instructions) {
+            body += `${instructionNumber}. ${settings.payment_instructions}\n\n`;
+            instructionNumber++;
+            hasPaymentInfo = true;
+        }
+
+        // If no payment info is configured in settings, show a reminder
+        if (!hasPaymentInfo) {
+            body += 'Please configure payment instructions in Settings.\n\n';
+        }
+
+        body += "If you have any questions, please don't hesitate to contact us.\n\n";
+        body += `Best regards,\n${companyName}`;
+
+        return body;
+    } catch (error) {
+        console.error('Failed to generate email body:', error);
+        return `Dear ${invoice.client_name || 'Client'},\n\nPlease find attached invoice ${invoice.invoice_number}.\n\nThank you for your business!`;
     }
 }
 
@@ -389,8 +645,10 @@ export async function showSendInvoiceModal(invoiceId) {
             document.getElementById('send-invoice-email').value = response.client_email || '';
             document.getElementById('send-invoice-subject').value =
                 `Invoice ${response.invoice_number} from ${companyName}`;
-            document.getElementById('send-invoice-message').value =
-                `Dear ${response.client_name},\n\nPlease find attached invoice ${response.invoice_number} from ${companyName} for your review.\n\nThank you for your business!`;
+
+            // Generate and pre-fill the email message
+            const emailBody = await generateInvoiceEmailBody(response);
+            document.getElementById('send-invoice-message').value = emailBody;
 
             document.getElementById('send-invoice-modal').classList.add('show');
             document.getElementById('modal-overlay').classList.add('show');
@@ -436,9 +694,12 @@ export async function sendInvoice(e) {
         });
 
         if (response) {
-            window.notify.success('Invoice sent successfully!');
             hideSendInvoiceModal();
             loadInvoices();
+            // Show success message AFTER closing modal and reloading
+            setTimeout(() => {
+                window.notify.success('Invoice sent successfully!');
+            }, 100);
         }
     } catch (error) {
         window.notify.error('Failed to send invoice: ' + error.message);
@@ -765,6 +1026,52 @@ export async function saveInvoiceItem(e) {
         rate: parseFloat(document.getElementById('item-rate').value)
     };
 
+    // Validate
+    if (!data.description) {
+        window.notify.error('Description is required');
+        return;
+    }
+    if (!data.work_date) {
+        window.notify.error('Work date is required');
+        return;
+    }
+    if (isNaN(data.hours) || data.hours <= 0) {
+        window.notify.error('Hours must be greater than 0');
+        return;
+    }
+    if (isNaN(data.rate) || data.rate < 0) {
+        window.notify.error('Rate must be 0 or greater');
+        return;
+    }
+
+    // Handle create mode (temporary storage)
+    if (invoiceId === 'create') {
+        if (itemId) {
+            // Edit existing temp item
+            const tempId = parseInt(itemId);
+            const item = createInvoiceItems.find(i => i.tempId === tempId);
+            if (item) {
+                item.description = data.description;
+                item.work_date = data.work_date;
+                item.hours = data.hours;
+                item.rate = data.rate;
+                window.notify.success('Item updated');
+            }
+        } else {
+            // Add new temp item
+            createInvoiceItems.push({
+                tempId: createItemIdCounter++,
+                ...data
+            });
+            window.notify.success('Item added');
+        }
+        hideAddItemModal();
+        displayCreateInvoiceItems();
+        updateCreateInvoiceTotals();
+        return;
+    }
+
+    // Handle edit mode (API calls)
     try {
         if (itemId) {
             // Update existing item (not implemented in controller yet, so treat as add)

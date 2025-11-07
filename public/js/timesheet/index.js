@@ -80,6 +80,9 @@ window.showAddItemModal = Invoices.showAddItemModal;
 window.hideAddItemModal = Invoices.hideAddItemModal;
 window.calculateItemAmount = Invoices.calculateItemAmount;
 window.deleteInvoiceItem = Invoices.deleteInvoiceItem;
+window.showAddItemModalForCreate = Invoices.showAddItemModalForCreate;
+window.editCreateInvoiceItem = Invoices.editCreateInvoiceItem;
+window.deleteCreateInvoiceItem = Invoices.deleteCreateInvoiceItem;
 
 // Settings functions
 window.showSettingsModal = showSettingsModal;

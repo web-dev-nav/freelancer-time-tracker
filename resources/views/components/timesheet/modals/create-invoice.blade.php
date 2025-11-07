@@ -67,6 +67,40 @@
                           placeholder="Billing address, if needed"></textarea>
             </div>
 
+            {{-- Invoice Items Section --}}
+            <div class="invoice-items-section">
+                <div class="section-header">
+                    <h4><i class="fas fa-list"></i> Invoice Items</h4>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="showAddItemModalForCreate()">
+                        <i class="fas fa-plus"></i> Add Item
+                    </button>
+                </div>
+
+                <div class="invoice-items-table" id="create-invoice-items-table">
+                    <div class="empty-state-small">
+                        <i class="fas fa-info-circle"></i>
+                        <p>No items added yet</p>
+                        <p style="font-size: 12px; margin-top: 8px;">Click "Add Item" to add line items to this invoice</p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Totals Display --}}
+            <div class="invoice-totals-display">
+                <div class="totals-row">
+                    <span>Subtotal:</span>
+                    <strong id="create-invoice-subtotal">$0.00</strong>
+                </div>
+                <div class="totals-row">
+                    <span>Tax (<span id="create-invoice-tax-rate">0</span>%):</span>
+                    <strong id="create-invoice-tax-amount">$0.00</strong>
+                </div>
+                <div class="totals-row totals-total">
+                    <span>Total:</span>
+                    <strong id="create-invoice-total">$0.00</strong>
+                </div>
+            </div>
+
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label" for="invoice-notes">
