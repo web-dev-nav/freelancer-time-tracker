@@ -29,6 +29,11 @@ class InvoiceController extends Controller
     {
         $query = Invoice::with('project');
 
+        // Hide cancelled invoices by default (unless specifically requested)
+        if (!$request->has('show_cancelled') || $request->show_cancelled != 'true') {
+            $query->where('status', '!=', 'cancelled');
+        }
+
         // Filter by project
         if ($request->has('project_id') && $request->project_id != 'all') {
             $query->where('project_id', $request->project_id);
@@ -508,6 +513,45 @@ class InvoiceController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Failed to update invoice',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Cancel/Archive invoice
+     */
+    public function cancel($id)
+    {
+        $invoice = Invoice::findOrFail($id);
+
+        if ($invoice->status === 'cancelled') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invoice is already cancelled'
+            ], 400);
+        }
+
+        if ($invoice->status === 'paid') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot cancel a paid invoice'
+            ], 400);
+        }
+
+        try {
+            $invoice->markAsCancelled();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Invoice cancelled successfully',
+                'invoice' => $invoice
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to cancel invoice',
                 'error' => $e->getMessage()
             ], 500);
         }

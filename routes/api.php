@@ -80,6 +80,7 @@ Route::prefix('invoices')->name('invoices.api.')->group(function () {
     // Actions
     Route::post('/{id}/send-email', [InvoiceController::class, 'sendEmail'])->name('send-email');
     Route::post('/{id}/mark-as-paid', [InvoiceController::class, 'markAsPaid'])->name('mark-as-paid');
+    Route::post('/{id}/cancel', [InvoiceController::class, 'cancel'])->name('cancel');
 
     // PDF generation
     Route::get('/{id}/pdf/download', [InvoiceController::class, 'downloadPdf'])->name('pdf-download');

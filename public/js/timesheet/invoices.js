@@ -169,6 +169,11 @@ export function displayInvoices(invoices) {
                             <i class="fas fa-trash"></i>
                         </button>
                     ` : ''}
+                    ${(invoice.status === 'sent' || invoice.status === 'draft') ? `
+                        <button class="btn btn-sm btn-warning" onclick="cancelInvoice(${invoice.id})" title="Cancel Invoice">
+                            <i class="fas fa-ban"></i>
+                        </button>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -796,6 +801,30 @@ export async function markInvoiceAsPaid(invoiceId) {
         }
     } catch (error) {
         window.notify.error('Failed to update invoice: ' + error.message);
+    }
+}
+
+/**
+ * Cancel/Archive invoice
+ */
+export async function cancelInvoice(invoiceId) {
+    if (!confirm('Cancel this invoice? This will archive it and stop all reminders. The invoice will be hidden from the active list.')) {
+        return;
+    }
+
+    try {
+        const response = await window.api.request(`/api/invoices/${invoiceId}/cancel`, {
+            method: 'POST'
+        });
+
+        if (response && response.success) {
+            window.notify.success('Invoice cancelled successfully!');
+            loadInvoices();
+        } else {
+            window.notify.error(response.message || 'Failed to cancel invoice');
+        }
+    } catch (error) {
+        window.notify.error('Failed to cancel invoice: ' + error.message);
     }
 }
 

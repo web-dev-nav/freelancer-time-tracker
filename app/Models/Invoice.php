@@ -30,6 +30,7 @@ class Invoice extends Model
         'description',
         'sent_at',
         'paid_at',
+        'cancelled_at',
     ];
 
     protected $casts = [

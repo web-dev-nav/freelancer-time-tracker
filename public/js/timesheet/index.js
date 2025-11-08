@@ -72,6 +72,7 @@ window.sendInvoice = Invoices.sendInvoice;
 window.downloadInvoicePDF = Invoices.downloadInvoicePDF;
 window.previewInvoicePDF = Invoices.previewInvoicePDF;
 window.markInvoiceAsPaid = Invoices.markInvoiceAsPaid;
+window.cancelInvoice = Invoices.cancelInvoice;
 window.deleteInvoice = Invoices.deleteInvoice;
 window.showEditInvoiceModal = Invoices.showEditInvoiceModal;
 window.hideEditInvoiceModal = Invoices.hideEditInvoiceModal;
