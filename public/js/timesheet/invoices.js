@@ -215,12 +215,12 @@ export function displayInvoices(invoices) {
                     <button class="btn btn-sm btn-secondary" onclick="previewInvoicePDF(${invoice.id})" title="Preview PDF">
                         <i class="fas fa-eye"></i>
                     </button>
-                    ${invoice.status !== 'paid' ? `
+                    ${(invoice.status !== 'paid' && invoice.status !== 'cancelled') ? `
                         <button class="btn btn-sm btn-primary" onclick="showSendInvoiceModal(${invoice.id})" title="Send via Email">
                             <i class="fas fa-paper-plane"></i>
                         </button>
                     ` : ''}
-                    ${invoice.status !== 'paid' ? `
+                    ${(invoice.status !== 'paid' && invoice.status !== 'cancelled') ? `
                         <button class="btn btn-sm btn-success" onclick="markInvoiceAsPaid(${invoice.id})" title="Mark as Paid">
                             <i class="fas fa-check"></i>
                         </button>
