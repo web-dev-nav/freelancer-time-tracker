@@ -109,7 +109,7 @@ export function displayInvoices(invoices) {
 
         const isOverdue = invoice.is_overdue;
 
-        const isScheduled = invoice.scheduled_send_at && !invoice.sent_at;
+        const isScheduled = invoice.scheduled_send_at && !invoice.sent_at && invoice.status !== 'cancelled';
 
         return `
             <div class="invoice-card" style="background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); border-left: 4px solid ${

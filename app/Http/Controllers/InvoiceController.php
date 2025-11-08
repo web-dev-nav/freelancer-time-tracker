@@ -529,6 +529,12 @@ class InvoiceController extends Controller
         try {
             $invoice->markAsPaid();
 
+            // Clear scheduled send if it was scheduled
+            if ($invoice->scheduled_send_at) {
+                $invoice->scheduled_send_at = null;
+                $invoice->save();
+            }
+
             return response()->json([
                 'message' => 'Invoice marked as paid',
                 'invoice' => $invoice
@@ -565,6 +571,12 @@ class InvoiceController extends Controller
 
         try {
             $invoice->markAsCancelled();
+
+            // Clear scheduled send if it was scheduled
+            if ($invoice->scheduled_send_at) {
+                $invoice->scheduled_send_at = null;
+                $invoice->save();
+            }
 
             return response()->json([
                 'success' => true,

@@ -3,6 +3,9 @@
  *
  * This file imports all modules and exports their functions to the global window object
  * for compatibility with existing HTML onclick attributes and inline event handlers.
+ *
+ * Note: Cache busting is handled by timestamp in blade template (index.js?v={{ time() }})
+ * This forces browser to reload index.js and all its module dependencies including invoices.js
  */
 
 // Import all modules
