@@ -83,7 +83,9 @@ class SendScheduledInvoiceEmails extends Command
                 // Email subject and body
                 $defaultCompanyName = $companySettings['invoice_company_name'] ?? config('app.name');
                 $subject = "Invoice {$invoice->invoice_number} from " . $defaultCompanyName;
-                $message = "Please find attached invoice {$invoice->invoice_number}.";
+
+                // Generate detailed message with payment instructions (same as regular send)
+                $message = $this->generateInvoiceEmailMessage($invoice, $companySettings);
                 $htmlMessage = $this->convertToHtmlEmail($message);
 
                 // Send email
@@ -192,6 +194,77 @@ class SendScheduledInvoiceEmails extends Command
             'from_address' => $emailSettings['email_from_address'] ?? config('mail.from.address'),
             'from_name' => $emailSettings['email_from_name'] ?? config('mail.from.name'),
         ];
+    }
+
+    /**
+     * Generate invoice email message with payment instructions
+     */
+    private function generateInvoiceEmailMessage(Invoice $invoice, array $companySettings): string
+    {
+        $paymentSettings = Setting::whereIn('key', [
+            'payment_etransfer_email',
+            'payment_bank_info',
+            'payment_instructions',
+        ])->pluck('value', 'key')->toArray();
+
+        $companyName = $companySettings['invoice_company_name'] ?? config('app.name');
+
+        // Calculate current month bill period
+        $now = Carbon::now();
+        $startOfMonth = $now->copy()->startOfMonth();
+        $endOfMonth = $now->copy()->endOfMonth();
+        $startDate = $startOfMonth->format('M d, Y');
+        $endDate = $endOfMonth->format('M d, Y');
+        $dueDate = $invoice->due_date ? $invoice->due_date->format('M d, Y') : 'N/A';
+
+        // Build email body
+        $body = "Thank you for choosing {$companyName}. The invoice for bill period ({$startDate} - {$endDate}) is attached.\n\n";
+        $body .= "The total amount $" . number_format($invoice->total, 2) . " will be due on {$dueDate}.\n\n";
+
+        // Add payment instructions
+        $hasPaymentInfo = false;
+        $body .= "Payment Instructions:\n";
+        $instructionNumber = 1;
+
+        // E-Transfer
+        if (!empty($paymentSettings['payment_etransfer_email'])) {
+            $body .= "{$instructionNumber}. By Interac e-Transfer\n";
+            $body .= "   Send to: {$paymentSettings['payment_etransfer_email']}\n";
+            $body .= "   Reference: Invoice {$invoice->invoice_number}\n\n";
+            $instructionNumber++;
+            $hasPaymentInfo = true;
+        }
+
+        // Direct Deposit
+        if (!empty($paymentSettings['payment_bank_info'])) {
+            $body .= "{$instructionNumber}. By Direct Deposit\n";
+            $bankLines = explode("\n", $paymentSettings['payment_bank_info']);
+            foreach ($bankLines as $line) {
+                if (trim($line)) {
+                    $body .= "   " . trim($line) . "\n";
+                }
+            }
+            $body .= "\n";
+            $instructionNumber++;
+            $hasPaymentInfo = true;
+        }
+
+        // Additional instructions
+        if (!empty($paymentSettings['payment_instructions'])) {
+            $body .= "{$instructionNumber}. {$paymentSettings['payment_instructions']}\n\n";
+            $instructionNumber++;
+            $hasPaymentInfo = true;
+        }
+
+        // If no payment info is configured in settings, show a reminder
+        if (!$hasPaymentInfo) {
+            $body .= "Please configure payment instructions in Settings.\n\n";
+        }
+
+        $body .= "If you have any questions, please don't hesitate to contact us.\n\n";
+        $body .= "Best regards,\n{$companyName}";
+
+        return $body;
     }
 
     /**

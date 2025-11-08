@@ -158,10 +158,10 @@ export function displayInvoices(invoices) {
 
                     ${isScheduled ? `
                         <div style="padding: 10px 12px; background: linear-gradient(135deg, #f3e8ff, #e9d5ff); border-radius: 6px; margin-bottom: 12px; border-left: 3px solid #8b5cf6;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                                 <i class="fas fa-clock" style="color: #7c3aed; font-size: 16px;"></i>
                                 <div>
-                                    <div style="font-size: 10px; color: #6b21a8; text-transform: uppercase; font-weight: 700; margin-bottom: 2px; letter-spacing: 0.5px;">Scheduled to Send</div>
+                                    <div style="font-size: 10px; color: #6b21a8; text-transform: uppercase; font-weight: 700; margin-bottom: 2px; letter-spacing: 0.5px;">Scheduled Time</div>
                                     <div style="font-size: 14px; font-weight: 700; color: #581c87;">${new Date(invoice.scheduled_send_at).toLocaleString('en-US', {
                                         year: 'numeric',
                                         month: 'short',
@@ -170,6 +170,26 @@ export function displayInvoices(invoices) {
                                         minute: '2-digit',
                                         hour12: true
                                     })}</div>
+                                </div>
+                            </div>
+                            <div style="padding: 6px 8px; background: rgba(59, 130, 246, 0.15); border-radius: 4px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-paper-plane" style="color: #3b82f6; font-size: 12px;"></i>
+                                <div style="font-size: 11px; color: #1e40af;">
+                                    <strong>Will send at:</strong> ${(() => {
+                                        const scheduled = new Date(invoice.scheduled_send_at);
+                                        const minutes = scheduled.getMinutes();
+                                        const nextInterval = Math.ceil(minutes / 5) * 5;
+                                        const triggerTime = new Date(scheduled);
+                                        triggerTime.setMinutes(nextInterval);
+                                        triggerTime.setSeconds(0);
+                                        return triggerTime.toLocaleString('en-US', {
+                                            month: 'short',
+                                            day: 'numeric',
+                                            hour: 'numeric',
+                                            minute: '2-digit',
+                                            hour12: true
+                                        });
+                                    })()}
                                 </div>
                             </div>
                         </div>
@@ -1306,6 +1326,63 @@ export async function deleteInvoiceItem(itemId) {
 }
 
 /**
+ * Calculate next cron trigger time (next 5-minute interval)
+ */
+function getNextCronTrigger(scheduledTime) {
+    const scheduled = new Date(scheduledTime);
+    const minutes = scheduled.getMinutes();
+
+    // Round up to next 5-minute interval
+    const nextInterval = Math.ceil(minutes / 5) * 5;
+
+    const triggerTime = new Date(scheduled);
+    triggerTime.setMinutes(nextInterval);
+    triggerTime.setSeconds(0);
+    triggerTime.setMilliseconds(0);
+
+    // If we're already past this interval in the same hour, it's the right time
+    // Otherwise if rounding brought us to :00 of next hour, that's correct too
+    return triggerTime;
+}
+
+/**
+ * Update trigger time preview
+ */
+function updateTriggerTimePreview() {
+    const scheduledInput = document.getElementById('scheduled-send-at');
+    const previewDiv = document.getElementById('trigger-time-preview');
+
+    if (!scheduledInput || !previewDiv) return;
+
+    if (scheduledInput.value) {
+        const triggerTime = getNextCronTrigger(scheduledInput.value);
+        const formattedTime = triggerTime.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+
+        previewDiv.innerHTML = `
+            <div style="padding: 10px 12px; background: #dbeafe; border-radius: 6px; border-left: 3px solid #3b82f6;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-info-circle" style="color: #1e40af; font-size: 14px;"></i>
+                    <div>
+                        <div style="font-size: 10px; color: #1e40af; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Email will be sent at</div>
+                        <div style="font-size: 13px; font-weight: 700; color: #1e3a8a;">${formattedTime}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        previewDiv.style.display = 'block';
+    } else {
+        previewDiv.style.display = 'none';
+    }
+}
+
+/**
  * Toggle scheduled send visibility
  */
 export function toggleScheduleSend() {
@@ -1325,8 +1402,17 @@ export function toggleScheduleSend() {
         const oneHourLater = new Date(Date.now() + 60 * 60 * 1000);
         oneHourLater.setMinutes(oneHourLater.getMinutes() - oneHourLater.getTimezoneOffset());
         scheduledInput.value = oneHourLater.toISOString().slice(0, 16);
+
+        // Add event listener for time changes
+        scheduledInput.removeEventListener('change', updateTriggerTimePreview);
+        scheduledInput.addEventListener('change', updateTriggerTimePreview);
+
+        // Show initial preview
+        updateTriggerTimePreview();
     } else {
         scheduleGroup.style.display = 'none';
         scheduledInput.value = '';
+        const previewDiv = document.getElementById('trigger-time-preview');
+        if (previewDiv) previewDiv.style.display = 'none';
     }
 }

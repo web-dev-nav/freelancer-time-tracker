@@ -59,8 +59,11 @@
                 </label>
                 <input type="datetime-local" id="scheduled-send-at" class="form-control">
                 <small style="color: var(--text-secondary); display: block; margin-top: 4px;">
-                    <i class="fas fa-info-circle"></i> Invoice will be sent automatically at the scheduled time (runs every 5 minutes)
+                    <i class="fas fa-info-circle"></i> Cron runs every 5 minutes. Email will be sent at the next 5-minute interval.
                 </small>
+
+                <!-- Trigger Time Preview -->
+                <div id="trigger-time-preview" style="display: none; margin-top: 10px;"></div>
             </div>
 
             <div class="alert alert-warning" style="margin: 0;">
