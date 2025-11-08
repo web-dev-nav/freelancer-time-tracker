@@ -141,35 +141,53 @@
                             {{-- Hostinger Instructions --}}
                             <div style="background: #f0fdf4; padding: 15px; border-radius: 6px; border: 2px solid #10b981; margin-top: 10px;">
                                 <strong style="color: #065f46; font-size: 15px; display: block; margin-bottom: 12px;">
-                                    <i class="fas fa-server" style="color: #10b981;"></i> ✅ HOSTINGER - Simple 3-Step Setup
+                                    <i class="fas fa-server" style="color: #10b981;"></i> ✅ HOSTINGER - Simple 4-Step Setup
                                 </strong>
 
                                 <div style="background: white; padding: 12px; border-radius: 4px; margin-bottom: 10px;">
                                     <strong style="color: #1f2937; display: block; margin-bottom: 8px;">📍 Step 1: Go to Cron Jobs</strong>
                                     <p style="margin: 0; color: #4b5563; font-size: 13px; line-height: 1.5;">
-                                        Login to <strong>Hostinger hPanel</strong> → Click <strong>"Advanced"</strong> → Click <strong>"Cron Jobs"</strong>
+                                        Login to <strong>Hostinger hPanel</strong> → Your Website → <strong>"Advanced"</strong> → <strong>"Cron Jobs"</strong>
                                     </p>
                                 </div>
 
                                 <div style="background: white; padding: 12px; border-radius: 4px; margin-bottom: 10px;">
-                                    <strong style="color: #1f2937; display: block; margin-bottom: 8px;">⚙️ Step 2: Configure Cron Job</strong>
-                                    <ul style="margin: 5px 0 0 20px; color: #4b5563; font-size: 13px; line-height: 1.6; padding-left: 0;">
-                                        <li style="margin-bottom: 6px;">Click <strong>"Create Cron Job"</strong></li>
-                                        <li style="margin-bottom: 6px;">Schedule: Select <strong>"Every Minute"</strong> or enter <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 3px;">* * * * *</code></li>
-                                        <li style="margin-bottom: 6px;">Type: Select <strong>"Run via URL"</strong> ⚠️ IMPORTANT!</li>
-                                    </ul>
+                                    <strong style="color: #1f2937; display: block; margin-bottom: 8px;">⚙️ Step 2: Select "Custom"</strong>
+                                    <p style="margin: 0; color: #4b5563; font-size: 13px; line-height: 1.5;">
+                                        At the top, change from <strong>"PHP"</strong> to <strong>"Custom"</strong>
+                                    </p>
+                                </div>
+
+                                <div style="background: white; padding: 12px; border-radius: 4px; margin-bottom: 10px;">
+                                    <strong style="color: #1f2937; display: block; margin-bottom: 8px;">⏰ Step 3: Set Schedule to Every Minute</strong>
+                                    <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 13px;">
+                                        Set all dropdowns to show an asterisk <strong>*</strong>:
+                                    </p>
+                                    <div style="background: #f9fafb; padding: 8px; border-radius: 4px; border: 1px solid #e5e7eb;">
+                                        <code style="color: #1f2937; font-size: 12px;">Minute: *  |  Hour: *  |  Day: *  |  Month: *  |  Weekday: *</code>
+                                    </div>
                                 </div>
 
                                 <div style="background: white; padding: 12px; border-radius: 4px;">
-                                    <strong style="color: #1f2937; display: block; margin-bottom: 8px;">🔗 Step 3: Paste This URL</strong>
-                                    <code style="display: block; background: #1f2937; color: #10b981; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 11px; word-break: break-all; border: 2px solid #10b981; font-weight: bold;">{{ $cronUrl }}</code>
-                                    <button onclick="navigator.clipboard.writeText('{{ $cronUrl }}')" style="margin-top: 8px; background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
-                                        <i class="fas fa-copy"></i> Copy URL
+                                    <strong style="color: #1f2937; display: block; margin-bottom: 8px;">🔗 Step 4: Paste This Command</strong>
+                                    <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 13px;">
+                                        In the <strong>"Command to run"</strong> field, paste this:
+                                    </p>
+                                    <code style="display: block; background: #1f2937; color: #10b981; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 10px; word-break: break-all; border: 2px solid #10b981; font-weight: bold; margin-bottom: 8px;">curl -s "{{ $cronUrl }}"</code>
+                                    <button onclick="navigator.clipboard.writeText('curl -s \"{{ $cronUrl }}\"')" style="background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500; margin-bottom: 12px;">
+                                        <i class="fas fa-copy"></i> Copy Command
+                                    </button>
+                                    <p style="margin: 8px 0 4px 0; color: #6b7280; font-size: 12px;">
+                                        <strong>Alternative (if curl doesn't work):</strong>
+                                    </p>
+                                    <code style="display: block; background: #1f2937; color: #10b981; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 10px; word-break: break-all; border: 2px solid #10b981; margin-bottom: 8px;">wget -q -O - "{{ $cronUrl }}"</code>
+                                    <button onclick="navigator.clipboard.writeText('wget -q -O - \"{{ $cronUrl }}\"')" style="background: #059669; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
+                                        <i class="fas fa-copy"></i> Copy wget Command
                                     </button>
                                 </div>
 
                                 <p style="margin: 12px 0 0 0; color: #065f46; font-size: 13px; font-weight: 600; text-align: center;">
-                                    <i class="fas fa-check-circle"></i> Done! Reminders will automatically send daily at 9:00 AM
+                                    <i class="fas fa-check-circle"></i> Click "Create" - Done! Reminders will send daily at 9:00 AM
                                 </p>
                             </div>
 
