@@ -54,6 +54,7 @@
                     <option value="draft">Draft</option>
                     <option value="sent">Sent</option>
                     <option value="paid">Paid</option>
+                    <option value="cancelled">Cancelled</option>
                 </select>
                 <button class="btn btn-primary" onclick="showCreateInvoiceModal()">
                     <i class="fas fa-plus"></i>

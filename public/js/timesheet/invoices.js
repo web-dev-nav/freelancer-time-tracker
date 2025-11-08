@@ -47,9 +47,11 @@ export async function loadInvoices() {
     try {
         const status = document.getElementById('invoice-status-filter')?.value || 'all';
         const projectId = State.selectedProjectId || 'all';
+        // Show cancelled invoices when "all" or "cancelled" status is selected
+        const showCancelled = status === 'all' || status === 'cancelled';
 
         const response = await window.api.request(
-            `/api/invoices?project_id=${projectId}&status=${status}&per_page=50`
+            `/api/invoices?project_id=${projectId}&status=${status}&show_cancelled=${showCancelled}&per_page=50`
         );
 
         if (response.data) {
@@ -102,47 +104,106 @@ export function displayInvoices(invoices) {
     list.innerHTML = invoices.map(invoice => {
         const statusClass = invoice.status === 'paid' ? 'success' :
                           invoice.status === 'sent' ? 'warning' :
-                          invoice.status === 'draft' ? 'secondary' : 'danger';
+                          invoice.status === 'draft' ? 'secondary' :
+                          invoice.status === 'cancelled' ? 'dark' : 'danger';
 
         const isOverdue = invoice.is_overdue;
 
         return `
-            <div class="invoice-card">
-                <div class="invoice-card-header">
-                    <div>
-                        <h3>${invoice.invoice_number}</h3>
-                        <p class="invoice-client">${invoice.client_name}</p>
+            <div class="invoice-card" style="background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); border-left: 4px solid ${
+                invoice.status === 'paid' ? '#10b981' :
+                invoice.status === 'sent' ? '#f59e0b' :
+                invoice.status === 'cancelled' ? '#ef4444' :
+                isOverdue ? '#dc2626' : '#6b7280'
+            }; margin-bottom: 16px; transition: box-shadow 0.2s;">
+
+                <div class="invoice-card-header" style="padding: 16px; border-bottom: 1px solid #f3f4f6;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                        <div>
+                            <h3 style="font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 4px 0;">${invoice.invoice_number}</h3>
+                            <span class="badge badge-${statusClass}" style="font-size: 11px; padding: 4px 8px;">
+                                ${isOverdue ? 'OVERDUE' : invoice.status.toUpperCase()}
+                            </span>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Total</div>
+                            <div style="font-size: 24px; font-weight: 800; color: #111827;">$${parseFloat(invoice.total).toFixed(2)}</div>
+                        </div>
                     </div>
-                    <div class="invoice-card-status">
-                        <span class="badge badge-${statusClass}">
-                            ${isOverdue ? 'Overdue' : invoice.status.toUpperCase()}
-                        </span>
-                        <div class="invoice-amount">$${parseFloat(invoice.total).toFixed(2)}</div>
+
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-user-circle" style="color: #6b7280; font-size: 16px;"></i>
+                        <div>
+                            <div style="font-size: 14px; font-weight: 600; color: #374151;">${invoice.client_name}</div>
+                            ${invoice.client_email ? `<div style="font-size: 12px; color: #9ca3af;">${invoice.client_email}</div>` : ''}
+                        </div>
                     </div>
                 </div>
 
-                <div class="invoice-card-body">
-                    <div class="invoice-detail">
-                        <i class="fas fa-calendar"></i>
-                        <span>Invoice Date: ${invoice.formatted_invoice_date || invoice.invoice_date}</span>
-                    </div>
-                    <div class="invoice-detail">
-                        <i class="fas fa-calendar-check"></i>
-                        <span>Due Date: ${invoice.formatted_due_date || invoice.due_date}</span>
-                    </div>
-                    <div class="invoice-detail">
-                        <i class="fas fa-folder"></i>
-                        <span>Project: ${invoice.project?.name || 'N/A'}</span>
-                    </div>
-                    ${invoice.sent_at ? `
+                <div class="invoice-card-body" style="padding: 16px;">
+                    ${invoice.description ? `
+                        <div style="padding: 10px 12px; background: #f9fafb; border-radius: 6px; margin-bottom: 12px;">
+                            <p style="margin: 0; color: #4b5563; font-size: 13px; font-style: italic;">${invoice.description}</p>
+                        </div>
+                    ` : ''}
+
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px;">
                         <div class="invoice-detail">
-                            <i class="fas fa-paper-plane"></i>
-                            <span>Sent: ${new Date(invoice.sent_at).toLocaleDateString()}</span>
+                            <i class="fas fa-calendar" style="color: #3b82f6;"></i>
+                            <span style="font-size: 13px; color: #6b7280;">Invoice: <strong style="color: #111827;">${invoice.formatted_invoice_date || invoice.invoice_date}</strong></span>
+                        </div>
+                        <div class="invoice-detail">
+                            <i class="fas fa-calendar-check" style="color: #f59e0b;"></i>
+                            <span style="font-size: 13px; color: #6b7280;">Due: <strong style="color: #111827;">${invoice.formatted_due_date || invoice.due_date}</strong></span>
+                        </div>
+                        <div class="invoice-detail">
+                            <i class="fas fa-folder" style="color: #8b5cf6;"></i>
+                            <span style="font-size: 13px; color: #6b7280;">Project: <strong style="color: #111827;">${invoice.project?.name || 'N/A'}</strong></span>
+                        </div>
+                        ${invoice.sent_at ? `
+                            <div class="invoice-detail">
+                                <i class="fas fa-paper-plane" style="color: #06b6d4;"></i>
+                                <span style="font-size: 13px; color: #6b7280;">Sent: <strong style="color: #111827;">${new Date(invoice.sent_at).toLocaleDateString()}</strong></span>
+                            </div>
+                        ` : ''}
+                        ${invoice.paid_at ? `
+                            <div class="invoice-detail">
+                                <i class="fas fa-check-circle" style="color: #10b981;"></i>
+                                <span style="font-size: 13px; color: #6b7280;">Paid: <strong style="color: #111827;">${new Date(invoice.paid_at).toLocaleDateString()}</strong></span>
+                            </div>
+                        ` : ''}
+                        ${invoice.cancelled_at ? `
+                            <div class="invoice-detail">
+                                <i class="fas fa-ban" style="color: #ef4444;"></i>
+                                <span style="font-size: 13px; color: #6b7280;">Cancelled: <strong style="color: #111827;">${new Date(invoice.cancelled_at).toLocaleDateString()}</strong></span>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <div style="background: #f9fafb; border-radius: 6px; padding: 12px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                        <div>
+                            <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Subtotal</div>
+                            <div style="font-size: 16px; font-weight: 700; color: #374151;">$${parseFloat(invoice.subtotal || 0).toFixed(2)}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Tax (${parseFloat(invoice.tax_rate || 0).toFixed(0)}%)</div>
+                            <div style="font-size: 16px; font-weight: 700; color: #374151;">$${parseFloat(invoice.tax_amount || 0).toFixed(2)}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: #111827; text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">Total</div>
+                            <div style="font-size: 18px; font-weight: 800; color: #111827;">$${parseFloat(invoice.total).toFixed(2)}</div>
+                        </div>
+                    </div>
+
+                    ${invoice.notes ? `
+                        <div style="margin-top: 12px; padding: 10px 12px; background: #fffbeb; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                            <div style="font-size: 10px; color: #92400e; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.5px;">Note</div>
+                            <p style="margin: 0; color: #78350f; font-size: 13px; line-height: 1.5;">${invoice.notes}</p>
                         </div>
                     ` : ''}
                 </div>
 
-                <div class="invoice-card-actions">
+                <div class="invoice-card-actions" style="padding: 12px 16px; background: #f9fafb; border-top: 1px solid #e5e7eb; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end;">
                     ${invoice.status === 'draft' ? `
                         <button class="btn btn-sm btn-primary" onclick="showEditInvoiceModal(${invoice.id})" title="Edit Invoice">
                             <i class="fas fa-edit"></i>
