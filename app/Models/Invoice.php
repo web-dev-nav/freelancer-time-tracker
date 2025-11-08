@@ -111,6 +111,13 @@ class Invoice extends Model
         $this->save();
     }
 
+    public function markAsCancelled()
+    {
+        $this->status = 'cancelled';
+        $this->cancelled_at = Carbon::now();
+        $this->save();
+    }
+
     public function generateInvoiceNumber()
     {
         $date = Carbon::now();
