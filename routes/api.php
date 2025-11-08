@@ -70,6 +70,7 @@ Route::prefix('invoices')->name('invoices.api.')->group(function () {
     // CRUD operations
     Route::post('/', [InvoiceController::class, 'store'])->name('store');
     Route::get('/{id}', [InvoiceController::class, 'show'])->name('show');
+    Route::get('/{id}/history', [InvoiceController::class, 'history'])->name('history');
     Route::put('/{id}', [InvoiceController::class, 'update'])->name('update');
     Route::delete('/{id}', [InvoiceController::class, 'destroy'])->name('destroy');
 

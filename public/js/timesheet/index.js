@@ -78,6 +78,8 @@ window.previewInvoicePDF = Invoices.previewInvoicePDF;
 window.markInvoiceAsPaid = Invoices.markInvoiceAsPaid;
 window.cancelInvoice = Invoices.cancelInvoice;
 window.deleteInvoice = Invoices.deleteInvoice;
+window.showInvoiceHistory = Invoices.showInvoiceHistory;
+window.hideInvoiceHistoryModal = Invoices.hideInvoiceHistoryModal;
 window.showEditInvoiceModal = Invoices.showEditInvoiceModal;
 window.hideEditInvoiceModal = Invoices.hideEditInvoiceModal;
 window.saveInvoiceChanges = Invoices.saveInvoiceChanges;
@@ -133,6 +135,7 @@ function setupHistoryButtonListeners() {
             const openSendInvoiceModal = document.querySelector('#send-invoice-modal.show');
             const openEditInvoiceModal = document.querySelector('#edit-invoice-modal.show');
             const openAddItemModal = document.querySelector('#add-item-modal.show');
+            const openInvoiceHistoryModal = document.querySelector('#invoice-history-modal.show');
             const openSettingsModal = document.querySelector('#settings-modal.show');
 
             if (openEditModal && typeof window.hideEditLogModal === 'function') {
@@ -159,6 +162,9 @@ function setupHistoryButtonListeners() {
             } else if (openSendInvoiceModal && typeof window.hideSendInvoiceModal === 'function') {
                 e.preventDefault();
                 window.hideSendInvoiceModal();
+            } else if (openInvoiceHistoryModal && typeof window.hideInvoiceHistoryModal === 'function') {
+                e.preventDefault();
+                window.hideInvoiceHistoryModal();
             } else if (openSettingsModal && typeof window.hideSettingsModal === 'function') {
                 e.preventDefault();
                 window.hideSettingsModal();
@@ -207,6 +213,7 @@ function setupHistoryButtonListeners() {
             const sendInvoiceModal = target.closest('#send-invoice-modal');
             const editInvoiceModal = target.closest('#edit-invoice-modal');
             const addItemModal = target.closest('#add-item-modal');
+            const invoiceHistoryModal = target.closest('#invoice-history-modal');
             const settingsModal = target.closest('#settings-modal');
 
             if (editModal && typeof window.hideEditLogModal === 'function') {
@@ -225,6 +232,8 @@ function setupHistoryButtonListeners() {
                 window.hideCreateInvoiceModal();
             } else if (sendInvoiceModal && typeof window.hideSendInvoiceModal === 'function') {
                 window.hideSendInvoiceModal();
+            } else if (invoiceHistoryModal && typeof window.hideInvoiceHistoryModal === 'function') {
+                window.hideInvoiceHistoryModal();
             } else if (settingsModal && typeof window.hideSettingsModal === 'function') {
                 window.hideSettingsModal();
             }
@@ -304,6 +313,7 @@ function setupHistoryButtonListeners() {
             const openSendInvoiceModal = document.querySelector('#send-invoice-modal.show');
             const openEditInvoiceModal = document.querySelector('#edit-invoice-modal.show');
             const openAddItemModal = document.querySelector('#add-item-modal.show');
+            const openInvoiceHistoryModal = document.querySelector('#invoice-history-modal.show');
             const openSettingsModal = document.querySelector('#settings-modal.show');
 
             if (openEditModal && typeof window.hideEditLogModal === 'function') {
@@ -322,6 +332,8 @@ function setupHistoryButtonListeners() {
                 window.hideCreateInvoiceModal();
             } else if (openSendInvoiceModal && typeof window.hideSendInvoiceModal === 'function') {
                 window.hideSendInvoiceModal();
+            } else if (openInvoiceHistoryModal && typeof window.hideInvoiceHistoryModal === 'function') {
+                window.hideInvoiceHistoryModal();
             } else if (openSettingsModal && typeof window.hideSettingsModal === 'function') {
                 window.hideSettingsModal();
             }

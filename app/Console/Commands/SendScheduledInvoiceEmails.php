@@ -110,6 +110,13 @@ class SendScheduledInvoiceEmails extends Command
                 $invoice->scheduled_send_at = null;
                 $invoice->save();
 
+                // Log history
+                $invoice->logHistory('sent', 'Invoice email sent to ' . $invoice->client_email . ' (scheduled)', [
+                    'email' => $invoice->client_email,
+                    'subject' => $subject,
+                    'sent_via' => 'scheduled_cron',
+                ]);
+
                 $this->info("✓ Sent invoice {$invoice->invoice_number} to {$invoice->client_email}");
                 $sent++;
 

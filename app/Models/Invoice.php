@@ -64,6 +64,11 @@ class Invoice extends Model
         return $this->hasMany(InvoiceItem::class);
     }
 
+    public function history()
+    {
+        return $this->hasMany(InvoiceHistory::class)->orderBy('created_at', 'desc');
+    }
+
     // Scopes
     public function scopeDraft($query)
     {
@@ -140,6 +145,18 @@ class Invoice extends Model
         }
 
         return sprintf('INV-%s-%s-%04d', $year, $month, $newNumber);
+    }
+
+    /**
+     * Log a history event for this invoice
+     */
+    public function logHistory($action, $description = null, $metadata = [])
+    {
+        return $this->history()->create([
+            'action' => $action,
+            'description' => $description,
+            'metadata' => $metadata,
+        ]);
     }
 
     // Accessors

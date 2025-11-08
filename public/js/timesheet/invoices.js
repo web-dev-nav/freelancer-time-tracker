@@ -263,6 +263,9 @@ export function displayInvoices(invoices) {
                     <button class="btn btn-sm btn-secondary" onclick="previewInvoicePDF(${invoice.id})" title="Preview PDF">
                         <i class="fas fa-eye"></i>
                     </button>
+                    <button class="btn btn-sm btn-secondary" onclick="showInvoiceHistory(${invoice.id})" title="View History">
+                        <i class="fas fa-history"></i>
+                    </button>
                     ${(invoice.status !== 'paid' && invoice.status !== 'cancelled') ? `
                         <button class="btn btn-sm btn-primary" onclick="showSendInvoiceModal(${invoice.id})" title="Send via Email">
                             <i class="fas fa-paper-plane"></i>
@@ -1415,4 +1418,127 @@ export function toggleScheduleSend() {
         const previewDiv = document.getElementById('trigger-time-preview');
         if (previewDiv) previewDiv.style.display = 'none';
     }
+}
+
+/**
+ * Show invoice history modal
+ */
+export async function showInvoiceHistory(invoiceId) {
+    const modal = document.getElementById('invoice-history-modal');
+    const overlay = document.getElementById('modal-overlay');
+    const loadingDiv = document.getElementById('invoice-history-loading');
+    const listDiv = document.getElementById('invoice-history-list');
+    const emptyDiv = document.getElementById('invoice-history-empty');
+
+    // Show modal
+    modal.classList.add('show');
+    overlay.classList.add('show');
+
+    // Show loading state
+    loadingDiv.style.display = 'block';
+    listDiv.style.display = 'none';
+    emptyDiv.style.display = 'none';
+
+    try {
+        const response = await window.api.request(`/api/invoices/${invoiceId}/history`);
+
+        if (response && response.length > 0) {
+            displayInvoiceHistory(response);
+            listDiv.style.display = 'block';
+        } else {
+            emptyDiv.style.display = 'block';
+        }
+    } catch (error) {
+        window.notify.error('Failed to load invoice history: ' + error.message);
+        emptyDiv.style.display = 'block';
+    } finally {
+        loadingDiv.style.display = 'none';
+    }
+}
+
+/**
+ * Hide invoice history modal
+ */
+export function hideInvoiceHistoryModal() {
+    const modal = document.getElementById('invoice-history-modal');
+    const overlay = document.getElementById('modal-overlay');
+    modal.classList.remove('show');
+    overlay.classList.remove('show');
+}
+
+/**
+ * Display invoice history items
+ */
+function displayInvoiceHistory(historyItems) {
+    const listDiv = document.getElementById('invoice-history-list');
+
+    const getActionIcon = (action) => {
+        switch (action) {
+            case 'created': return 'fa-plus-circle';
+            case 'updated': return 'fa-edit';
+            case 'sent': return 'fa-paper-plane';
+            case 'scheduled': return 'fa-clock';
+            case 'paid': return 'fa-check-circle';
+            case 'cancelled': return 'fa-ban';
+            default: return 'fa-circle';
+        }
+    };
+
+    const getActionColor = (action) => {
+        switch (action) {
+            case 'created': return '#3b82f6';
+            case 'updated': return '#f59e0b';
+            case 'sent': return '#10b981';
+            case 'scheduled': return '#8b5cf6';
+            case 'paid': return '#22c55e';
+            case 'cancelled': return '#ef4444';
+            default: return '#6b7280';
+        }
+    };
+
+    const historyHtml = historyItems.map(item => {
+        const date = new Date(item.created_at);
+        const formattedDate = date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+
+        const metadata = item.metadata ? Object.entries(item.metadata).map(([key, value]) => {
+            return `<div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">
+                        <strong>${key}:</strong> ${value}
+                    </div>`;
+        }).join('') : '';
+
+        return `
+            <div style="display: flex; gap: 15px; padding: 15px; border-bottom: 1px solid var(--border-color); align-items: start;">
+                <div style="flex-shrink: 0;">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: ${getActionColor(item.action)}15; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas ${getActionIcon(item.action)}" style="color: ${getActionColor(item.action)}; font-size: 16px;"></i>
+                    </div>
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; color: var(--text-primary); text-transform: capitalize;">
+                        ${item.action}
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 3px;">
+                        ${item.description || ''}
+                    </div>
+                    ${metadata}
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">
+                        <i class="far fa-clock"></i> ${formattedDate}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    listDiv.innerHTML = `
+        <div style="max-height: 500px; overflow-y: auto;">
+            ${historyHtml}
+        </div>
+    `;
 }

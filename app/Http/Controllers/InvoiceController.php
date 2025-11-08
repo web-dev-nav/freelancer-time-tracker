@@ -68,6 +68,16 @@ class InvoiceController extends Controller
     }
 
     /**
+     * Get invoice history
+     */
+    public function history($id)
+    {
+        $invoice = Invoice::findOrFail($id);
+        $history = $invoice->history()->orderBy('created_at', 'desc')->get();
+        return response()->json($history);
+    }
+
+    /**
      * Create a new invoice
      */
     public function store(Request $request)
@@ -161,6 +171,12 @@ class InvoiceController extends Controller
             // Calculate totals
             $invoice->calculateTotals();
 
+            // Log history
+            $invoice->logHistory('created', 'Invoice created as draft', [
+                'invoice_number' => $invoice->invoice_number,
+                'total' => $invoice->total,
+            ]);
+
             DB::commit();
 
             return response()->json([
@@ -215,6 +231,9 @@ class InvoiceController extends Controller
                 'client_email',
                 'client_address'
             ]));
+
+            // Log history
+            $invoice->logHistory('updated', 'Invoice details updated');
 
             return response()->json([
                 'message' => 'Invoice updated successfully',
@@ -447,6 +466,12 @@ class InvoiceController extends Controller
             $invoice->client_email = $recipientEmail; // Save email for later sending
             $invoice->save();
 
+            // Log history
+            $invoice->logHistory('scheduled', 'Invoice email scheduled', [
+                'email' => $recipientEmail,
+                'scheduled_time' => $scheduledTime->format('Y-m-d H:i:s'),
+            ]);
+
             return response()->json([
                 'message' => 'Invoice scheduled to send on ' . $scheduledTime->format('M d, Y h:i A'),
                 'invoice' => $invoice->fresh(),
@@ -499,6 +524,12 @@ class InvoiceController extends Controller
                     }
                 });
 
+            // Log history
+            $invoice->logHistory('sent', 'Invoice email sent to ' . $recipientEmail, [
+                'email' => $recipientEmail,
+                'subject' => $subject,
+            ]);
+
             return response()->json([
                 'message' => 'Invoice sent successfully',
                 'invoice' => $invoice->fresh(),
@@ -534,6 +565,11 @@ class InvoiceController extends Controller
                 $invoice->scheduled_send_at = null;
                 $invoice->save();
             }
+
+            // Log history
+            $invoice->logHistory('paid', 'Invoice marked as paid', [
+                'total' => $invoice->total,
+            ]);
 
             return response()->json([
                 'message' => 'Invoice marked as paid',
@@ -577,6 +613,9 @@ class InvoiceController extends Controller
                 $invoice->scheduled_send_at = null;
                 $invoice->save();
             }
+
+            // Log history
+            $invoice->logHistory('cancelled', 'Invoice cancelled');
 
             return response()->json([
                 'success' => true,

@@ -40,6 +40,7 @@
 @include('components.timesheet.modals.send-invoice')
 @include('components.timesheet.modals.edit-invoice')
 @include('components.timesheet.modals.add-invoice-item')
+@include('components.timesheet.modals.invoice-history')
 @include('components.timesheet.modals.settings')
 
 {{-- Modal Overlay --}}
