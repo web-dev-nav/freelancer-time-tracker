@@ -38,6 +38,10 @@
                 <div class="invoice-stat-content">
                     <div class="invoice-stat-value" id="total-revenue">$0.00</div>
                     <div class="invoice-stat-label">Total Revenue</div>
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-top: 4px;">
+                        <span id="revenue-subtotal">$0.00</span> +
+                        <span id="revenue-tax">$0.00</span> tax
+                    </div>
                 </div>
             </div>
         </div>

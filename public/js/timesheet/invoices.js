@@ -78,6 +78,16 @@ export async function loadInvoiceStats() {
             document.getElementById('paid-invoices-count').textContent = response.paid_count || 0;
             document.getElementById('total-revenue').textContent =
                 '$' + (response.total_revenue || 0).toFixed(2);
+
+            // Update revenue breakdown
+            const revenueSubtotal = document.getElementById('revenue-subtotal');
+            const revenueTax = document.getElementById('revenue-tax');
+            if (revenueSubtotal) {
+                revenueSubtotal.textContent = '$' + (response.total_revenue_subtotal || 0).toFixed(2);
+            }
+            if (revenueTax) {
+                revenueTax.textContent = '$' + (response.total_revenue_tax || 0).toFixed(2);
+            }
         }
     } catch (error) {
         console.error('Failed to load invoice stats:', error);

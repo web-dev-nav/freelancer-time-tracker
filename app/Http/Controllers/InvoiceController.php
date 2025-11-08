@@ -639,10 +639,17 @@ class InvoiceController extends Controller
     {
         $query = Invoice::query();
 
+        // Exclude cancelled invoices from stats
+        $query->where('status', '!=', 'cancelled');
+
         // Filter by project if provided
         if ($request->has('project_id') && $request->project_id != 'all') {
             $query->where('project_id', $request->project_id);
         }
+
+        // Get paid invoices for revenue calculation
+        $paidQuery = (clone $query)->paid();
+        $unpaidQuery = (clone $query)->unpaid();
 
         $stats = [
             'total_invoices' => $query->count(),
@@ -650,8 +657,16 @@ class InvoiceController extends Controller
             'sent_count' => (clone $query)->sent()->count(),
             'paid_count' => (clone $query)->paid()->count(),
             'overdue_count' => (clone $query)->overdue()->count(),
-            'total_revenue' => (clone $query)->paid()->sum('total'),
-            'pending_revenue' => (clone $query)->unpaid()->sum('total'),
+
+            // Revenue breakdown for paid invoices
+            'total_revenue' => $paidQuery->sum('total') ?: 0,
+            'total_revenue_subtotal' => $paidQuery->sum('subtotal') ?: 0,
+            'total_revenue_tax' => $paidQuery->sum('tax_amount') ?: 0,
+
+            // Pending revenue breakdown
+            'pending_revenue' => $unpaidQuery->sum('total') ?: 0,
+            'pending_revenue_subtotal' => $unpaidQuery->sum('subtotal') ?: 0,
+            'pending_revenue_tax' => $unpaidQuery->sum('tax_amount') ?: 0,
         ];
 
         return response()->json($stats);
