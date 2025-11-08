@@ -139,47 +139,87 @@
                             </div>
 
                             {{-- Hostinger Instructions --}}
-                            <div style="background: #ffffff; padding: 12px; border-radius: 4px; border: 1px solid #d1d5db; margin-top: 10px;">
-                                <strong style="color: #374151; font-size: 14px; display: block; margin-bottom: 8px;">
-                                    <i class="fas fa-server" style="color: #7c3aed;"></i> Hostinger (Recommended)
+                            <div style="background: #f0fdf4; padding: 15px; border-radius: 6px; border: 2px solid #10b981; margin-top: 10px;">
+                                <strong style="color: #065f46; font-size: 15px; display: block; margin-bottom: 12px;">
+                                    <i class="fas fa-server" style="color: #10b981;"></i> ✅ HOSTINGER - Simple 3-Step Setup
                                 </strong>
-                                <ol style="margin: 8px 0; padding-left: 20px; color: #4b5563; font-size: 13px; line-height: 1.6;">
-                                    <li style="margin-bottom: 8px;">Log into your <strong>Hostinger hPanel</strong></li>
-                                    <li style="margin-bottom: 8px;">Go to <strong>"Advanced"</strong> → <strong>"Cron Jobs"</strong></li>
-                                    <li style="margin-bottom: 8px;">Click <strong>"Create Cron Job"</strong></li>
-                                    <li style="margin-bottom: 8px;">Set schedule: <strong>Every minute (* * * * *)</strong> or Custom</li>
-                                    <li style="margin-bottom: 8px;">Select <strong>"Run via URL"</strong></li>
-                                    <li style="margin-bottom: 8px;"><strong>Paste this URL:</strong></li>
-                                </ol>
-                                <code style="display: block; background: #f9fafb; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 11px; color: #1f2937; word-break: break-all; border: 1px solid #e5e7eb; margin-top: 5px;">
-                                    {{ $cronUrl }}
-                                </code>
-                                <p style="margin: 8px 0 0 0; color: #059669; font-size: 12px;">
-                                    <i class="fas fa-check-circle"></i> That's it! Hostinger will call this URL every minute, and Laravel handles the rest.
+
+                                <div style="background: white; padding: 12px; border-radius: 4px; margin-bottom: 10px;">
+                                    <strong style="color: #1f2937; display: block; margin-bottom: 8px;">📍 Step 1: Go to Cron Jobs</strong>
+                                    <p style="margin: 0; color: #4b5563; font-size: 13px; line-height: 1.5;">
+                                        Login to <strong>Hostinger hPanel</strong> → Click <strong>"Advanced"</strong> → Click <strong>"Cron Jobs"</strong>
+                                    </p>
+                                </div>
+
+                                <div style="background: white; padding: 12px; border-radius: 4px; margin-bottom: 10px;">
+                                    <strong style="color: #1f2937; display: block; margin-bottom: 8px;">⚙️ Step 2: Configure Cron Job</strong>
+                                    <ul style="margin: 5px 0 0 20px; color: #4b5563; font-size: 13px; line-height: 1.6; padding-left: 0;">
+                                        <li style="margin-bottom: 6px;">Click <strong>"Create Cron Job"</strong></li>
+                                        <li style="margin-bottom: 6px;">Schedule: Select <strong>"Every Minute"</strong> or enter <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 3px;">* * * * *</code></li>
+                                        <li style="margin-bottom: 6px;">Type: Select <strong>"Run via URL"</strong> ⚠️ IMPORTANT!</li>
+                                    </ul>
+                                </div>
+
+                                <div style="background: white; padding: 12px; border-radius: 4px;">
+                                    <strong style="color: #1f2937; display: block; margin-bottom: 8px;">🔗 Step 3: Paste This URL</strong>
+                                    <code style="display: block; background: #1f2937; color: #10b981; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 11px; word-break: break-all; border: 2px solid #10b981; font-weight: bold;">{{ $cronUrl }}</code>
+                                    <button onclick="navigator.clipboard.writeText('{{ $cronUrl }}')" style="margin-top: 8px; background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
+                                        <i class="fas fa-copy"></i> Copy URL
+                                    </button>
+                                </div>
+
+                                <p style="margin: 12px 0 0 0; color: #065f46; font-size: 13px; font-weight: 600; text-align: center;">
+                                    <i class="fas fa-check-circle"></i> Done! Reminders will automatically send daily at 9:00 AM
                                 </p>
                             </div>
 
                             {{-- cPanel Instructions --}}
-                            <div style="background: #ffffff; padding: 12px; border-radius: 4px; border: 1px solid #d1d5db; margin-top: 10px;">
-                                <strong style="color: #374151; font-size: 14px; display: block; margin-bottom: 8px;">
-                                    <i class="fas fa-server" style="color: #3b82f6;"></i> cPanel / Other Shared Hosting
+                            <div style="background: #eff6ff; padding: 15px; border-radius: 6px; border: 2px solid #3b82f6; margin-top: 10px;">
+                                <strong style="color: #1e40af; font-size: 15px; display: block; margin-bottom: 12px;">
+                                    <i class="fas fa-server" style="color: #3b82f6;"></i> ✅ cPANEL - Simple 3-Step Setup
                                 </strong>
-                                <p style="margin: 8px 0; color: #4b5563; font-size: 13px;"><strong>Option 1: Use URL (Easier):</strong></p>
-                                <ol style="margin: 8px 0; padding-left: 20px; color: #4b5563; font-size: 13px; line-height: 1.6;">
-                                    <li style="margin-bottom: 8px;">Log into <strong>cPanel</strong></li>
-                                    <li style="margin-bottom: 8px;">Find <strong>"Cron Jobs"</strong></li>
-                                    <li style="margin-bottom: 8px;">Add cron job with: <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 3px;">* * * * *</code></li>
-                                    <li style="margin-bottom: 8px;">Use <strong>wget</strong> or <strong>curl</strong> command:</li>
-                                </ol>
-                                <code style="display: block; background: #f9fafb; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 11px; color: #1f2937; word-break: break-all; border: 1px solid #e5e7eb; margin-top: 5px;">
-                                    wget -q -O - "{{ $cronUrl }}" > /dev/null 2>&1
-                                </code>
-                                <p style="margin: 8px 0; color: #4b5563; font-size: 13px;"><strong>Or use curl:</strong></p>
-                                <code style="display: block; background: #f9fafb; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 11px; color: #1f2937; word-break: break-all; border: 1px solid #e5e7eb; margin-top: 5px;">
-                                    curl -s "{{ $cronUrl }}" > /dev/null 2>&1
-                                </code>
-                                <p style="margin: 8px 0 0 0; color: #059669; font-size: 12px;">
-                                    <i class="fas fa-check-circle"></i> This calls your URL every minute automatically.
+
+                                <div style="background: white; padding: 12px; border-radius: 4px; margin-bottom: 10px;">
+                                    <strong style="color: #1f2937; display: block; margin-bottom: 8px;">📍 Step 1: Go to Cron Jobs</strong>
+                                    <p style="margin: 0; color: #4b5563; font-size: 13px; line-height: 1.5;">
+                                        Login to <strong>cPanel</strong> → Search for <strong>"Cron Jobs"</strong> → Click to open
+                                    </p>
+                                </div>
+
+                                <div style="background: white; padding: 12px; border-radius: 4px; margin-bottom: 10px;">
+                                    <strong style="color: #1f2937; display: block; margin-bottom: 8px;">⚙️ Step 2: Set Schedule</strong>
+                                    <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 13px;">
+                                        Under <strong>"Add New Cron Job"</strong>, set the schedule to <strong>Every Minute</strong>:
+                                    </p>
+                                    <div style="background: #f9fafb; padding: 8px; border-radius: 4px; border: 1px solid #e5e7eb;">
+                                        <code style="color: #1f2937; font-size: 12px;">Minute: *  |  Hour: *  |  Day: *  |  Month: *  |  Weekday: *</code>
+                                    </div>
+                                    <p style="margin: 6px 0 0 0; color: #6b7280; font-size: 12px;">
+                                        Or select "Common Settings" → "Once Per Minute (* * * * *)"
+                                    </p>
+                                </div>
+
+                                <div style="background: white; padding: 12px; border-radius: 4px;">
+                                    <strong style="color: #1f2937; display: block; margin-bottom: 8px;">🔗 Step 3: Paste This Command</strong>
+                                    <p style="margin: 0 0 8px 0; color: #4b5563; font-size: 13px;">
+                                        In the <strong>"Command"</strong> field, paste this (choose wget OR curl):
+                                    </p>
+
+                                    <p style="margin: 8px 0 4px 0; color: #1f2937; font-size: 12px; font-weight: 600;">Option 1: wget (recommended)</p>
+                                    <code style="display: block; background: #1f2937; color: #60a5fa; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 10px; word-break: break-all; border: 2px solid #3b82f6; margin-bottom: 8px;">wget -q -O - "{{ $cronUrl }}" > /dev/null 2>&1</code>
+                                    <button onclick="navigator.clipboard.writeText('wget -q -O - \"{{ $cronUrl }}\" > /dev/null 2>&1')" style="background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-bottom: 12px;">
+                                        <i class="fas fa-copy"></i> Copy wget Command
+                                    </button>
+
+                                    <p style="margin: 8px 0 4px 0; color: #1f2937; font-size: 12px; font-weight: 600;">Option 2: curl</p>
+                                    <code style="display: block; background: #1f2937; color: #60a5fa; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 10px; word-break: break-all; border: 2px solid #3b82f6; margin-bottom: 8px;">curl -s "{{ $cronUrl }}" > /dev/null 2>&1</code>
+                                    <button onclick="navigator.clipboard.writeText('curl -s \"{{ $cronUrl }}\" > /dev/null 2>&1')" style="background: #3b82f6; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                        <i class="fas fa-copy"></i> Copy curl Command
+                                    </button>
+                                </div>
+
+                                <p style="margin: 12px 0 0 0; color: #1e40af; font-size: 13px; font-weight: 600; text-align: center;">
+                                    <i class="fas fa-check-circle"></i> Click "Add New Cron Job" - Done! Reminders will send daily at 9:00 AM
                                 </p>
                             </div>
 
@@ -221,25 +261,29 @@
 
 
                             {{-- Important Notes --}}
-                            <div style="background: #fef3c7; padding: 12px; border-radius: 4px; border: 1px solid #fbbf24; margin-top: 10px;">
-                                <p style="margin: 0; color: #92400e; font-size: 12px; line-height: 1.6;">
-                                    <i class="fas fa-lightbulb" style="color: #f59e0b;"></i>
-                                    <strong>Important Notes for Hostinger Users:</strong>
+                            <div style="background: #fef3c7; padding: 15px; border-radius: 6px; border: 2px solid #f59e0b; margin-top: 15px;">
+                                <p style="margin: 0 0 10px 0; color: #92400e; font-size: 14px; font-weight: 600;">
+                                    <i class="fas fa-lightbulb" style="color: #f59e0b;"></i> 💡 Quick Tips
                                 </p>
-                                <ul style="margin: 8px 0 0 20px; color: #92400e; font-size: 12px; line-height: 1.6;">
-                                    <li><strong>First, test the URLs above</strong> by clicking the green buttons - you should see JSON with "status": "success"</li>
-                                    <li>In Hostinger cron jobs, select <strong>"Run via URL"</strong> method (not command line)</li>
-                                    <li>The cron runs <strong>every minute</strong>, but Laravel only sends reminders at <strong>9:00 AM</strong></li>
-                                    <li>Your cron URL includes a security token - <strong>keep it private!</strong></li>
-                                    <li>The URL works on localhost too - test it now before deploying to Hostinger</li>
-                                    <li>Check Laravel logs at <code style="background: #fde68a; padding: 2px 4px; border-radius: 3px;">storage/logs/laravel.log</code> for any errors</li>
-                                </ul>
+                                <div style="background: white; padding: 10px; border-radius: 4px; margin-bottom: 8px;">
+                                    <strong style="color: #92400e; font-size: 12px;">✅ ALWAYS TEST FIRST!</strong>
+                                    <p style="margin: 4px 0 0 0; color: #92400e; font-size: 12px;">
+                                        Click the green "Test" buttons above to verify the URL works before setting up cron
+                                    </p>
+                                </div>
+                                <div style="background: white; padding: 10px; border-radius: 4px; margin-bottom: 8px;">
+                                    <strong style="color: #92400e; font-size: 12px;">⏰ How It Works</strong>
+                                    <p style="margin: 4px 0 0 0; color: #92400e; font-size: 12px;">
+                                        Cron runs every minute, but reminders only send at <strong>9:00 AM daily</strong> for invoices due within 3 days or overdue
+                                    </p>
+                                </div>
+                                <div style="background: white; padding: 10px; border-radius: 4px;">
+                                    <strong style="color: #92400e; font-size: 12px;">🔒 Security</strong>
+                                    <p style="margin: 4px 0 0 0; color: #92400e; font-size: 12px;">
+                                        Your cron URL includes a security token - <strong>keep it private!</strong> Check logs at <code style="background: #fde68a; padding: 2px 4px; border-radius: 3px;">storage/logs/laravel.log</code>
+                                    </p>
+                                </div>
                             </div>
-
-                            <p style="margin: 12px 0 0 0; color: #059669; font-size: 13px; font-weight: 500;">
-                                <i class="fas fa-check-circle"></i>
-                                Once set up, the system automatically checks for unpaid invoices (status: sent) due within 3 days or overdue.
-                            </p>
                         </div>
                     </div>
                 </div>
