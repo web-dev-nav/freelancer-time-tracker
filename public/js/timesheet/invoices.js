@@ -508,6 +508,7 @@ export async function createInvoice(e) {
             window.notify.success('Invoice created successfully!');
             hideCreateInvoiceModal();
             loadInvoices();
+            loadInvoiceStats(); // Refresh stats to update counts
         }
     } catch (error) {
         window.notify.error('Failed to create invoice: ' + error.message);
@@ -835,6 +836,7 @@ export async function sendInvoice(e) {
                 : 'Invoice sent successfully!';
             showInvoiceMessage('success', successMessage);
             loadInvoices();
+            loadInvoiceStats(); // Refresh stats to update counts
 
             // Auto-close modal after 2 seconds on success
             setTimeout(() => {
@@ -930,6 +932,7 @@ export async function markInvoiceAsPaid(invoiceId) {
         if (response) {
             window.notify.success('Invoice marked as paid!');
             loadInvoices();
+            loadInvoiceStats(); // Refresh stats to update revenue
         }
     } catch (error) {
         window.notify.error('Failed to update invoice: ' + error.message);
@@ -952,6 +955,7 @@ export async function cancelInvoice(invoiceId) {
         if (response && response.success) {
             window.notify.success('Invoice cancelled successfully!');
             loadInvoices();
+            loadInvoiceStats(); // Refresh stats to update counts
         } else {
             window.notify.error(response.message || 'Failed to cancel invoice');
         }
@@ -976,6 +980,7 @@ export async function deleteInvoice(invoiceId) {
         if (response) {
             window.notify.success('Invoice deleted successfully!');
             loadInvoices();
+            loadInvoiceStats(); // Refresh stats to update counts
         }
     } catch (error) {
         window.notify.error('Failed to delete invoice: ' + error.message);
@@ -1055,6 +1060,7 @@ export async function saveInvoiceChanges() {
             window.notify.success('Invoice updated successfully!');
             hideEditInvoiceModal();
             loadInvoices();
+            loadInvoiceStats(); // Refresh stats for consistency
         }
     } catch (error) {
         window.notify.error('Failed to update invoice: ' + error.message);
