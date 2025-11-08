@@ -415,6 +415,7 @@ class InvoiceController extends Controller
             'email' => 'required|email',
             'subject' => 'nullable|string',
             'message' => 'nullable|string',
+            'scheduled_send_at' => 'nullable|date|after:now',
         ]);
 
         if ($validator->fails()) {
@@ -428,6 +429,19 @@ class InvoiceController extends Controller
             return response()->json([
                 'message' => 'No email address provided'
             ], 422);
+        }
+
+        // Handle scheduled send
+        if ($request->has('scheduled_send_at') && $request->scheduled_send_at) {
+            $invoice->scheduled_send_at = Carbon::parse($request->scheduled_send_at);
+            $invoice->client_email = $recipientEmail; // Save email for later sending
+            $invoice->save();
+
+            return response()->json([
+                'message' => 'Invoice scheduled to send on ' . Carbon::parse($request->scheduled_send_at)->format('M d, Y h:i A'),
+                'invoice' => $invoice->fresh(),
+                'success' => true
+            ]);
         }
 
         $companySettings = $this->getInvoiceSettings();

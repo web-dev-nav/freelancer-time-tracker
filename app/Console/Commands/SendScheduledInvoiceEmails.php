@@ -1,0 +1,219 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\Invoice;
+use App\Models\Setting;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Config;
+use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
+
+class SendScheduledInvoiceEmails extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'invoices:send-scheduled';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = 'Send scheduled invoice emails';
+
+    /**
+     * Execute the console command.
+     */
+    public function handle()
+    {
+        $this->info('Checking for scheduled invoices to send...');
+
+        // Find invoices scheduled to be sent now or in the past
+        $invoices = Invoice::with(['project', 'items'])
+            ->whereNotNull('scheduled_send_at')
+            ->where('scheduled_send_at', '<=', Carbon::now())
+            ->whereNull('sent_at')
+            ->get();
+
+        if ($invoices->isEmpty()) {
+            $this->info('No scheduled invoices to send at this time.');
+            return 0;
+        }
+
+        $this->info("Found {$invoices->count()} scheduled invoice(s) to send.");
+
+        $sent = 0;
+        $failed = 0;
+
+        foreach ($invoices as $invoice) {
+            try {
+                $this->info("Processing invoice {$invoice->invoice_number}...");
+
+                if (!$invoice->client_email) {
+                    $this->warn("Skipping invoice {$invoice->invoice_number}: No client email");
+                    $invoice->scheduled_send_at = null;
+                    $invoice->save();
+                    continue;
+                }
+
+                // Get settings
+                $companySettings = $this->getInvoiceSettings();
+                $emailSettings = $this->getEmailSettings();
+                $mailerConfig = $this->prepareMailerConfiguration($emailSettings);
+
+                // Mark invoice as sent BEFORE generating PDF
+                if ($invoice->status === 'draft') {
+                    $invoice->markAsSent();
+                    $invoice->refresh();
+                }
+
+                // Generate PDF
+                $pdf = PDF::loadView('invoices.pdf', [
+                    'invoice' => $invoice,
+                    'companySettings' => $companySettings,
+                ]);
+                $pdfContent = $pdf->output();
+
+                // Email subject and body
+                $defaultCompanyName = $companySettings['invoice_company_name'] ?? config('app.name');
+                $subject = "Invoice {$invoice->invoice_number} from " . $defaultCompanyName;
+                $message = "Please find attached invoice {$invoice->invoice_number}.";
+                $htmlMessage = $this->convertToHtmlEmail($message);
+
+                // Send email
+                Mail::mailer($mailerConfig['mailer'])
+                    ->send([], [], function ($mail) use ($invoice, $subject, $htmlMessage, $pdfContent, $mailerConfig) {
+                        $mail->to($invoice->client_email)
+                            ->subject($subject)
+                            ->html($htmlMessage)
+                            ->attachData($pdfContent, "invoice-{$invoice->invoice_number}.pdf", [
+                                'mime' => 'application/pdf',
+                            ]);
+
+                        if ($mailerConfig['from_address']) {
+                            $mail->from(
+                                $mailerConfig['from_address'],
+                                $mailerConfig['from_name'] ?: $mailerConfig['from_address']
+                            );
+                        }
+                    });
+
+                // Clear scheduled send time
+                $invoice->scheduled_send_at = null;
+                $invoice->save();
+
+                $this->info("✓ Sent invoice {$invoice->invoice_number} to {$invoice->client_email}");
+                $sent++;
+
+            } catch (\Exception $e) {
+                $this->error("Failed to send invoice {$invoice->invoice_number}: {$e->getMessage()}");
+                Log::error("Failed to send scheduled invoice {$invoice->invoice_number}", [
+                    'error' => $e->getMessage(),
+                    'invoice_id' => $invoice->id,
+                ]);
+                $failed++;
+            }
+        }
+
+        $this->info("\n✓ Successfully sent {$sent} invoice(s)");
+        if ($failed > 0) {
+            $this->warn("✗ Failed to send {$failed} invoice(s)");
+        }
+
+        return 0;
+    }
+
+    /**
+     * Get invoice settings
+     */
+    private function getInvoiceSettings()
+    {
+        $settings = Setting::whereIn('key', [
+            'invoice_company_name',
+            'invoice_company_email',
+            'invoice_company_address',
+        ])->pluck('value', 'key')->toArray();
+
+        return $settings;
+    }
+
+    /**
+     * Get email settings
+     */
+    private function getEmailSettings()
+    {
+        $settings = Setting::whereIn('key', [
+            'email_mailer',
+            'email_from_address',
+            'email_from_name',
+            'email_smtp_host',
+            'email_smtp_port',
+            'email_smtp_username',
+            'email_smtp_password',
+            'email_smtp_encryption',
+        ])->pluck('value', 'key')->toArray();
+
+        return $settings;
+    }
+
+    /**
+     * Prepare mailer configuration
+     */
+    private function prepareMailerConfiguration(array $emailSettings): array
+    {
+        $mailer = config('mail.default');
+        $selectedMailer = $emailSettings['email_mailer'] ?? 'default';
+
+        if ($selectedMailer === 'smtp' && !empty($emailSettings['email_smtp_host'])) {
+            $dynamicMailer = 'settings_smtp';
+            Config::set("mail.mailers.{$dynamicMailer}", [
+                'transport' => 'smtp',
+                'host' => $emailSettings['email_smtp_host'],
+                'port' => (int) ($emailSettings['email_smtp_port'] ?? 587),
+                'encryption' => $emailSettings['email_smtp_encryption'] ?: null,
+                'username' => $emailSettings['email_smtp_username'],
+                'password' => $emailSettings['email_smtp_password'],
+                'timeout' => null,
+                'auth_mode' => null,
+            ]);
+            $mailer = $dynamicMailer;
+        } elseif ($selectedMailer === 'mail') {
+            $mailer = 'sendmail';
+        }
+
+        return [
+            'mailer' => $mailer,
+            'from_address' => $emailSettings['email_from_address'] ?? config('mail.from.address'),
+            'from_name' => $emailSettings['email_from_name'] ?? config('mail.from.name'),
+        ];
+    }
+
+    /**
+     * Convert plain text message to HTML
+     */
+    private function convertToHtmlEmail($text)
+    {
+        $html = nl2br(htmlspecialchars($text));
+
+        return <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+        {$html}
+    </div>
+</body>
+</html>
+HTML;
+    }
+}

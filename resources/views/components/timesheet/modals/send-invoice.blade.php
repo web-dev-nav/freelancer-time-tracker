@@ -45,6 +45,24 @@
                 </small>
             </div>
 
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="schedule-send-checkbox" onchange="toggleScheduleSend()">
+                    <span><i class="fas fa-clock"></i> Schedule Send Later</span>
+                </label>
+            </div>
+
+            <div id="schedule-send-group" class="form-group" style="display: none;">
+                <label class="form-label" for="scheduled-send-at">
+                    <i class="fas fa-calendar-alt"></i>
+                    Schedule Date & Time
+                </label>
+                <input type="datetime-local" id="scheduled-send-at" class="form-control">
+                <small style="color: var(--text-secondary); display: block; margin-top: 4px;">
+                    <i class="fas fa-info-circle"></i> Invoice will be sent automatically at the scheduled time (runs every 5 minutes)
+                </small>
+            </div>
+
             <div class="alert alert-warning" style="margin: 0;">
                 <i class="fas fa-info-circle"></i>
                 <strong>Note:</strong> The invoice will be automatically marked as "Sent" after sending the email.

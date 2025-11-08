@@ -32,3 +32,15 @@ Schedule::command('invoices:send-reminders')
     ->onFailure(function () {
         error_log('Invoice payment reminders failed');
     });
+
+// Schedule sending of scheduled invoice emails every 5 minutes
+// Checks for invoices with scheduled_send_at <= now
+Schedule::command('invoices:send-scheduled')
+    ->everyFiveMinutes()
+    ->name('send-scheduled-invoices')
+    ->onSuccess(function () {
+        info('Scheduled invoices processed successfully');
+    })
+    ->onFailure(function () {
+        error_log('Scheduled invoices processing failed');
+    });

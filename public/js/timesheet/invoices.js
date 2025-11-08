@@ -747,12 +747,19 @@ export async function sendInvoice(e) {
     const email = document.getElementById('send-invoice-email').value;
     const subject = document.getElementById('send-invoice-subject').value;
     const message = document.getElementById('send-invoice-message').value;
+    const scheduleCheckbox = document.getElementById('schedule-send-checkbox');
+    const scheduledSendAt = document.getElementById('scheduled-send-at').value;
 
     const data = {
         email: email,
         subject: subject || null,
         message: message || null
     };
+
+    // Add scheduled send time if checkbox is checked
+    if (scheduleCheckbox && scheduleCheckbox.checked && scheduledSendAt) {
+        data.scheduled_send_at = scheduledSendAt;
+    }
 
     try {
         hideInvoiceMessage();
@@ -762,7 +769,10 @@ export async function sendInvoice(e) {
         });
 
         if (response && response.success) {
-            showInvoiceMessage('success', 'Invoice sent successfully!');
+            const successMessage = data.scheduled_send_at
+                ? response.message
+                : 'Invoice sent successfully!';
+            showInvoiceMessage('success', successMessage);
             loadInvoices();
 
             // Auto-close modal after 2 seconds on success
@@ -1264,5 +1274,31 @@ export async function deleteInvoiceItem(itemId) {
         }
     } catch (error) {
         window.notify.error('Failed to delete item: ' + error.message);
+    }
+}
+
+/**
+ * Toggle scheduled send visibility
+ */
+export function toggleScheduleSend() {
+    const checkbox = document.getElementById('schedule-send-checkbox');
+    const scheduleGroup = document.getElementById('schedule-send-group');
+    const scheduledInput = document.getElementById('scheduled-send-at');
+
+    if (checkbox && checkbox.checked) {
+        scheduleGroup.style.display = 'block';
+
+        // Set minimum datetime to current time
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        scheduledInput.min = now.toISOString().slice(0, 16);
+
+        // Set default to 1 hour from now
+        const oneHourLater = new Date(Date.now() + 60 * 60 * 1000);
+        oneHourLater.setMinutes(oneHourLater.getMinutes() - oneHourLater.getTimezoneOffset());
+        scheduledInput.value = oneHourLater.toISOString().slice(0, 16);
+    } else {
+        scheduleGroup.style.display = 'none';
+        scheduledInput.value = '';
     }
 }

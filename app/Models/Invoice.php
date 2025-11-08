@@ -29,6 +29,7 @@ class Invoice extends Model
         'notes',
         'description',
         'sent_at',
+        'scheduled_send_at',
         'paid_at',
         'cancelled_at',
     ];
@@ -37,7 +38,9 @@ class Invoice extends Model
         'invoice_date' => 'date',
         'due_date' => 'date',
         'sent_at' => 'datetime',
+        'scheduled_send_at' => 'datetime',
         'paid_at' => 'datetime',
+        'cancelled_at' => 'datetime',
         'subtotal' => 'decimal:2',
         'tax_rate' => 'decimal:2',
         'tax_amount' => 'decimal:2',

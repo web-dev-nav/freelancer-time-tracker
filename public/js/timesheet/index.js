@@ -69,6 +69,7 @@ window.handleCreateInvoiceProjectChange = Invoices.handleCreateInvoiceProjectCha
 window.showSendInvoiceModal = Invoices.showSendInvoiceModal;
 window.hideSendInvoiceModal = Invoices.hideSendInvoiceModal;
 window.sendInvoice = Invoices.sendInvoice;
+window.toggleScheduleSend = Invoices.toggleScheduleSend;
 window.downloadInvoicePDF = Invoices.downloadInvoicePDF;
 window.previewInvoicePDF = Invoices.previewInvoicePDF;
 window.markInvoiceAsPaid = Invoices.markInvoiceAsPaid;
