@@ -109,8 +109,11 @@ export function displayInvoices(invoices) {
 
         const isOverdue = invoice.is_overdue;
 
+        const isScheduled = invoice.scheduled_send_at && !invoice.sent_at;
+
         return `
             <div class="invoice-card" style="background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); border-left: 4px solid ${
+                isScheduled ? '#8b5cf6' :
                 invoice.status === 'paid' ? '#10b981' :
                 invoice.status === 'sent' ? '#f59e0b' :
                 invoice.status === 'cancelled' ? '#ef4444' :
@@ -118,16 +121,22 @@ export function displayInvoices(invoices) {
             }; margin-bottom: 16px; transition: box-shadow 0.2s;">
 
                 <div class="invoice-card-header" style="padding: 16px; border-bottom: 1px solid #f3f4f6;">
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-                        <div>
+                    <div style="display: flex; justify-content: space-between; align-items: start; gap: 16px; margin-bottom: 12px;">
+                        <div style="flex: 1;">
                             <h3 style="font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 4px 0;">${invoice.invoice_number}</h3>
-                            <span class="badge badge-${statusClass}" style="font-size: 11px; padding: 4px 8px;">
-                                ${isOverdue ? 'OVERDUE' : invoice.status.toUpperCase()}
-                            </span>
+                            ${isScheduled ? `
+                                <span class="badge" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; font-size: 11px; padding: 4px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
+                                    <i class="fas fa-clock"></i> SCHEDULED
+                                </span>
+                            ` : `
+                                <span class="badge badge-${statusClass}" style="font-size: 11px; padding: 4px 8px;">
+                                    ${isOverdue ? 'OVERDUE' : invoice.status.toUpperCase()}
+                                </span>
+                            `}
                         </div>
-                        <div style="text-align: right;">
-                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Total</div>
-                            <div style="font-size: 24px; font-weight: 800; color: #111827;">$${parseFloat(invoice.total).toFixed(2)}</div>
+                        <div style="text-align: right; min-width: 120px;">
+                            <div style="font-size: 11px; color: #6b7280; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Total</div>
+                            <div style="font-size: 24px; font-weight: 800; color: #111827; line-height: 1;">$${parseFloat(invoice.total).toFixed(2)}</div>
                         </div>
                     </div>
 
@@ -144,6 +153,25 @@ export function displayInvoices(invoices) {
                     ${invoice.description ? `
                         <div style="padding: 10px 12px; background: #f9fafb; border-radius: 6px; margin-bottom: 12px;">
                             <p style="margin: 0; color: #4b5563; font-size: 13px; font-style: italic;">${invoice.description}</p>
+                        </div>
+                    ` : ''}
+
+                    ${isScheduled ? `
+                        <div style="padding: 10px 12px; background: linear-gradient(135deg, #f3e8ff, #e9d5ff); border-radius: 6px; margin-bottom: 12px; border-left: 3px solid #8b5cf6;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-clock" style="color: #7c3aed; font-size: 16px;"></i>
+                                <div>
+                                    <div style="font-size: 10px; color: #6b21a8; text-transform: uppercase; font-weight: 700; margin-bottom: 2px; letter-spacing: 0.5px;">Scheduled to Send</div>
+                                    <div style="font-size: 14px; font-weight: 700; color: #581c87;">${new Date(invoice.scheduled_send_at).toLocaleString('en-US', {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: 'numeric',
+                                        minute: '2-digit',
+                                        hour12: true
+                                    })}</div>
+                                </div>
+                            </div>
                         </div>
                     ` : ''}
 
