@@ -415,7 +415,7 @@ class InvoiceController extends Controller
             'email' => 'required|email',
             'subject' => 'nullable|string',
             'message' => 'nullable|string',
-            'scheduled_send_at' => 'nullable|date|after:now',
+            'scheduled_send_at' => 'nullable|date',
         ]);
 
         if ($validator->fails()) {
@@ -433,12 +433,22 @@ class InvoiceController extends Controller
 
         // Handle scheduled send
         if ($request->has('scheduled_send_at') && $request->scheduled_send_at) {
-            $invoice->scheduled_send_at = Carbon::parse($request->scheduled_send_at);
+            $scheduledTime = Carbon::parse($request->scheduled_send_at);
+
+            // Check if scheduled time is in the past (with 1 minute buffer for processing time)
+            if ($scheduledTime->lt(Carbon::now()->subMinute())) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Scheduled time cannot be in the past. Please select a future date/time.'
+                ], 422);
+            }
+
+            $invoice->scheduled_send_at = $scheduledTime;
             $invoice->client_email = $recipientEmail; // Save email for later sending
             $invoice->save();
 
             return response()->json([
-                'message' => 'Invoice scheduled to send on ' . Carbon::parse($request->scheduled_send_at)->format('M d, Y h:i A'),
+                'message' => 'Invoice scheduled to send on ' . $scheduledTime->format('M d, Y h:i A'),
                 'invoice' => $invoice->fresh(),
                 'success' => true
             ]);

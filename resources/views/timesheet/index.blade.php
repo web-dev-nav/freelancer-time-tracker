@@ -3,7 +3,7 @@
 @section('title', 'Professional Timesheet')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/timesheet/main.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/timesheet/main.css') }}?v={{ time() }}">
 @endpush
 
 @section('content')

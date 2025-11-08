@@ -3,7 +3,7 @@
 @section('title', 'Settings')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/timesheet/main.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/timesheet/main.css') }}?v={{ time() }}">
     <style>
         .settings-container {
             max-width: 1200px;
