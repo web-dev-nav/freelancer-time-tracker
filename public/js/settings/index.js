@@ -1,0 +1,287 @@
+/**
+ * Settings Page JavaScript
+ */
+
+let isLoading = false;
+
+/**
+ * Switch between tabs
+ */
+window.switchTab = function(tabName) {
+    // Remove active class from all tabs and content
+    document.querySelectorAll('.settings-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+
+    // Add active class to clicked tab and corresponding content
+    event.target.classList.add('active');
+    document.getElementById(tabName + '-tab').classList.add('active');
+};
+
+/**
+ * Load settings from API
+ */
+async function loadSettings() {
+    try {
+        const response = await window.api.request('/api/settings');
+
+        if (response && response.success) {
+            const data = response.data;
+
+            // General settings
+            setValue('invoice-company-name', data.invoice_company_name);
+            setValue('invoice-company-address', data.invoice_company_address);
+            setValue('invoice-tax-number', data.invoice_tax_number);
+
+            // Payment settings
+            setValue('payment-etransfer-email', data.payment_etransfer_email);
+            setValue('payment-bank-info', data.payment_bank_info);
+            setValue('payment-instructions', data.payment_instructions);
+
+            // Email settings
+            setValue('email-mailer', data.email_mailer || 'default');
+            setValue('email-smtp-host', data.email_smtp_host);
+            setValue('email-smtp-port', data.email_smtp_port);
+            setValue('email-smtp-username', data.email_smtp_username);
+            setValue('email-smtp-password', data.email_smtp_password);
+            setValue('email-smtp-encryption', data.email_smtp_encryption);
+            setValue('email-from-address', data.email_from_address);
+            setValue('email-from-name', data.email_from_name);
+
+            // Toggle SMTP fields visibility
+            toggleSmtpFields();
+        }
+    } catch (error) {
+        console.error('Failed to load settings:', error);
+        showMessage('error', 'Failed to load settings: ' + error.message);
+    }
+}
+
+/**
+ * Save settings to API
+ */
+async function saveSettings(e) {
+    e.preventDefault();
+
+    if (isLoading) return;
+
+    const formData = collectFormData();
+
+    try {
+        isLoading = true;
+        showMessage('', 'Saving settings...', 'info');
+
+        const response = await window.api.request('/api/settings', {
+            method: 'POST',
+            body: JSON.stringify(formData),
+        });
+
+        if (response && response.success) {
+            showMessage('success', 'Settings saved successfully!');
+            // Reload settings to ensure we have the latest data
+            await loadSettings();
+        } else {
+            showMessage('error', response.message || 'Failed to save settings');
+        }
+    } catch (error) {
+        console.error('Failed to save settings:', error);
+        showMessage('error', 'Failed to save settings: ' + error.message);
+    } finally {
+        isLoading = false;
+    }
+}
+
+/**
+ * Collect form data
+ */
+function collectFormData() {
+    return {
+        // General
+        invoice_company_name: getValue('invoice-company-name'),
+        invoice_company_address: getValue('invoice-company-address'),
+        invoice_tax_number: getValue('invoice-tax-number'),
+
+        // Payment
+        payment_etransfer_email: getValue('payment-etransfer-email'),
+        payment_bank_info: getValue('payment-bank-info'),
+        payment_instructions: getValue('payment-instructions'),
+
+        // Email
+        email_mailer: getValue('email-mailer'),
+        email_smtp_host: getValue('email-smtp-host'),
+        email_smtp_port: getValue('email-smtp-port'),
+        email_smtp_username: getValue('email-smtp-username'),
+        email_smtp_password: getValue('email-smtp-password'),
+        email_smtp_encryption: getValue('email-smtp-encryption'),
+        email_from_address: getValue('email-from-address'),
+        email_from_name: getValue('email-from-name'),
+    };
+}
+
+/**
+ * Get value from form field
+ */
+function getValue(id) {
+    const element = document.getElementById(id);
+    return element ? element.value.trim() : null;
+}
+
+/**
+ * Set value to form field
+ */
+function setValue(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.value = value || '';
+    }
+}
+
+/**
+ * Show message in save bar
+ */
+function showMessage(type, message, customType = null) {
+    const messageEl = document.getElementById('save-message');
+    if (!messageEl) return;
+
+    messageEl.textContent = message;
+    messageEl.className = 'save-bar-message';
+
+    if (type === 'success') {
+        messageEl.classList.add('success');
+        messageEl.innerHTML = '<i class="fas fa-check-circle"></i> ' + message;
+        // Auto-hide after 5 seconds
+        setTimeout(() => {
+            messageEl.style.display = 'none';
+        }, 5000);
+    } else if (type === 'error') {
+        messageEl.classList.add('error');
+        messageEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + message;
+    } else if (customType === 'info') {
+        messageEl.style.display = 'flex';
+        messageEl.style.alignItems = 'center';
+        messageEl.style.gap = '8px';
+        messageEl.style.background = '#e0f2fe';
+        messageEl.style.color = '#0c4a6e';
+        messageEl.style.border = '1px solid #0284c7';
+        messageEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + message;
+    }
+}
+
+/**
+ * Toggle SMTP fields based on email mailer selection
+ */
+window.toggleSmtpFields = function() {
+    const mailerSelect = document.getElementById('email-mailer');
+    const smtpSection = document.getElementById('smtp-settings');
+
+    if (mailerSelect && smtpSection) {
+        smtpSection.style.display = mailerSelect.value === 'smtp' ? 'block' : 'none';
+    }
+};
+
+/**
+ * Send test email
+ */
+window.sendTestEmail = async function() {
+    if (isLoading) return;
+
+    const testEmailAddress = document.getElementById('test-email-address')?.value?.trim();
+
+    if (!testEmailAddress) {
+        showTestEmailMessage('error', 'Please enter an email address to send the test email to.');
+        return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(testEmailAddress)) {
+        showTestEmailMessage('error', 'Please enter a valid email address.');
+        return;
+    }
+
+    const payload = {
+        test_email: testEmailAddress,
+        email_mailer: getValue('email-mailer') || 'default',
+        email_smtp_host: getValue('email-smtp-host'),
+        email_smtp_port: getValue('email-smtp-port'),
+        email_smtp_username: getValue('email-smtp-username'),
+        email_smtp_password: getValue('email-smtp-password'),
+        email_smtp_encryption: getValue('email-smtp-encryption'),
+        email_from_address: getValue('email-from-address'),
+        email_from_name: getValue('email-from-name'),
+    };
+
+    try {
+        isLoading = true;
+        showTestEmailMessage('info', 'Sending test email...');
+
+        const response = await window.api.request('/api/settings/test-email', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+
+        if (response && response.success) {
+            showTestEmailMessage('success', response.message || 'Test email sent! Check your inbox and spam folder.');
+        } else {
+            showTestEmailMessage('error', response.message || 'Failed to send test email.');
+        }
+    } catch (error) {
+        console.error('Test email failed:', error);
+        showTestEmailMessage('error', 'Failed to send test email: ' + (error.message || 'Unknown error'));
+    } finally {
+        isLoading = false;
+    }
+};
+
+/**
+ * Show test email message
+ */
+function showTestEmailMessage(type, message) {
+    const messageEl = document.getElementById('test-email-message');
+    if (!messageEl) return;
+
+    messageEl.style.display = 'flex';
+    messageEl.style.alignItems = 'center';
+    messageEl.style.gap = '8px';
+    messageEl.textContent = message;
+
+    if (type === 'success') {
+        messageEl.style.background = '#d1fae5';
+        messageEl.style.color = '#065f46';
+        messageEl.style.border = '1px solid #10b981';
+        messageEl.innerHTML = '<i class="fas fa-check-circle"></i> ' + message;
+    } else if (type === 'error') {
+        messageEl.style.background = '#fee2e2';
+        messageEl.style.color = '#991b1b';
+        messageEl.style.border = '1px solid #ef4444';
+        messageEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + message;
+    } else if (type === 'info') {
+        messageEl.style.background = '#e0f2fe';
+        messageEl.style.color = '#0c4a6e';
+        messageEl.style.border = '1px solid #0284c7';
+        messageEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + message;
+    }
+}
+
+/**
+ * Initialize on page load
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    // Load settings
+    loadSettings();
+
+    // Attach form submit handler
+    const form = document.getElementById('settings-form');
+    if (form) {
+        form.addEventListener('submit', saveSettings);
+    }
+
+    // Initialize SMTP toggle
+    const emailMailer = document.getElementById('email-mailer');
+    if (emailMailer) {
+        emailMailer.addEventListener('change', toggleSmtpFields);
+    }
+});

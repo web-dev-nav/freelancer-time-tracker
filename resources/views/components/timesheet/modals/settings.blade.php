@@ -93,13 +93,60 @@
                     <i class="fas fa-clock"></i> Scheduled Invoice Reminders
                 </h4>
 
+                {{-- What This Cron Does --}}
+                <div style="background: #f0f9ff; padding: 15px; border-radius: 6px; border: 2px solid #0284c7; margin-bottom: 15px;">
+                    <strong style="color: #0c4a6e; display: block; margin-bottom: 10px; font-size: 14px;">
+                        <i class="fas fa-info-circle" style="color: #0284c7;"></i> 📖 What This Cron Job Does
+                    </strong>
+
+                    <div style="background: white; padding: 12px; border-radius: 4px; margin-bottom: 8px;">
+                        <strong style="color: #1f2937; display: block; margin-bottom: 4px; font-size: 13px;">⏰ Schedule:</strong>
+                        <p style="margin: 0; color: #4b5563; font-size: 12px;">
+                            Cron runs <strong>every minute</strong>, but only executes at <strong>9:00 AM daily</strong>
+                        </p>
+                    </div>
+
+                    <div style="background: white; padding: 12px; border-radius: 4px; margin-bottom: 8px;">
+                        <strong style="color: #1f2937; display: block; margin-bottom: 4px; font-size: 13px;">✅ Sends Reminders For:</strong>
+                        <ul style="margin: 4px 0 0 20px; padding: 0; color: #4b5563; font-size: 12px; line-height: 1.6;">
+                            <li>Invoices with status <code style="background: #e0f2fe; padding: 2px 6px; border-radius: 3px;">sent</code> (not draft or paid)</li>
+                            <li>Due date is <strong>today, tomorrow, within 3 days</strong></li>
+                            <li>OR due date is <strong>in the past (overdue)</strong></li>
+                        </ul>
+                    </div>
+
+                    <div style="background: white; padding: 12px; border-radius: 4px; margin-bottom: 8px;">
+                        <strong style="color: #1f2937; display: block; margin-bottom: 4px; font-size: 13px;">❌ Does NOT Send For:</strong>
+                        <ul style="margin: 4px 0 0 20px; padding: 0; color: #4b5563; font-size: 12px; line-height: 1.6;">
+                            <li>Draft invoices (not sent yet)</li>
+                            <li>Paid invoices</li>
+                            <li>Invoices due more than 3 days from now</li>
+                            <li>Invoices without client email</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: white; padding: 12px; border-radius: 4px;">
+                        <strong style="color: #1f2937; display: block; margin-bottom: 4px; font-size: 13px;">📧 What Happens:</strong>
+                        <p style="margin: 0; color: #4b5563; font-size: 12px; line-height: 1.6;">
+                            At 9:00 AM daily, system checks all invoices → Sends reminder email to client for each qualifying invoice → Logs action in <code style="background: #fef3c7; padding: 2px 6px; border-radius: 3px;">storage/logs/laravel.log</code>
+                        </p>
+                    </div>
+
+                    <div style="background: #fef3c7; padding: 10px; border-radius: 4px; margin-top: 10px; border: 1px solid #fbbf24;">
+                        <p style="margin: 0; color: #92400e; font-size: 11px; line-height: 1.5;">
+                            <i class="fas fa-exclamation-triangle" style="color: #f59e0b;"></i>
+                            <strong>Note:</strong> Same invoice will receive reminders <strong>every day at 9 AM</strong> until you mark it as paid. This helps ensure clients don't forget to pay.
+                        </p>
+                    </div>
+                </div>
+
                 <div class="alert alert-info" style="margin-bottom: 20px; background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 4px;">
                     <div style="display: flex; align-items: start;">
-                        <i class="fas fa-info-circle" style="color: #3b82f6; margin-right: 12px; margin-top: 2px; font-size: 18px;"></i>
+                        <i class="fas fa-rocket" style="color: #3b82f6; margin-right: 12px; margin-top: 2px; font-size: 18px;"></i>
                         <div style="flex: 1;">
-                            <strong style="color: #1f2937; display: block; margin-bottom: 8px;">Automatic Payment Reminders</strong>
+                            <strong style="color: #1f2937; display: block; margin-bottom: 8px;">Setup Instructions</strong>
                             <p style="margin: 0 0 10px 0; color: #4b5563; font-size: 13px; line-height: 1.5;">
-                                Set up a cron job to automatically send payment reminders for unpaid invoices that are due within 3 days or overdue. <strong>Runs daily at 9:00 AM.</strong>
+                                Follow the steps below to set up automated payment reminders on your hosting provider.
                             </p>
 
                             @php

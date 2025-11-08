@@ -76,6 +76,10 @@ Route::get('/cron/test-reminders/{token}', function($token) {
 Route::get('/', [TimeLogController::class, 'index'])->name('timesheet.index');
 Route::get('/timesheet', [TimeLogController::class, 'index'])->name('timesheet.dashboard');
 
+// Settings page
+Route::get('/settings', function() {
+    return view('settings.index');
+})->name('settings.index');
 
 // Fallback route
 Route::fallback(function () {

@@ -5,10 +5,10 @@
         <div class="modal-header">
             <h3 id="project-modal-title">Add New Project</h3>
             <div class="modal-header-actions">
-                <button type="button" class="btn btn-secondary" onclick="showSettingsModal()">
+                <a href="{{ route('settings.index') }}" target="_blank" class="btn btn-secondary">
                     <i class="fas fa-cog"></i>
                     Settings
-                </button>
+                </a>
                 <button class="modal-close" onclick="hideProjectModal()">
                     <i class="fas fa-times"></i>
                 </button>
