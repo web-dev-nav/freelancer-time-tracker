@@ -47,17 +47,38 @@ class TimeLog extends Model
     // Accessors for formatted display
     public function getClockInDateAttribute()
     {
-        return $this->clock_in ? $this->clock_in->setTimezone('America/Toronto')->format('Y-m-d') : null;
+        $raw = $this->getRawOriginal('clock_in');
+        if (!$raw) {
+            return null;
+        }
+
+        return Carbon::parse($raw, 'UTC')
+            ->setTimezone('America/Toronto')
+            ->format('Y-m-d');
     }
 
     public function getClockInTimeAttribute()
     {
-        return $this->clock_in ? $this->clock_in->setTimezone('America/Toronto')->format('H:i') : null;
+        $raw = $this->getRawOriginal('clock_in');
+        if (!$raw) {
+            return null;
+        }
+
+        return Carbon::parse($raw, 'UTC')
+            ->setTimezone('America/Toronto')
+            ->format('H:i');
     }
 
     public function getClockOutTimeAttribute()
     {
-        return $this->clock_out ? $this->clock_out->setTimezone('America/Toronto')->format('H:i') : null;
+        $raw = $this->getRawOriginal('clock_out');
+        if (!$raw) {
+            return null;
+        }
+
+        return Carbon::parse($raw, 'UTC')
+            ->setTimezone('America/Toronto')
+            ->format('H:i');
     }
 
     public function getDurationHoursAttribute()

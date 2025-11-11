@@ -45,7 +45,7 @@ export async function loadHistory(page = 1, perPage = null) {
                     const truncatedDescription = Utils.truncateDescription(workDescription, 80);
 
                     row.innerHTML = `
-                        <td>${window.utils.formatDate(log.clock_in)}</td>
+                        <td>${log.clock_in_date ? window.utils.formatDate(log.clock_in_date) : window.utils.formatDate(log.clock_in)}</td>
                         <td>${clockInDisplay}</td>
                         <td>${clockOutDisplay}</td>
                         <td>${formattedDuration}</td>
@@ -77,7 +77,7 @@ export async function loadHistory(page = 1, perPage = null) {
                     const truncatedDesc = Utils.truncateDescription(workDesc, 80);
 
                     row.innerHTML = `
-                        <td>${new Date(log.clock_in).toLocaleDateString()}</td>
+                        <td>${log.clock_in_date || new Date(log.clock_in).toLocaleDateString()}</td>
                         <td>${clockInTime}</td>
                         <td>${clockOutTime}</td>
                         <td>${formattedDuration}</td>
@@ -412,7 +412,9 @@ export async function viewDetails(logId) {
             const log = response.data;
 
             // Populate modal with data
-            document.getElementById('detail-date').textContent = window.utils.formatDate(log.clock_in);
+            document.getElementById('detail-date').textContent = log.clock_in_date
+                ? window.utils.formatDate(log.clock_in_date)
+                : window.utils.formatDate(log.clock_in);
             document.getElementById('detail-start-time').textContent = log.clock_in_time || window.utils.formatTimeForDisplay(log.clock_in);
             document.getElementById('detail-end-time').textContent = log.clock_out
                 ? (log.clock_out_time || window.utils.formatTimeForDisplay(log.clock_out))

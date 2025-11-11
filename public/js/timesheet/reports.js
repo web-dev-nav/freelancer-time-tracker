@@ -165,7 +165,7 @@ export function displayReport() {
             const truncatedDescription = Utils.truncateDescription(workDescription, 100);
 
             row.innerHTML = `
-                <td>${window.utils.formatDate(log.clock_in)}</td>
+                <td>${log.clock_in_date ? window.utils.formatDate(log.clock_in_date) : window.utils.formatDate(log.clock_in)}</td>
                 <td>${clockInDisplay}</td>
                 <td>${clockOutDisplay}</td>
                 <td>${formattedDuration}</td>
@@ -186,7 +186,7 @@ export function displayReport() {
             const truncatedDesc = Utils.truncateDescription(workDesc, 100);
 
             row.innerHTML = `
-                <td>${new Date(log.clock_in).toLocaleDateString()}</td>
+                <td>${log.clock_in_date || new Date(log.clock_in).toLocaleDateString()}</td>
                 <td>${clockInTime}</td>
                 <td>${clockOutTime}</td>
                 <td>${formattedDuration}</td>
