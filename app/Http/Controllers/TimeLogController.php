@@ -309,22 +309,11 @@ class TimeLogController extends Controller
 
         $log = TimeLog::findOrFail($id);
 
-        // Debug logging
-        \Log::info('=== UPDATE LOG DEBUG ===');
-        \Log::info('Received date: ' . $request->date);
-        \Log::info('Received clock_in_time: ' . $request->clock_in_time);
-        \Log::info('Received clock_out_time: ' . $request->clock_out_time);
-
         // Create clock-in and clock-out datetimes in Toronto timezone, then convert to UTC
         $clockIn = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->clock_in_time, 'America/Toronto')
                         ->setTimezone('UTC');
         $clockOut = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->clock_out_time, 'America/Toronto')
                          ->setTimezone('UTC');
-
-        \Log::info('Created clockIn (Toronto): ' . Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->clock_in_time, 'America/Toronto')->toDateTimeString());
-        \Log::info('Converted clockIn (UTC): ' . $clockIn->toDateTimeString());
-        \Log::info('Created clockOut (Toronto): ' . Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->clock_out_time, 'America/Toronto')->toDateTimeString());
-        \Log::info('Converted clockOut (UTC): ' . $clockOut->toDateTimeString());
 
         // Handle overnight sessions
         if ($clockOut->lt($clockIn)) {
@@ -355,16 +344,10 @@ class TimeLogController extends Controller
             'project_name' => null
         ]);
 
-        $freshLog = $log->fresh();
-        \Log::info('Saved to database, refreshed log data:');
-        \Log::info('- clock_in (UTC): ' . $freshLog->clock_in);
-        \Log::info('- clock_out (UTC): ' . $freshLog->clock_out);
-        \Log::info('=== END DEBUG ===');
-
         return response()->json([
             'success' => true,
             'message' => 'Time log updated successfully',
-            'data' => $freshLog
+            'data' => $log->fresh()
         ]);
     }
 
