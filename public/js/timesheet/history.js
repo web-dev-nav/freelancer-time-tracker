@@ -235,6 +235,11 @@ export async function editLog(id) {
             // Populate the edit form
             document.getElementById('edit-log-id').value = log.id;
 
+            // Debug logging
+            console.log('=== EDIT LOG DEBUG ===');
+            console.log('Raw log.clock_in from API:', log.clock_in);
+            console.log('Raw log.clock_out from API:', log.clock_out);
+
             // Parse the clock_in datetime in Toronto timezone
             const clockInDate = new Date(log.clock_in);
 
@@ -255,6 +260,9 @@ export async function editLog(id) {
                 hour12: false
             });
 
+            console.log('Formatted date for input:', dateForInput);
+            console.log('Formatted clock_in time for input:', timeForInput);
+
             document.getElementById('edit-clock-in-date').value = dateForInput;
             document.getElementById('edit-clock-in-time').value = timeForInput;
 
@@ -267,12 +275,20 @@ export async function editLog(id) {
                     minute: '2-digit',
                     hour12: false
                 });
+                console.log('Formatted clock_out time for input:', clockOutTimeForInput);
                 document.getElementById('edit-clock-out-time').value = clockOutTimeForInput;
             } else {
                 document.getElementById('edit-clock-out-time').value = '';
             }
 
             document.getElementById('edit-work-description').value = log.work_description || '';
+
+            // Verify what's actually in the form fields
+            console.log('Form field values after setting:');
+            console.log('- Date:', document.getElementById('edit-clock-in-date').value);
+            console.log('- Clock In:', document.getElementById('edit-clock-in-time').value);
+            console.log('- Clock Out:', document.getElementById('edit-clock-out-time').value);
+            console.log('=== END DEBUG ===');
 
             // Show the modal
             showEditLogModal();

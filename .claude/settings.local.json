@@ -9,7 +9,9 @@
       "Bash(for:*)",
       "Bash(done)",
       "Bash(tree:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(php:*)",
+      "Bash(cat:*)"
     ],
     "deny": []
   }

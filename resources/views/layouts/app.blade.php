@@ -385,29 +385,12 @@
             }
         };
 
-        // Global utility functions
-        window.utils = {
+        // Global utility functions (will be overridden by utils.js module with timezone-aware versions)
+        window.utils = window.utils || {
             formatTime(minutes) {
                 const hours = Math.floor(minutes / 60);
                 const mins = minutes % 60;
                 return `${hours}:${mins.toString().padStart(2, '0')}`;
-            },
-            
-            formatDate(dateString) {
-                return new Date(dateString).toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                });
-            },
-            
-            getCurrentDateTime() {
-                const now = new Date();
-                return {
-                    date: now.toISOString().split('T')[0],
-                    time: now.toTimeString().slice(0, 5)
-                };
             }
         };
     </script>
