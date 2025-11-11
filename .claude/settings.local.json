@@ -8,7 +8,8 @@
       "Read(//tmp/**)",
       "Bash(for:*)",
       "Bash(done)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }

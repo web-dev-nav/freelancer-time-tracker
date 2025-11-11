@@ -201,18 +201,17 @@ export function createNewEntry() {
 
     editLogId.value = '';
 
-    // Set default values - current date and current time
-    const now = new Date();
-    const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
+    // Set default values - current date and current time in Toronto timezone
+    const currentDateTime = Utils.getCurrentDateTime();
 
     const dateField = document.getElementById('edit-clock-in-date');
     const clockInField = document.getElementById('edit-clock-in-time');
     const clockOutField = document.getElementById('edit-clock-out-time');
     const descField = document.getElementById('edit-work-description');
 
-    if (dateField) dateField.value = now.toISOString().split('T')[0];
-    if (clockInField) clockInField.value = currentTime;
-    if (clockOutField) clockOutField.value = currentTime;
+    if (dateField) dateField.value = currentDateTime.date;
+    if (clockInField) clockInField.value = currentDateTime.time;
+    if (clockOutField) clockOutField.value = currentDateTime.time;
     if (descField) descField.value = '';
 
     // Store the currently selected project for the new entry
@@ -236,15 +235,39 @@ export async function editLog(id) {
             // Populate the edit form
             document.getElementById('edit-log-id').value = log.id;
 
-            // Parse the clock_in datetime
+            // Parse the clock_in datetime in Toronto timezone
             const clockInDate = new Date(log.clock_in);
-            document.getElementById('edit-clock-in-date').value = clockInDate.toISOString().split('T')[0];
-            document.getElementById('edit-clock-in-time').value = clockInDate.toTimeString().slice(0, 5);
+
+            // Format date in Toronto timezone for the date input (YYYY-MM-DD)
+            // Using en-CA locale with these options returns YYYY-MM-DD format
+            const dateForInput = clockInDate.toLocaleDateString('en-CA', {
+                timeZone: 'America/Toronto',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+
+            // Format time in Toronto timezone for the time input (HH:MM)
+            const timeForInput = clockInDate.toLocaleTimeString('en-CA', {
+                timeZone: 'America/Toronto',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+
+            document.getElementById('edit-clock-in-date').value = dateForInput;
+            document.getElementById('edit-clock-in-time').value = timeForInput;
 
             // Parse the clock_out datetime if it exists
             if (log.clock_out) {
                 const clockOutDate = new Date(log.clock_out);
-                document.getElementById('edit-clock-out-time').value = clockOutDate.toTimeString().slice(0, 5);
+                const clockOutTimeForInput = clockOutDate.toLocaleTimeString('en-CA', {
+                    timeZone: 'America/Toronto',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+                document.getElementById('edit-clock-out-time').value = clockOutTimeForInput;
             } else {
                 document.getElementById('edit-clock-out-time').value = '';
             }
