@@ -35,9 +35,11 @@ export async function loadHistory(page = 1, perPage = null) {
                 const row = tbody.insertRow();
 
                 try {
-                    // Format the data properly using Toronto timezone
-                    const clockInDisplay = window.utils.formatTimeForDisplay(log.clock_in);
-                    const clockOutDisplay = log.clock_out ? window.utils.formatTimeForDisplay(log.clock_out) : '-';
+                    // Prefer backend-supplied timezone-aware fields when available
+                    const clockInDisplay = log.clock_in_time || window.utils.formatTimeForDisplay(log.clock_in);
+                    const clockOutDisplay = log.clock_out
+                        ? (log.clock_out_time || window.utils.formatTimeForDisplay(log.clock_out))
+                        : '-';
                     const formattedDuration = log.formatted_duration || (log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-');
                     const workDescription = log.work_description || '-';
                     const truncatedDescription = Utils.truncateDescription(workDescription, 80);
@@ -65,8 +67,10 @@ export async function loadHistory(page = 1, perPage = null) {
                     `;
                 } catch (error) {
                     // Fallback formatting
-                    const clockInTime = new Date(log.clock_in).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false});
-                    const clockOutTime = log.clock_out ? new Date(log.clock_out).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false}) : '-';
+                    const clockInTime = log.clock_in_time
+                        || new Date(log.clock_in).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false});
+                    const clockOutTime = log.clock_out_time
+                        || (log.clock_out ? new Date(log.clock_out).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false}) : '-');
                     const formattedDuration = log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-';
 
                     const workDesc = log.work_description || '-';
@@ -235,20 +239,14 @@ export async function editLog(id) {
             // Populate the edit form
             document.getElementById('edit-log-id').value = log.id;
 
-            // Parse the clock_in datetime in Toronto timezone
-            const clockInDate = new Date(log.clock_in);
-
-            // Format date in Toronto timezone for the date input (YYYY-MM-DD)
-            // Using en-CA locale with these options returns YYYY-MM-DD format
-            const dateForInput = clockInDate.toLocaleDateString('en-CA', {
+            const dateForInput = log.clock_in_date || new Date(log.clock_in).toLocaleDateString('en-CA', {
                 timeZone: 'America/Toronto',
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit'
             });
 
-            // Format time in Toronto timezone for the time input (HH:MM)
-            const timeForInput = clockInDate.toLocaleTimeString('en-CA', {
+            const timeForInput = log.clock_in_time || new Date(log.clock_in).toLocaleTimeString('en-CA', {
                 timeZone: 'America/Toronto',
                 hour: '2-digit',
                 minute: '2-digit',
@@ -260,8 +258,7 @@ export async function editLog(id) {
 
             // Parse the clock_out datetime if it exists
             if (log.clock_out) {
-                const clockOutDate = new Date(log.clock_out);
-                const clockOutTimeForInput = clockOutDate.toLocaleTimeString('en-CA', {
+                const clockOutTimeForInput = log.clock_out_time || new Date(log.clock_out).toLocaleTimeString('en-CA', {
                     timeZone: 'America/Toronto',
                     hour: '2-digit',
                     minute: '2-digit',
@@ -416,8 +413,10 @@ export async function viewDetails(logId) {
 
             // Populate modal with data
             document.getElementById('detail-date').textContent = window.utils.formatDate(log.clock_in);
-            document.getElementById('detail-start-time').textContent = window.utils.formatTimeForDisplay(log.clock_in);
-            document.getElementById('detail-end-time').textContent = log.clock_out ? window.utils.formatTimeForDisplay(log.clock_out) : '-';
+            document.getElementById('detail-start-time').textContent = log.clock_in_time || window.utils.formatTimeForDisplay(log.clock_in);
+            document.getElementById('detail-end-time').textContent = log.clock_out
+                ? (log.clock_out_time || window.utils.formatTimeForDisplay(log.clock_out))
+                : '-';
             document.getElementById('detail-duration').textContent = log.formatted_duration || (log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-');
             document.getElementById('detail-work-description').textContent = log.work_description || 'No description provided';
 

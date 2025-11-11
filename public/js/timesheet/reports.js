@@ -155,9 +155,11 @@ export function displayReport() {
         const row = tbody.insertRow();
 
         try {
-            // Format the data properly using Toronto timezone
-            const clockInDisplay = window.utils.formatTimeForDisplay(log.clock_in);
-            const clockOutDisplay = log.clock_out ? window.utils.formatTimeForDisplay(log.clock_out) : '-';
+            // Prefer backend-supplied timezone-aware fields when available
+            const clockInDisplay = log.clock_in_time || window.utils.formatTimeForDisplay(log.clock_in);
+            const clockOutDisplay = log.clock_out
+                ? (log.clock_out_time || window.utils.formatTimeForDisplay(log.clock_out))
+                : '-';
             const formattedDuration = log.formatted_duration || (log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-');
             const workDescription = log.work_description || '-';
             const truncatedDescription = Utils.truncateDescription(workDescription, 100);
@@ -174,8 +176,10 @@ export function displayReport() {
             `;
         } catch (error) {
             // Fallback formatting
-            const clockInTime = new Date(log.clock_in).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false});
-            const clockOutTime = log.clock_out ? new Date(log.clock_out).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false}) : '-';
+            const clockInTime = log.clock_in_time
+                || new Date(log.clock_in).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false});
+            const clockOutTime = log.clock_out_time
+                || (log.clock_out ? new Date(log.clock_out).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false}) : '-');
             const formattedDuration = log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-';
 
             const workDesc = log.work_description || '-';
