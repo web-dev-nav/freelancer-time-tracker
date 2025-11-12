@@ -1579,11 +1579,13 @@
 
     // Initialize Application
     document.addEventListener('DOMContentLoaded', function() {
+        const timezone = window.appTimezone || 'UTC';
+
         // Ensure utils functions are available
         if (!window.utils.formatTimeForDisplay) {
             window.utils.formatTimeForDisplay = function(dateString) {
                 return new Date(dateString).toLocaleTimeString('en-CA', {
-                    timeZone: 'America/Toronto',
+                    timeZone: timezone,
                     hour: '2-digit',
                     minute: '2-digit',
                     hour12: false
@@ -1596,14 +1598,14 @@
                 const date = new Date(dateString);
                 return {
                     date: date.toLocaleDateString('en-CA', {
-                        timeZone: 'America/Toronto',
+                        timeZone: timezone,
                         weekday: 'short',
                         year: 'numeric',
                         month: 'short',
                         day: 'numeric'
                     }),
                     time: date.toLocaleTimeString('en-CA', {
-                        timeZone: 'America/Toronto',
+                        timeZone: timezone,
                         hour: '2-digit',
                         minute: '2-digit',
                         hour12: false
@@ -1612,10 +1614,10 @@
             };
         }
         
-        // Update utils.formatDate to use Toronto timezone
+        // Update utils.formatDate to use application timezone
         window.utils.formatDate = function(dateString) {
             return new Date(dateString).toLocaleDateString('en-CA', {
-                timeZone: 'America/Toronto',
+                timeZone: timezone,
                 weekday: 'short',
                 year: 'numeric',
                 month: 'short',
@@ -1623,10 +1625,10 @@
             });
         };
         
-        // Update utils.getCurrentDateTime to use Toronto timezone
+        // Update utils.getCurrentDateTime to use application timezone
         window.utils.getCurrentDateTime = function() {
             const formatter = new Intl.DateTimeFormat('en-CA', {
-                timeZone: 'America/Toronto',
+                timeZone: timezone,
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit',
@@ -2006,7 +2008,7 @@
                     const row = tbody.insertRow();
                     
                     try {
-                        // Format the data properly using Toronto timezone
+                        // Format the data properly using application timezone
                         const clockInDisplay = window.utils.formatTimeForDisplay(log.clock_in);
                         const clockOutDisplay = log.clock_out ? window.utils.formatTimeForDisplay(log.clock_out) : '-';
                         const formattedDuration = log.formatted_duration || (log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-');
@@ -2449,7 +2451,7 @@
             const row = tbody.insertRow();
             
             try {
-                // Format the data properly using Toronto timezone
+                // Format the data properly using application timezone
                 const clockInDisplay = window.utils.formatTimeForDisplay(log.clock_in);
                 const clockOutDisplay = log.clock_out ? window.utils.formatTimeForDisplay(log.clock_out) : '-';
                 const formattedDuration = log.formatted_duration || (log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-');

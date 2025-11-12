@@ -176,10 +176,11 @@ export function displayReport() {
             `;
         } catch (error) {
             // Fallback formatting
+            const timezone = Utils.getAppTimezone();
             const clockInTime = log.clock_in_time
-                || new Date(log.clock_in).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false});
+                || new Date(log.clock_in).toLocaleTimeString('en-US', {timeZone: timezone, hour: '2-digit', minute:'2-digit', hour12: false});
             const clockOutTime = log.clock_out_time
-                || (log.clock_out ? new Date(log.clock_out).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false}) : '-');
+                || (log.clock_out ? new Date(log.clock_out).toLocaleTimeString('en-US', {timeZone: timezone, hour: '2-digit', minute:'2-digit', hour12: false}) : '-');
             const formattedDuration = log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-';
 
             const workDesc = log.work_description || '-';
@@ -187,7 +188,7 @@ export function displayReport() {
 
             row.innerHTML = `
                 <td>${new Date(log.clock_in).toLocaleDateString('en-CA', {
-                    timeZone: 'America/Toronto',
+                    timeZone: timezone,
                     weekday: 'short',
                     year: 'numeric',
                     month: 'short',

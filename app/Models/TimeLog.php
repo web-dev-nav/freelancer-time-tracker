@@ -53,7 +53,7 @@ class TimeLog extends Model
         }
 
         return Carbon::parse($raw, 'UTC')
-            ->setTimezone('America/Toronto')
+            ->setTimezone($this->getAppTimezone())
             ->format('Y-m-d');
     }
 
@@ -65,7 +65,7 @@ class TimeLog extends Model
         }
 
         return Carbon::parse($raw, 'UTC')
-            ->setTimezone('America/Toronto')
+            ->setTimezone($this->getAppTimezone())
             ->format('H:i');
     }
 
@@ -77,7 +77,7 @@ class TimeLog extends Model
         }
 
         return Carbon::parse($raw, 'UTC')
-            ->setTimezone('America/Toronto')
+            ->setTimezone($this->getAppTimezone())
             ->format('H:i');
     }
 
@@ -202,5 +202,13 @@ class TimeLog extends Model
     public static function calculateTotalMinutes($logs)
     {
         return $logs->sum('total_minutes');
+    }
+
+    /**
+     * Resolve the application timezone for formatting accessors.
+     */
+    protected function getAppTimezone(): string
+    {
+        return config('app.timezone', 'UTC');
     }
 }

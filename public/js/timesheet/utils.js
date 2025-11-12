@@ -2,17 +2,31 @@
  * Utility Functions Module
  *
  * Provides utility functions for formatting dates, times, and other common operations.
- * All time-related functions use America/Toronto timezone.
+ * All time-related functions respect the app timezone configured on the server.
  */
 
+const DEFAULT_TIMEZONE = 'UTC';
+
 /**
- * Format a datetime string to display time in HH:MM format (Toronto timezone)
+ * Resolve the application timezone provided by the backend
+ * @returns {string} IANA timezone identifier
+ */
+export function getAppTimezone() {
+    if (typeof window !== 'undefined' && window.appTimezone) {
+        return window.appTimezone;
+    }
+    return DEFAULT_TIMEZONE;
+}
+
+/**
+ * Format a datetime string to display time in HH:MM format (app timezone)
  * @param {string} dateString - ISO datetime string
  * @returns {string} Formatted time string
  */
 export function formatTimeForDisplay(dateString) {
+    const timezone = getAppTimezone();
     return new Date(dateString).toLocaleTimeString('en-CA', {
-        timeZone: 'America/Toronto',
+        timeZone: timezone,
         hour: '2-digit',
         minute: '2-digit',
         hour12: false
@@ -20,22 +34,23 @@ export function formatTimeForDisplay(dateString) {
 }
 
 /**
- * Format a datetime string to display both date and time (Toronto timezone)
+ * Format a datetime string to display both date and time (app timezone)
  * @param {string} dateString - ISO datetime string
  * @returns {Object} Object with date and time properties
  */
 export function formatDateTimeForDisplay(dateString) {
+    const timezone = getAppTimezone();
     const date = new Date(dateString);
     return {
         date: date.toLocaleDateString('en-CA', {
-            timeZone: 'America/Toronto',
+            timeZone: timezone,
             weekday: 'short',
             year: 'numeric',
             month: 'short',
             day: 'numeric'
         }),
         time: date.toLocaleTimeString('en-CA', {
-            timeZone: 'America/Toronto',
+            timeZone: timezone,
             hour: '2-digit',
             minute: '2-digit',
             hour12: false
@@ -44,13 +59,14 @@ export function formatDateTimeForDisplay(dateString) {
 }
 
 /**
- * Format a date string for display (Toronto timezone)
+ * Format a date string for display (app timezone)
  * @param {string} dateString - ISO date string
  * @returns {string} Formatted date string
  */
 export function formatDate(dateString) {
+    const timezone = getAppTimezone();
     return new Date(dateString).toLocaleDateString('en-CA', {
-        timeZone: 'America/Toronto',
+        timeZone: timezone,
         weekday: 'short',
         year: 'numeric',
         month: 'short',
@@ -59,12 +75,13 @@ export function formatDate(dateString) {
 }
 
 /**
- * Get current date and time in Toronto timezone
+ * Get current date and time in application timezone
  * @returns {Object} Object with date (YYYY-MM-DD) and time (HH:MM) properties
  */
 export function getCurrentDateTime() {
+    const timezone = getAppTimezone();
     const formatter = new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'America/Toronto',
+        timeZone: timezone,
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
@@ -166,6 +183,7 @@ export function initializeUtils() {
         window.utils = {};
     }
 
+    window.utils.getAppTimezone = getAppTimezone;
     window.utils.formatTimeForDisplay = formatTimeForDisplay;
     window.utils.formatDateTimeForDisplay = formatDateTimeForDisplay;
     window.utils.formatDate = formatDate;

@@ -312,6 +312,9 @@
     <script>
         // Global CSRF token
         window.csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        // Application timezone (configurable via APP_TIMEZONE)
+        window.appTimezone = @json(config('app.timezone', 'UTC'));
         
         // Global API helper
         window.api = {

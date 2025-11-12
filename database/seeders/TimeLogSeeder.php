@@ -15,6 +15,7 @@ class TimeLogSeeder extends Seeder
     {
         // Read the timesheet data from JSON file
         $jsonPath = base_path('timesheet_data.json');
+        $timezone = config('app.timezone', 'UTC');
         
         if (!file_exists($jsonPath)) {
             $this->command->info('timesheet_data.json file not found. Skipping TimeLogSeeder.');
@@ -32,12 +33,12 @@ class TimeLogSeeder extends Seeder
         
         foreach ($timeLogsData as $logData) {
             try {
-                // Create clock-in datetime in Toronto timezone, then convert to UTC
-                $clockIn = Carbon::createFromFormat('Y-m-d H:i', $logData['date'] . ' ' . $logData['start_time'], 'America/Toronto')
+                // Create clock-in datetime in application timezone, then convert to UTC
+                $clockIn = Carbon::createFromFormat('Y-m-d H:i', $logData['date'] . ' ' . $logData['start_time'], $timezone)
                                 ->setTimezone('UTC');
                 
-                // Create clock-out datetime in Toronto timezone, then convert to UTC
-                $clockOut = Carbon::createFromFormat('Y-m-d H:i', $logData['date'] . ' ' . $logData['end_time'], 'America/Toronto')
+                // Create clock-out datetime in application timezone, then convert to UTC
+                $clockOut = Carbon::createFromFormat('Y-m-d H:i', $logData['date'] . ' ' . $logData['end_time'], $timezone)
                                  ->setTimezone('UTC');
                 
                 // Handle overnight sessions

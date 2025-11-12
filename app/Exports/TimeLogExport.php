@@ -21,6 +21,7 @@ class TimeLogExport implements FromArray, WithHeadings, WithStyles, WithColumnWi
     protected $endDate;
     protected $totalHours;
     protected $totalMinutes;
+    protected $timezone;
 
     public function __construct($logs, $startDate, $endDate)
     {
@@ -29,6 +30,7 @@ class TimeLogExport implements FromArray, WithHeadings, WithStyles, WithColumnWi
         $this->endDate = $endDate;
         $this->totalMinutes = $logs->sum('total_minutes');
         $this->totalHours = round($this->totalMinutes / 60, 2);
+        $this->timezone = config('app.timezone', 'UTC');
     }
 
     public function array(): array
@@ -41,22 +43,22 @@ class TimeLogExport implements FromArray, WithHeadings, WithStyles, WithColumnWi
         $data[] = ['Report Period:', "{$this->startDate} to {$this->endDate}"];
         $data[] = ['Total Hours Worked:', $this->totalHours . ' hours'];
         $data[] = ['Total Work Sessions:', $this->logs->count()];
-        $data[] = ['Report Generated:', now('America/Toronto')->format('M j, Y g:i A T')];
+        $data[] = ['Report Generated:', now($this->timezone)->format('M j, Y g:i A T')];
         $data[] = [''];
         $data[] = [''];
 
-        // Group logs by date (using Toronto timezone)
+        // Group logs by date (using application timezone)
         $groupedLogs = $this->logs->groupBy(function($log) {
-            return $log->clock_in->setTimezone('America/Toronto')->format('Y-m-d');
+            return $log->clock_in->setTimezone($this->timezone)->format('Y-m-d');
         });
 
         foreach ($groupedLogs as $date => $dailyLogs) {
             $dayTotal = $dailyLogs->sum('total_minutes');
             $dayHours = round($dayTotal / 60, 2);
             
-            // Date header with better formatting (using Toronto timezone)
+            // Date header with better formatting (using application timezone)
             $data[] = [
-                strtoupper($dailyLogs->first()->clock_in->setTimezone('America/Toronto')->format('l, F j, Y')),
+                strtoupper($dailyLogs->first()->clock_in->setTimezone($this->timezone)->format('l, F j, Y')),
                 '',
                 '',
                 "Daily Total: {$dayHours} hrs"

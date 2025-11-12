@@ -36,6 +36,8 @@ class TimeLogController extends Controller
             'project_id' => 'nullable|exists:projects,id'
         ]);
 
+        $timezone = config('app.timezone', 'UTC');
+
         // Check for existing active session
         $existingSession = TimeLog::getActiveSession();
         if ($existingSession) {
@@ -46,8 +48,8 @@ class TimeLogController extends Controller
             ], 422);
         }
 
-        // Create clock-in datetime in Toronto timezone
-        $clockIn = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->time, 'America/Toronto')
+        // Create clock-in datetime in application timezone
+        $clockIn = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->time, $timezone)
                         ->setTimezone('UTC'); // Convert to UTC for storage
 
         // Create new session
@@ -79,6 +81,8 @@ class TimeLogController extends Controller
             'work_description' => 'required|string'
         ]);
 
+        $timezone = config('app.timezone', 'UTC');
+
         $session = TimeLog::where('session_id', $request->session_id)->first();
 
         if (!$session || $session->status !== 'active') {
@@ -88,9 +92,9 @@ class TimeLogController extends Controller
             ], 404);
         }
 
-        // Create clock-out datetime in Toronto timezone
-        $clockOutDate = $session->clock_in->copy()->setTimezone('America/Toronto')->format('Y-m-d');
-        $clockOut = Carbon::createFromFormat('Y-m-d H:i', $clockOutDate . ' ' . $request->time, 'America/Toronto')
+        // Create clock-out datetime in application timezone
+        $clockOutDate = $session->clock_in->copy()->setTimezone($timezone)->format('Y-m-d');
+        $clockOut = Carbon::createFromFormat('Y-m-d H:i', $clockOutDate . ' ' . $request->time, $timezone)
                          ->setTimezone('UTC'); // Convert to UTC for storage
 
         // Handle overnight sessions
@@ -224,10 +228,12 @@ class TimeLogController extends Controller
             'project_id' => 'nullable|exists:projects,id'
         ]);
 
-        // Create clock-in and clock-out datetimes in Toronto timezone, then convert to UTC
-        $clockIn = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->clock_in_time, 'America/Toronto')
+        $timezone = config('app.timezone', 'UTC');
+
+        // Create clock-in and clock-out datetimes in application timezone, then convert to UTC
+        $clockIn = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->clock_in_time, $timezone)
                         ->setTimezone('UTC');
-        $clockOut = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->clock_out_time, 'America/Toronto')
+        $clockOut = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->clock_out_time, $timezone)
                          ->setTimezone('UTC');
 
         // Handle overnight sessions
@@ -309,10 +315,12 @@ class TimeLogController extends Controller
 
         $log = TimeLog::findOrFail($id);
 
-        // Create clock-in and clock-out datetimes in Toronto timezone, then convert to UTC
-        $clockIn = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->clock_in_time, 'America/Toronto')
+        $timezone = config('app.timezone', 'UTC');
+
+        // Create clock-in and clock-out datetimes in application timezone, then convert to UTC
+        $clockIn = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->clock_in_time, $timezone)
                         ->setTimezone('UTC');
-        $clockOut = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->clock_out_time, 'America/Toronto')
+        $clockOut = Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->clock_out_time, $timezone)
                          ->setTimezone('UTC');
 
         // Handle overnight sessions

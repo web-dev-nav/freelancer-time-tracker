@@ -67,10 +67,11 @@ export async function loadHistory(page = 1, perPage = null) {
                     `;
                 } catch (error) {
                     // Fallback formatting
+                    const timezone = Utils.getAppTimezone();
                     const clockInTime = log.clock_in_time
-                        || new Date(log.clock_in).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false});
+                        || new Date(log.clock_in).toLocaleTimeString('en-US', {timeZone: timezone, hour: '2-digit', minute:'2-digit', hour12: false});
                     const clockOutTime = log.clock_out_time
-                        || (log.clock_out ? new Date(log.clock_out).toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit', hour12: false}) : '-');
+                        || (log.clock_out ? new Date(log.clock_out).toLocaleTimeString('en-US', {timeZone: timezone, hour: '2-digit', minute:'2-digit', hour12: false}) : '-');
                     const formattedDuration = log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-';
 
                     const workDesc = log.work_description || '-';
@@ -78,7 +79,7 @@ export async function loadHistory(page = 1, perPage = null) {
 
                     row.innerHTML = `
                         <td>${new Date(log.clock_in).toLocaleDateString('en-CA', {
-                            timeZone: 'America/Toronto',
+                            timeZone: timezone,
                             weekday: 'short',
                             year: 'numeric',
                             month: 'short',
@@ -211,7 +212,7 @@ export function createNewEntry() {
 
     editLogId.value = '';
 
-    // Set default values - current date and current time in Toronto timezone
+    // Set default values - current date and current time in application timezone
     const currentDateTime = Utils.getCurrentDateTime();
 
     const dateField = document.getElementById('edit-clock-in-date');
@@ -240,20 +241,21 @@ export async function editLog(id) {
         const response = await window.api.request(`/api/timesheet/logs/${id}`);
 
         if (response.success) {
+            const timezone = Utils.getAppTimezone();
             const log = response.data;
 
             // Populate the edit form
             document.getElementById('edit-log-id').value = log.id;
 
             const dateForInput = log.clock_in_date || new Date(log.clock_in).toLocaleDateString('en-CA', {
-                timeZone: 'America/Toronto',
+                timeZone: timezone,
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit'
             });
 
             const timeForInput = log.clock_in_time || new Date(log.clock_in).toLocaleTimeString('en-CA', {
-                timeZone: 'America/Toronto',
+                timeZone: timezone,
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: false
@@ -265,7 +267,7 @@ export async function editLog(id) {
             // Parse the clock_out datetime if it exists
             if (log.clock_out) {
                 const clockOutTimeForInput = log.clock_out_time || new Date(log.clock_out).toLocaleTimeString('en-CA', {
-                    timeZone: 'America/Toronto',
+                    timeZone: timezone,
                     hour: '2-digit',
                     minute: '2-digit',
                     hour12: false
