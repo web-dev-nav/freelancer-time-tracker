@@ -76,6 +76,7 @@ Route::prefix('invoices')->name('invoices.api.')->group(function () {
 
     // Invoice items
     Route::post('/{id}/items', [InvoiceController::class, 'addItem'])->name('add-item');
+    Route::put('/{id}/items/{itemId}', [InvoiceController::class, 'updateItem'])->name('update-item');
     Route::delete('/{id}/items/{itemId}', [InvoiceController::class, 'removeItem'])->name('remove-item');
 
     // Actions

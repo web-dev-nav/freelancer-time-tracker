@@ -646,7 +646,7 @@ export function editCreateInvoiceItem(tempId) {
     document.getElementById('item-id').value = tempId;
     document.getElementById('item-invoice-id').value = 'create';
     document.getElementById('item-description').value = item.description;
-    document.getElementById('item-work-date').value = item.work_date;
+    document.getElementById('item-work-date').value = formatDateForInput(item.work_date);
     document.getElementById('item-hours').value = parseFloat(item.hours).toFixed(2);
     document.getElementById('item-rate').value = parseFloat(item.rate).toFixed(2);
     document.getElementById('item-amount').value = (item.hours * item.rate).toFixed(2);
@@ -1179,7 +1179,7 @@ export async function showAddItemModal(invoiceId = null, itemId = null) {
                 document.getElementById('item-id').value = item.id;
                 document.getElementById('item-invoice-id').value = editInvoiceId;
                 document.getElementById('item-description').value = item.description;
-                document.getElementById('item-work-date').value = item.work_date;
+                document.getElementById('item-work-date').value = formatDateForInput(item.work_date);
                 document.getElementById('item-hours').value = parseFloat(item.hours).toFixed(2);
                 document.getElementById('item-rate').value = parseFloat(item.rate).toFixed(2);
                 document.getElementById('item-amount').value = parseFloat(item.amount).toFixed(2);
@@ -1298,9 +1298,21 @@ export async function saveInvoiceItem(e) {
     // Handle edit mode (API calls)
     try {
         if (itemId) {
-            // Update existing item (not implemented in controller yet, so treat as add)
-            window.notify.error('Editing items is not yet supported. Please delete and re-add.');
-            return;
+            // Update existing item
+            const response = await window.api.request(`/api/invoices/${invoiceId}/items/${itemId}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    ...data,
+                    time_log_id: currentEditingItem?.time_log_id || null
+                })
+            });
+
+            if (response) {
+                window.notify.success('Item updated successfully!');
+                hideAddItemModal();
+                await loadInvoiceItems(invoiceId);
+                updateEditInvoiceTotals();
+            }
         } else {
             // Add new item
             const response = await window.api.request(`/api/invoices/${invoiceId}/items`, {

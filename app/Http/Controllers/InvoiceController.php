@@ -334,6 +334,64 @@ class InvoiceController extends Controller
     }
 
     /**
+     * Update an existing invoice item
+     */
+    public function updateItem(Request $request, $id, $itemId)
+    {
+        $invoice = Invoice::findOrFail($id);
+
+        if ($invoice->status !== 'draft') {
+            return response()->json([
+                'message' => 'Cannot update items on non-draft invoices'
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'time_log_id' => 'nullable|exists:time_logs,id',
+            'description' => 'required|string',
+            'work_date' => 'required|date',
+            'hours' => 'required|numeric|min:0',
+            'rate' => 'required|numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $item = InvoiceItem::where('invoice_id', $invoice->id)
+                ->where('id', $itemId)
+                ->firstOrFail();
+
+            $item->time_log_id = $request->time_log_id;
+            $item->description = $request->description;
+            $item->work_date = $request->work_date;
+            $item->hours = $request->hours;
+            $item->rate = $request->rate;
+            $item->calculateAmount();
+
+            $invoice->calculateTotals();
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Item updated successfully',
+                'item' => $item->fresh(),
+                'invoice' => $invoice->load(['project', 'items'])
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Failed to update item',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Remove item from invoice
      */
     public function removeItem($id, $itemId)
