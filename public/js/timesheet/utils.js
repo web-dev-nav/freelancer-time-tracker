@@ -63,22 +63,49 @@ export function formatDate(dateString) {
  * @returns {Object} Object with date (YYYY-MM-DD) and time (HH:MM) properties
  */
 export function getCurrentDateTime() {
-    const now = new Date();
-    // Convert to Toronto timezone and format properly
-    const torontoTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Toronto"}));
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Toronto',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    });
 
-    // Format date as YYYY-MM-DD
-    const year = torontoTime.getFullYear();
-    const month = String(torontoTime.getMonth() + 1).padStart(2, '0');
-    const day = String(torontoTime.getDate()).padStart(2, '0');
+    const parts = formatter.formatToParts(new Date());
+    let year = '0000';
+    let month = '00';
+    let day = '00';
+    let hour = '00';
+    let minute = '00';
 
-    // Format time as HH:MM
-    const hours = String(torontoTime.getHours()).padStart(2, '0');
-    const minutes = String(torontoTime.getMinutes()).padStart(2, '0');
+    for (const { type, value } of parts) {
+        switch (type) {
+            case 'year':
+                year = value;
+                break;
+            case 'month':
+                month = value;
+                break;
+            case 'day':
+                day = value;
+                break;
+            case 'hour':
+                hour = value;
+                break;
+            case 'minute':
+                minute = value;
+                break;
+            default:
+                // Ignore literals and other parts
+                break;
+        }
+    }
 
     return {
         date: `${year}-${month}-${day}`,
-        time: `${hours}:${minutes}`
+        time: `${hour}:${minute}`
     };
 }
 

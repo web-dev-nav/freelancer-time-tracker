@@ -1625,22 +1625,34 @@
         
         // Update utils.getCurrentDateTime to use Toronto timezone
         window.utils.getCurrentDateTime = function() {
-            const now = new Date();
-            // Convert to Toronto timezone and format properly
-            const torontoTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Toronto"}));
+            const formatter = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'America/Toronto',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
             
-            // Format date as YYYY-MM-DD
-            const year = torontoTime.getFullYear();
-            const month = String(torontoTime.getMonth() + 1).padStart(2, '0');
-            const day = String(torontoTime.getDate()).padStart(2, '0');
+            const parts = formatter.formatToParts(new Date());
+            let year = '0000';
+            let month = '00';
+            let day = '00';
+            let hour = '00';
+            let minute = '00';
             
-            // Format time as HH:MM
-            const hours = String(torontoTime.getHours()).padStart(2, '0');
-            const minutes = String(torontoTime.getMinutes()).padStart(2, '0');
+            parts.forEach(({ type, value }) => {
+                if (type === 'year') year = value;
+                if (type === 'month') month = value;
+                if (type === 'day') day = value;
+                if (type === 'hour') hour = value;
+                if (type === 'minute') minute = value;
+            });
             
             return {
                 date: `${year}-${month}-${day}`,
-                time: `${hours}:${minutes}`
+                time: `${hour}:${minute}`
             };
         };
         
