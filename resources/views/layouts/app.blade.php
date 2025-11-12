@@ -22,7 +22,7 @@
     @stack('styles')
 </head>
 <body>
-    <div class="container-xl py-3">
+    <div class="container-xl py-2">
         <header class="app-header">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
                 <div>

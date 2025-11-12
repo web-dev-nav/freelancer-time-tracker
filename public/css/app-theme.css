@@ -33,6 +33,7 @@ body {
     background: linear-gradient(140deg, #f5f7ff 0%, #e6f3ff 28%, #f9fbff 100%);
     color: var(--text-primary);
     min-height: 100vh;
+    padding-top: 0.75rem;
 }
 
 a {
@@ -49,8 +50,8 @@ a:hover {
     background: var(--surface-card);
     backdrop-filter: blur(18px);
     border-radius: 22px;
-    padding: 2rem 2.5rem;
-    margin: 0 0 1.5rem 0;
+    padding: 1.85rem 2.25rem;
+    margin: 0 0 1.25rem 0;
     border: 1px solid var(--surface-border);
     box-shadow: var(--shadow);
     color: var(--text-primary);
@@ -198,6 +199,7 @@ a:hover {
 body.dark-mode {
     background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
     color: #f9fafb;
+    padding-top: 0.75rem;
     --primary-color: #8b5cf6;
     --primary-dark: #7c3aed;
     --primary-rgb: 139, 92, 246;

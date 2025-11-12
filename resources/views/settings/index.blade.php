@@ -8,22 +8,22 @@
         .settings-container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 30px 20px;
+            padding: 18px 20px;
         }
 
         .settings-header {
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .settings-header h1 {
             font-size: 28px;
             font-weight: 600;
-            color: #1f2937;
+            color: var(--text-primary);
             margin: 0 0 8px 0;
         }
 
         .settings-header p {
-            color: #6b7280;
+            color: var(--text-secondary);
             font-size: 14px;
             margin: 0;
         }
@@ -31,8 +31,8 @@
         .settings-tabs {
             display: flex;
             gap: 8px;
-            border-bottom: 2px solid #e5e7eb;
-            margin-bottom: 30px;
+            border-bottom: 2px solid var(--surface-border);
+            margin-bottom: 24px;
             overflow-x: auto;
         }
 
@@ -41,7 +41,7 @@
             background: none;
             border: none;
             border-bottom: 3px solid transparent;
-            color: #6b7280;
+            color: var(--text-secondary);
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
@@ -51,13 +51,13 @@
         }
 
         .settings-tab:hover {
-            color: #374151;
-            background: #f9fafb;
+            color: var(--primary-dark);
+            background: rgba(var(--primary-rgb), 0.08);
         }
 
         .settings-tab.active {
-            color: #8b5cf6;
-            border-bottom-color: #8b5cf6;
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
         }
 
         .settings-tab i {
@@ -79,28 +79,29 @@
         }
 
         .settings-section {
-            background: white;
-            border-radius: 8px;
-            padding: 24px;
+            background: var(--surface-card);
+            border-radius: 14px;
+            padding: 22px;
             margin-bottom: 24px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--surface-border);
+            box-shadow: var(--shadow);
         }
 
         .section-header {
             margin-bottom: 20px;
             padding-bottom: 12px;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid var(--surface-border);
         }
 
         .section-header h2 {
             font-size: 18px;
             font-weight: 600;
-            color: #1f2937;
+            color: var(--text-primary);
             margin: 0 0 4px 0;
         }
 
         .section-header p {
-            color: #6b7280;
+            color: var(--text-secondary);
             font-size: 13px;
             margin: 0;
         }
@@ -110,10 +111,10 @@
             align-items: center;
             gap: 8px;
             padding: 10px 20px;
-            background: #f3f4f6;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            color: #374151;
+            background: var(--surface-muted);
+            border: 1px solid var(--surface-border);
+            border-radius: 999px;
+            color: var(--text-secondary);
             text-decoration: none;
             font-size: 14px;
             font-weight: 500;
@@ -122,8 +123,8 @@
         }
 
         .back-button:hover {
-            background: #e5e7eb;
-            color: #1f2937;
+            background: rgba(var(--primary-rgb), 0.12);
+            color: var(--primary-dark);
         }
 
         .save-bar {
@@ -131,8 +132,8 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: white;
-            border-top: 2px solid #e5e7eb;
+            background: var(--surface-card);
+            border-top: 2px solid var(--surface-border);
             padding: 16px 20px;
             display: flex;
             justify-content: space-between;
