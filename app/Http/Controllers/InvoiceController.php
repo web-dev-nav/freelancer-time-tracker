@@ -775,7 +775,11 @@ class InvoiceController extends Controller
         $invoice->opened_user_agent = mb_substr($request->userAgent() ?? '', 0, 512);
         $invoice->save();
 
-        if ($previousCount === 0) {
+        $hasViewHistory = $invoice->history()
+            ->where('action', 'viewed')
+            ->exists();
+
+        if (!$hasViewHistory) {
             $invoice->logHistory('viewed', 'Invoice viewed by client', [
                 'ip' => $invoice->opened_ip,
                 'user_agent' => $invoice->opened_user_agent,

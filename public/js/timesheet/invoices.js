@@ -1527,6 +1527,7 @@ function displayInvoiceHistory(historyItems) {
             case 'scheduled': return 'fa-clock';
             case 'paid': return 'fa-check-circle';
             case 'cancelled': return 'fa-ban';
+            case 'viewed': return 'fa-eye';
             default: return 'fa-circle';
         }
     };
@@ -1539,6 +1540,7 @@ function displayInvoiceHistory(historyItems) {
             case 'scheduled': return '#8b5cf6';
             case 'paid': return '#22c55e';
             case 'cancelled': return '#ef4444';
+            case 'viewed': return '#8b5cf6';
             default: return '#6b7280';
         }
     };
