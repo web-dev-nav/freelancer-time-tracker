@@ -1817,11 +1817,12 @@
     function updateActiveSessionDisplay() {
         if (!currentActiveSession) return;
 
-        const startTime = new Date(currentActiveSession.clock_in);
         const startDisplay = utils.formatDateTimeForDisplay(currentActiveSession.clock_in);
+        const formattedDate = utils.formatDate(currentActiveSession.clock_in);
+        const formattedTime = currentActiveSession.clock_in_time || startDisplay.time;
         
-        document.getElementById('session-start-display').textContent = `${startDisplay.date} at ${startDisplay.time}`;
-        document.getElementById('current-session-start').textContent = `Started at ${startDisplay.time}`;
+        document.getElementById('session-start-display').textContent = `${formattedDate} at ${formattedTime}`;
+        document.getElementById('current-session-start').textContent = `Started at ${formattedTime}`;
     }
 
     // Session Timer

@@ -146,17 +146,19 @@ export function hideActiveSessionUI() {
 export function updateActiveSessionDisplay() {
     if (!State.currentActiveSession) return;
 
-    const startTime = new Date(State.currentActiveSession.clock_in);
-    const startDisplay = Utils.formatDateTimeForDisplay(State.currentActiveSession.clock_in);
+    const session = State.currentActiveSession;
+    const startDisplay = Utils.formatDateTimeForDisplay(session.clock_in);
+    const formattedDate = Utils.formatDate(session.clock_in);
+    const formattedTime = session.clock_in_time || startDisplay.time;
 
     const sessionStartDisplay = document.getElementById('session-start-display');
     const currentSessionStart = document.getElementById('current-session-start');
 
     if (sessionStartDisplay) {
-        sessionStartDisplay.textContent = `${startDisplay.date} at ${startDisplay.time}`;
+        sessionStartDisplay.textContent = `${formattedDate} at ${formattedTime}`;
     }
     if (currentSessionStart) {
-        currentSessionStart.textContent = `Started at ${startDisplay.time}`;
+        currentSessionStart.textContent = `Started at ${formattedTime}`;
     }
 }
 
