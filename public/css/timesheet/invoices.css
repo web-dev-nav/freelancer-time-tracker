@@ -178,7 +178,7 @@
 
 .invoice-card-actions {
     padding: 16px 20px;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--surface-muted);
     display: flex;
     gap: 8px;
     justify-content: flex-end;
@@ -220,10 +220,10 @@
 .unbilled-logs-container {
     max-height: 400px;
     overflow-y: auto;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border: 1px solid var(--surface-border);
+    border-radius: 12px;
     padding: 16px;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--surface-muted);
 }
 
 .unbilled-logs-list {
@@ -288,7 +288,7 @@
 .invoice-preview-summary {
     margin-top: 24px;
     padding: 20px;
-    background: rgba(139, 92, 246, 0.1);
+    background: rgba(var(--primary-rgb), 0.12);
     border: 2px solid var(--primary-color);
     border-radius: 12px;
 }
@@ -371,9 +371,9 @@
 .invoice-items-section {
     margin: 24px 0;
     padding: 20px;
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--surface-muted);
     border-radius: 12px;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--surface-border);
 }
 
 .invoice-items-section .section-header {
@@ -405,7 +405,7 @@
 }
 
 .invoice-items-table-element thead {
-    background: rgba(139, 92, 246, 0.1);
+    background: rgba(var(--primary-rgb), 0.12);
 }
 
 .invoice-items-table-element th {
@@ -431,7 +431,7 @@
 }
 
 .invoice-items-table-element tbody tr:hover {
-    background: rgba(139, 92, 246, 0.05);
+    background: rgba(var(--primary-rgb), 0.08);
 }
 
 .invoice-items-table-element tbody td:first-child {
@@ -447,7 +447,7 @@
 .invoice-totals-display {
     margin-top: 20px;
     padding: 20px;
-    background: rgba(139, 92, 246, 0.1);
+    background: rgba(var(--primary-rgb), 0.12);
     border: 2px solid var(--primary-color);
     border-radius: 12px;
 }

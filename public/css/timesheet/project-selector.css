@@ -11,10 +11,11 @@
 
 .project-selector-container {
     margin-bottom: 20px;
-    background: rgba(31, 41, 55, 0.95);
+    background: var(--surface-card);
     border-radius: 12px;
     padding: 16px 20px;
-    border: 1px solid rgba(75, 85, 99, 0.5);
+    border: 1px solid var(--surface-border);
+    box-shadow: var(--shadow);
 }
 
 .project-selector-header {
@@ -48,9 +49,9 @@
 .project-select {
     flex: 1;
     padding: 10px 16px;
-    background: var(--light-color);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+    background: var(--surface-muted);
+    border: 1px solid var(--surface-border);
+    border-radius: 10px;
     color: var(--text-primary);
     font-size: 1rem;
     font-weight: 500;
@@ -65,11 +66,11 @@
 .project-select:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.18);
 }
 
 .project-select option {
-    background: var(--light-color);
+    background: var(--surface-card);
     color: var(--text-primary);
     padding: 8px;
 }

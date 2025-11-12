@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,292 +11,32 @@
     
     <!-- Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <!-- Styles -->
-    <style>
-        :root {
-            --primary-color: #8b5cf6;
-            --primary-dark: #7c3aed;
-            --secondary-color: #374151;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --danger-color: #ef4444;
-            --dark-color: #111827;
-            --darker-color: #0f172a;
-            --light-color: #1f2937;
-            --lighter-color: #374151;
-            --border-color: #4b5563;
-            --text-primary: #f9fafb;
-            --text-secondary: #d1d5db;
-            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.2);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3);
-        }
+    <link rel="stylesheet" href="https://bootswatch.com/5/lumen/bootstrap.css">
+    <link rel="stylesheet" href="https://bootswatch.com/_vendor/bootstrap-icons/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://bootswatch.com/_vendor/prismjs/themes/prism-okaidia.css">
+    <link rel="stylesheet" href="https://bootswatch.com/_assets/css/custom.min.css">
+    <link rel="stylesheet" href="{{ asset('css/app-theme.css') }}?v={{ time() }}">
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            min-height: 100vh;
-            color: var(--text-primary);
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .app-header {
-            background: rgba(31, 41, 55, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: var(--shadow-lg);
-            border: 1px solid rgba(75, 85, 99, 0.5);
-        }
-
-        .app-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: white;
-            margin-bottom: 8px;
-        }
-
-        .app-subtitle {
-            color: var(--text-secondary);
-            font-size: 1rem;
-        }
-
-        .main-content {
-            background: rgba(31, 41, 55, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            box-shadow: var(--shadow-lg);
-            border: 1px solid rgba(75, 85, 99, 0.5);
-            overflow: hidden;
-        }
-
-        /* Utility Classes */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 500;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            white-space: nowrap;
-        }
-
-        .btn:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--shadow);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-            color: white;
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, var(--success-color), #059669);
-            color: white;
-        }
-
-        .btn-warning {
-            background: linear-gradient(135deg, var(--warning-color), #d97706);
-            color: white;
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, var(--danger-color), #dc2626);
-            color: white;
-        }
-
-        .btn-secondary {
-            background: var(--secondary-color);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .alert {
-            padding: 16px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 4px solid;
-            animation: slideIn 0.3s ease;
-        }
-
-        .alert-success {
-            background: rgba(16, 185, 129, 0.1);
-            border-color: var(--success-color);
-            color: #6ee7b7;
-        }
-
-        .alert-error {
-            background: rgba(239, 68, 68, 0.1);
-            border-color: var(--danger-color);
-            color: #fca5a5;
-        }
-
-        .alert-warning {
-            background: rgba(245, 158, 11, 0.1);
-            border-color: var(--warning-color);
-            color: #fcd34d;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            font-weight: 500;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-            background: var(--dark-color);
-            color: var(--text-primary);
-        }
-
-        .form-control:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
-        }
-
-        .card {
-            background: var(--light-color);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border-color);
-            margin-bottom: 24px;
-        }
-
-        .card-header {
-            margin-bottom: 20px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .loading {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text-secondary);
-        }
-
-        .spinner {
-            width: 16px;
-            height: 16px;
-            border: 2px solid var(--border-color);
-            border-top: 2px solid var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .text-center {
-            text-align: center;
-        }
-
-        .text-right {
-            text-align: right;
-        }
-
-        .mb-0 { margin-bottom: 0; }
-        .mb-2 { margin-bottom: 8px; }
-        .mb-4 { margin-bottom: 16px; }
-        .mb-6 { margin-bottom: 24px; }
-
-        .mt-4 { margin-top: 16px; }
-        .mt-6 { margin-top: 24px; }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container {
-                padding: 16px;
-            }
-            
-            .app-header {
-                padding: 20px;
-            }
-            
-            .app-title {
-                font-size: 1.5rem;
-            }
-            
-            .btn {
-                padding: 10px 16px;
-                font-size: 13px;
-            }
-        }
-    </style>
     
     @stack('styles')
 </head>
 <body>
-    <div class="container">
+    <div class="container-xl py-3">
         <header class="app-header">
-            <h1 class="app-title">
-                <i class="fas fa-clock"></i>
-                Professional Timesheet
-            </h1>
-            <p class="app-subtitle">Simple, reliable time tracking for professionals</p>
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+                <div>
+                    <h1 class="app-title mb-1">
+                        <i class="fas fa-clock me-2"></i>
+                        Professional Timesheet
+                    </h1>
+                    <p class="app-subtitle mb-0">Simple, reliable time tracking for professionals</p>
+                </div>
+                <button id="theme-toggle" type="button" class="btn btn-outline-secondary d-inline-flex align-items-center">
+                    <i class="bi bi-moon-stars-fill me-2"></i>
+                    <span>Dark Mode</span>
+                </button>
+            </div>
         </header>
 
         <main class="main-content">
@@ -308,8 +47,51 @@
     {{-- Modals Stack (renders outside main-content) --}}
     @stack('modals')
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-Piv4xVNRyMGpqkH+6W2kQja1GaGLjm+rXhN3kLBYjgJv1bVbWcv16O3EO8PhB0uT" crossorigin="anonymous"></script>
     <!-- Scripts -->
     <script>
+        (function initThemeToggle() {
+            const themeToggle = document.getElementById('theme-toggle');
+            const body = document.body;
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const storedTheme = localStorage.getItem('app-theme');
+
+            function applyTheme(theme) {
+                const useDark = theme === 'dark';
+                body.classList.toggle('dark-mode', useDark);
+
+                if (themeToggle) {
+                    const icon = themeToggle.querySelector('i');
+                    const label = themeToggle.querySelector('span');
+                    if (icon && label) {
+                        if (useDark) {
+                            icon.classList.remove('bi-moon-stars-fill');
+                            icon.classList.add('bi-sun-fill');
+                            label.textContent = 'Light Mode';
+                        } else {
+                            icon.classList.remove('bi-sun-fill');
+                            icon.classList.add('bi-moon-stars-fill');
+                            label.textContent = 'Dark Mode';
+                        }
+                    }
+                }
+            }
+
+            const initialTheme = storedTheme || (prefersDark ? 'dark' : 'light');
+            applyTheme(initialTheme);
+            if (storedTheme !== initialTheme) {
+                localStorage.setItem('app-theme', initialTheme);
+            }
+
+            if (themeToggle) {
+                themeToggle.addEventListener('click', () => {
+                    const nextTheme = body.classList.contains('dark-mode') ? 'light' : 'dark';
+                    applyTheme(nextTheme);
+                    localStorage.setItem('app-theme', nextTheme);
+                });
+            }
+        })();
+
         // Global CSRF token
         window.csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
