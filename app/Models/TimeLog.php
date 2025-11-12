@@ -69,6 +69,18 @@ class TimeLog extends Model
             ->format('H:i');
     }
 
+    public function getClockInDisplayDateAttribute()
+    {
+        $raw = $this->getRawOriginal('clock_in');
+        if (!$raw) {
+            return null;
+        }
+
+        return Carbon::parse($raw, 'UTC')
+            ->setTimezone($this->getAppTimezone())
+            ->format('D, M j, Y');
+    }
+
     public function getClockOutTimeAttribute()
     {
         $raw = $this->getRawOriginal('clock_out');
@@ -100,6 +112,7 @@ class TimeLog extends Model
         'clock_in_date',
         'clock_in_time',
         'clock_out_time',
+        'clock_in_display_date',
         'duration_hours',
         'formatted_duration'
     ];
