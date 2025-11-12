@@ -50,7 +50,12 @@
         <div class="invoices-page-header">
             <div>
                 <h2>Invoices</h2>
-                <p class="invoices-subtitle">Create and manage client invoices</p>
+                <p class="invoices-subtitle">
+                    Create and manage client invoices
+                    <span class="invoice-view-legend">
+                        <i class="bi bi-eye-fill"></i> indicates the client has opened the invoice email
+                    </span>
+                </p>
             </div>
             <div class="invoices-page-actions">
                 <select class="form-control" id="invoice-status-filter" onchange="loadInvoices()" style="width: auto; display: inline-block;">

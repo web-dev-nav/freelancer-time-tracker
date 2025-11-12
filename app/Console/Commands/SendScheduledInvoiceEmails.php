@@ -73,6 +73,12 @@ class SendScheduledInvoiceEmails extends Command
                     $invoice->refresh();
                 }
 
+                $invoice->ensureViewToken();
+                if ($invoice->isDirty('view_token')) {
+                    $invoice->save();
+                    $invoice->refresh();
+                }
+
                 // Generate PDF
                 $pdf = PDF::loadView('invoices.pdf', [
                     'invoice' => $invoice,
@@ -87,6 +93,7 @@ class SendScheduledInvoiceEmails extends Command
                 // Generate detailed message with payment instructions (same as regular send)
                 $message = $this->generateInvoiceEmailMessage($invoice, $companySettings);
                 $htmlMessage = $this->convertToHtmlEmail($message);
+                $htmlMessage = $this->injectTrackingPixel($htmlMessage, $invoice);
 
                 // Send email
                 Mail::mailer($mailerConfig['mailer'])
@@ -201,6 +208,27 @@ class SendScheduledInvoiceEmails extends Command
             'from_address' => $emailSettings['email_from_address'] ?? config('mail.from.address'),
             'from_name' => $emailSettings['email_from_name'] ?? config('mail.from.name'),
         ];
+    }
+
+    private function injectTrackingPixel(string $html, Invoice $invoice): string
+    {
+        $invoice->ensureViewToken();
+        if ($invoice->isDirty('view_token')) {
+            $invoice->save();
+        }
+
+        $trackingUrl = route('invoices.track-open', [
+            'invoice' => $invoice->id,
+            'token' => $invoice->view_token,
+        ]);
+
+        $pixel = '<img src="' . e($trackingUrl) . '" width="1" height="1" style="display:none;" alt="" />';
+
+        if (str_contains($html, '</body>')) {
+            return str_replace('</body>', $pixel . '</body>', $html);
+        }
+
+        return $html . $pixel;
     }
 
     /**

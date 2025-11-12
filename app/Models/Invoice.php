@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Invoice extends Model
 {
@@ -32,6 +33,11 @@ class Invoice extends Model
         'scheduled_send_at',
         'paid_at',
         'cancelled_at',
+        'view_token',
+        'opened_at',
+        'opened_count',
+        'opened_ip',
+        'opened_user_agent',
     ];
 
     protected $casts = [
@@ -45,6 +51,8 @@ class Invoice extends Model
         'tax_rate' => 'decimal:2',
         'tax_amount' => 'decimal:2',
         'total' => 'decimal:2',
+        'opened_at' => 'datetime',
+        'opened_count' => 'integer',
     ];
 
     protected $appends = [
@@ -52,6 +60,13 @@ class Invoice extends Model
         'formatted_due_date',
         'is_overdue',
     ];
+
+    protected static function booted()
+    {
+        static::creating(function (Invoice $invoice) {
+            $invoice->ensureViewToken();
+        });
+    }
 
     // Relationships
     public function project()
@@ -124,6 +139,20 @@ class Invoice extends Model
         $this->status = 'cancelled';
         $this->cancelled_at = Carbon::now();
         $this->save();
+    }
+
+    public function ensureViewToken(): void
+    {
+        if (empty($this->view_token)) {
+            $this->view_token = $this->generateViewToken();
+        }
+    }
+
+    public function generateViewToken(): string
+    {
+        $token = Str::random(40);
+        $this->view_token = $token;
+        return $token;
     }
 
     public function generateInvoiceNumber()

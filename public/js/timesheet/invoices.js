@@ -126,6 +126,17 @@ export function displayInvoices(invoices) {
 
         const isScheduled = invoice.scheduled_send_at && !invoice.sent_at && invoice.status !== 'cancelled';
 
+        const openedCount = Number(invoice.opened_count ?? 0);
+        const viewTitleRaw = invoice.opened_at
+            ? `Viewed ${new Date(invoice.opened_at).toLocaleString()}${openedCount > 1 ? ` (${openedCount} times)` : ''}`
+            : 'Not viewed yet';
+        const viewTitle = viewTitleRaw.replace(/"/g, '&quot;');
+        const viewedIndicator = `
+            <span class="invoice-viewed-icon ${invoice.opened_at ? '' : 'muted'}" title="${viewTitle}">
+                <i class="bi ${invoice.opened_at ? 'bi-eye-fill' : 'bi-eye'}"></i>
+            </span>
+        `;
+
         return `
             <div class="invoice-card" style="background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); border-left: 4px solid ${
                 isScheduled ? '#8b5cf6' :
@@ -139,15 +150,18 @@ export function displayInvoices(invoices) {
                     <div style="display: flex; justify-content: space-between; align-items: start; gap: 16px; margin-bottom: 12px;">
                         <div style="flex: 1;">
                             <h3 style="font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 4px 0;">${invoice.invoice_number}</h3>
-                            ${isScheduled ? `
-                                <span class="badge" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; font-size: 11px; padding: 4px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
-                                    <i class="fas fa-clock"></i> SCHEDULED
-                                </span>
-                            ` : `
-                                <span class="badge badge-${statusClass}" style="font-size: 11px; padding: 4px 8px;">
-                                    ${isOverdue ? 'OVERDUE' : invoice.status.toUpperCase()}
-                                </span>
-                            `}
+                            <div class="invoice-status-meta">
+                                ${isScheduled ? `
+                                    <span class="badge" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; font-size: 11px; padding: 4px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
+                                        <i class="fas fa-clock"></i> SCHEDULED
+                                    </span>
+                                ` : `
+                                    <span class="badge badge-${statusClass}" style="font-size: 11px; padding: 4px 8px;">
+                                        ${isOverdue ? 'OVERDUE' : invoice.status.toUpperCase()}
+                                    </span>
+                                `}
+                                ${viewedIndicator}
+                            </div>
                         </div>
                         <div style="text-align: right; min-width: 120px;">
                             <div style="font-size: 11px; color: #6b7280; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Total</div>

@@ -487,6 +487,11 @@ class InvoiceController extends Controller
     public function sendEmail(Request $request, $id)
     {
         $invoice = Invoice::with(['project', 'items'])->findOrFail($id);
+        $invoice->ensureViewToken();
+        if ($invoice->isDirty('view_token')) {
+            $invoice->save();
+            $invoice->refresh();
+        }
 
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
@@ -563,6 +568,7 @@ class InvoiceController extends Controller
 
             // Convert plain text message to HTML for better formatting
             $htmlMessage = $this->convertToHtmlEmail($message);
+            $htmlMessage = $this->injectTrackingPixel($htmlMessage, $invoice);
 
             // Send email
             Mail::mailer($mailerConfig['mailer'])
@@ -750,6 +756,44 @@ class InvoiceController extends Controller
     }
 
     /**
+     * Track when a client opens an invoice email.
+     */
+    public function trackOpen(Request $request, $id, $token)
+    {
+        $invoice = Invoice::findOrFail($id);
+
+        if (!$invoice->view_token || !hash_equals($invoice->view_token, $token)) {
+            abort(404);
+        }
+
+        $now = Carbon::now();
+
+        $previousCount = $invoice->opened_count ?? 0;
+        $invoice->opened_at = $now;
+        $invoice->opened_count = $previousCount + 1;
+        $invoice->opened_ip = $request->ip();
+        $invoice->opened_user_agent = mb_substr($request->userAgent() ?? '', 0, 512);
+        $invoice->save();
+
+        if ($previousCount === 0) {
+            $invoice->logHistory('viewed', 'Invoice viewed by client', [
+                'ip' => $invoice->opened_ip,
+                'user_agent' => $invoice->opened_user_agent,
+                'view_count' => $invoice->opened_count,
+                'viewed_at' => $now->toDateTimeString(),
+            ]);
+        }
+
+        $pixel = base64_decode('R0lGODlhAQABAPAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==');
+
+        return response($pixel, 200)
+            ->header('Content-Type', 'image/gif')
+            ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
+    }
+
+    /**
      * Convert plain text email message to HTML format.
      *
      * @param string $message
@@ -913,6 +957,35 @@ class InvoiceController extends Controller
 </html>';
 
         return $html;
+    }
+
+    /**
+     * Inject a tracking pixel into the generated HTML email.
+     */
+    protected function injectTrackingPixel(string $html, Invoice $invoice): string
+    {
+        $this->ensureViewTrackingToken($invoice);
+
+        $trackingUrl = route('invoices.track-open', [
+            'invoice' => $invoice->id,
+            'token' => $invoice->view_token,
+        ]);
+
+        $pixel = '<img src="' . e($trackingUrl) . '" width="1" height="1" style="display:none;" alt="" />';
+
+        if (str_contains($html, '</body>')) {
+            return str_replace('</body>', $pixel . '</body>', $html);
+        }
+
+        return $html . $pixel;
+    }
+
+    protected function ensureViewTrackingToken(Invoice $invoice): void
+    {
+        $invoice->ensureViewToken();
+        if ($invoice->isDirty('view_token')) {
+            $invoice->save();
+        }
     }
 
     /**

@@ -2,6 +2,7 @@
 
 // routes/web.php
 
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\TimeLogController;
 use Illuminate\Support\Facades\Route;
 
@@ -80,6 +81,9 @@ Route::get('/timesheet', [TimeLogController::class, 'index'])->name('timesheet.d
 Route::get('/settings', function() {
     return view('settings.index');
 })->name('settings.index');
+
+Route::get('/invoices/{invoice}/open/{token}.png', [InvoiceController::class, 'trackOpen'])
+    ->name('invoices.track-open');
 
 // Fallback route
 Route::fallback(function () {
