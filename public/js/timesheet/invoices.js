@@ -127,15 +127,16 @@ export function displayInvoices(invoices) {
         const isScheduled = invoice.scheduled_send_at && !invoice.sent_at && invoice.status !== 'cancelled';
 
         const openedCount = Number(invoice.opened_count ?? 0);
-        const viewTitleRaw = invoice.opened_at
-            ? `Viewed ${new Date(invoice.opened_at).toLocaleString()}${openedCount > 1 ? ` (${openedCount} times)` : ''}`
-            : 'Not viewed yet';
-        const viewTitle = viewTitleRaw.replace(/"/g, '&quot;');
-        const viewedIndicator = `
-            <span class="invoice-viewed-icon ${invoice.opened_at ? '' : 'muted'}" title="${viewTitle}">
-                <i class="bi ${invoice.opened_at ? 'bi-eye-fill' : 'bi-eye'}"></i>
-            </span>
-        `;
+        let viewedIndicator = '';
+        if (invoice.opened_at || openedCount > 0) {
+            const viewTitleRaw = `Viewed ${new Date(invoice.opened_at).toLocaleString()}${openedCount > 1 ? ` (${openedCount} times)` : ''}`;
+            const viewTitle = viewTitleRaw.replace(/"/g, '&quot;');
+            viewedIndicator = `
+                <span class="invoice-viewed-icon" title="${viewTitle}">
+                    <i class="bi bi-eye-fill"></i>
+                </span>
+            `;
+        }
 
         return `
             <div class="invoice-card" style="background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); border-left: 4px solid ${
