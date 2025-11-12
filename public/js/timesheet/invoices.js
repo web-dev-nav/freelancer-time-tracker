@@ -72,21 +72,26 @@ export async function loadInvoiceStats() {
         const response = await window.api.request(`/api/invoices/stats?project_id=${projectId}`);
 
         if (response) {
-            document.getElementById('total-invoices-count').textContent = response.total_invoices || 0;
-            document.getElementById('pending-invoices-count').textContent =
-                (response.draft_count || 0) + (response.sent_count || 0);
-            document.getElementById('paid-invoices-count').textContent = response.paid_count || 0;
-            document.getElementById('total-revenue').textContent =
-                '$' + (response.total_revenue || 0).toFixed(2);
+            const totalInvoices = Number(response.total_invoices ?? 0);
+            const draftCount = Number(response.draft_count ?? 0);
+            const sentCount = Number(response.sent_count ?? 0);
+            const paidCount = Number(response.paid_count ?? 0);
+            const totalRevenue = Number(response.total_revenue ?? 0);
+            const totalRevenueSubtotal = Number(response.total_revenue_subtotal ?? 0);
+            const totalRevenueTax = Number(response.total_revenue_tax ?? 0);
 
-            // Update revenue breakdown
+            document.getElementById('total-invoices-count').textContent = totalInvoices;
+            document.getElementById('pending-invoices-count').textContent = draftCount + sentCount;
+            document.getElementById('paid-invoices-count').textContent = paidCount;
+            document.getElementById('total-revenue').textContent = '$' + totalRevenue.toFixed(2);
+
             const revenueSubtotal = document.getElementById('revenue-subtotal');
             const revenueTax = document.getElementById('revenue-tax');
             if (revenueSubtotal) {
-                revenueSubtotal.textContent = '$' + (response.total_revenue_subtotal || 0).toFixed(2);
+                revenueSubtotal.textContent = '$' + totalRevenueSubtotal.toFixed(2);
             }
             if (revenueTax) {
-                revenueTax.textContent = '$' + (response.total_revenue_tax || 0).toFixed(2);
+                revenueTax.textContent = '$' + totalRevenueTax.toFixed(2);
             }
         }
     } catch (error) {
