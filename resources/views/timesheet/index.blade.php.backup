@@ -1818,8 +1818,8 @@
         if (!currentActiveSession) return;
 
         const startDisplay = utils.formatDateTimeForDisplay(currentActiveSession.clock_in);
-        const formattedDate = utils.formatDate(currentActiveSession.clock_in);
-        const formattedTime = currentActiveSession.clock_in_time || startDisplay.time;
+        const formattedDate = startDisplay.date;
+        const formattedTime = startDisplay.time;
         
         document.getElementById('session-start-display').textContent = `${formattedDate} at ${formattedTime}`;
         document.getElementById('current-session-start').textContent = `Started at ${formattedTime}`;

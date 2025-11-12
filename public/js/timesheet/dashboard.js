@@ -148,8 +148,8 @@ export function updateActiveSessionDisplay() {
 
     const session = State.currentActiveSession;
     const startDisplay = Utils.formatDateTimeForDisplay(session.clock_in);
-    const formattedDate = Utils.formatDate(session.clock_in);
-    const formattedTime = session.clock_in_time || startDisplay.time;
+    const formattedDate = startDisplay.date;
+    const formattedTime = startDisplay.time;
 
     const sessionStartDisplay = document.getElementById('session-start-display');
     const currentSessionStart = document.getElementById('current-session-start');
