@@ -3,7 +3,7 @@
 @section('title', 'Professional Timesheet')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/timesheet/main.css') }}?v={{ time() }}">
+    <link rel="stylesheet" href="{{ asset_version('css/timesheet/main.css') }}">
 @endpush
 
 @section('content')
@@ -48,5 +48,5 @@
 @endpush
 
 @push('scripts')
-    <script type="module" src="{{ asset('js/timesheet/index.js') }}?v={{ time() }}"></script>
+    <script type="module" src="{{ asset_version('js/timesheet/index.js') }}"></script>
 @endpush

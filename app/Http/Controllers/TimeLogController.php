@@ -387,9 +387,9 @@ class TimeLogController extends Controller
         $totalHours = TimeLog::calculateTotalHours($logs);
         $totalMinutes = TimeLog::calculateTotalMinutes($logs);
 
-        // Group by date for better organization
+        // Group by date for better organization (use local timezone)
         $groupedLogs = $logs->groupBy(function($log) {
-            return $log->clock_in->format('Y-m-d');
+            return $log->clock_in_date; // Use the accessor which handles timezone conversion
         });
 
         // Group by project for project breakdown

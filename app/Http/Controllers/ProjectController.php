@@ -227,7 +227,7 @@ class ProjectController extends Controller
             'recent_activity' => $timeLogs->take(5)->map(function ($log) {
                 return [
                     'id' => $log->id,
-                    'date' => $log->clock_in->format('Y-m-d'),
+                    'date' => $log->clock_in_date, // Use accessor for timezone conversion
                     'hours' => $log->duration_hours,
                     'description' => $log->work_description
                 ];

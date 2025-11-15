@@ -164,8 +164,11 @@ export function displayReport() {
             const workDescription = log.work_description || '-';
             const truncatedDescription = Utils.truncateDescription(workDescription, 100);
 
+            // Use server-provided clock_in_display_date to avoid timezone issues
+            const displayDate = log.clock_in_display_date || window.utils.formatDate(log.clock_in);
+
             row.innerHTML = `
-                <td>${window.utils.formatDate(log.clock_in)}</td>
+                <td>${displayDate}</td>
                 <td>${clockInDisplay}</td>
                 <td>${clockOutDisplay}</td>
                 <td>${formattedDuration}</td>
@@ -186,14 +189,17 @@ export function displayReport() {
             const workDesc = log.work_description || '-';
             const truncatedDesc = Utils.truncateDescription(workDesc, 100);
 
+            // Use server-provided clock_in_display_date to avoid timezone issues
+            const displayDate = log.clock_in_display_date || new Date(log.clock_in).toLocaleDateString('en-CA', {
+                timeZone: timezone,
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+
             row.innerHTML = `
-                <td>${new Date(log.clock_in).toLocaleDateString('en-CA', {
-                    timeZone: timezone,
-                    weekday: 'short',
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                })}</td>
+                <td>${displayDate}</td>
                 <td>${clockInTime}</td>
                 <td>${clockOutTime}</td>
                 <td>${formattedDuration}</td>

@@ -4,8 +4,9 @@
  * This file imports all modules and exports their functions to the global window object
  * for compatibility with existing HTML onclick attributes and inline event handlers.
  *
- * Note: Cache busting is handled by timestamp in blade template (index.js?v={{ time() }})
- * This forces browser to reload index.js and all its module dependencies including invoices.js
+ * Cache Busting: Version is based on file modification time (asset_version helper)
+ * When this file changes, the browser reloads this and all imported modules.
+ * ES6 module imports are automatically versioned when the entry point is versioned.
  */
 
 // Import all modules

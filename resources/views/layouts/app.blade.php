@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://bootswatch.com/_vendor/bootstrap-icons/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://bootswatch.com/_vendor/prismjs/themes/prism-okaidia.css">
     <link rel="stylesheet" href="https://bootswatch.com/_assets/css/custom.min.css">
-    <link rel="stylesheet" href="{{ asset('css/app-theme.css') }}?v={{ time() }}">
+    <link rel="stylesheet" href="{{ asset_version('css/app-theme.css') }}">
 
 
     

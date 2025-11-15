@@ -44,8 +44,11 @@ export async function loadHistory(page = 1, perPage = null) {
                     const workDescription = log.work_description || '-';
                     const truncatedDescription = Utils.truncateDescription(workDescription, 80);
 
+                    // Use server-provided clock_in_display_date to avoid timezone issues
+                    const displayDate = log.clock_in_display_date || window.utils.formatDate(log.clock_in);
+
                     row.innerHTML = `
-                        <td>${window.utils.formatDate(log.clock_in)}</td>
+                        <td>${displayDate}</td>
                         <td>${clockInDisplay}</td>
                         <td>${clockOutDisplay}</td>
                         <td>${formattedDuration}</td>
@@ -66,7 +69,7 @@ export async function loadHistory(page = 1, perPage = null) {
                         </td>
                     `;
                 } catch (error) {
-                    // Fallback formatting
+                    // Fallback formatting - use server-provided formatted dates when available
                     const timezone = Utils.getAppTimezone();
                     const clockInTime = log.clock_in_time
                         || new Date(log.clock_in).toLocaleTimeString('en-US', {timeZone: timezone, hour: '2-digit', minute:'2-digit', hour12: false});
@@ -77,14 +80,17 @@ export async function loadHistory(page = 1, perPage = null) {
                     const workDesc = log.work_description || '-';
                     const truncatedDesc = Utils.truncateDescription(workDesc, 80);
 
+                    // Use server-provided clock_in_display_date to avoid timezone issues
+                    const displayDate = log.clock_in_display_date || new Date(log.clock_in).toLocaleDateString('en-CA', {
+                        timeZone: timezone,
+                        weekday: 'short',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+
                     row.innerHTML = `
-                        <td>${new Date(log.clock_in).toLocaleDateString('en-CA', {
-                            timeZone: timezone,
-                            weekday: 'short',
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                        })}</td>
+                        <td>${displayDate}</td>
                         <td>${clockInTime}</td>
                         <td>${clockOutTime}</td>
                         <td>${formattedDuration}</td>
@@ -420,7 +426,8 @@ export async function viewDetails(logId) {
             const log = response.data;
 
             // Populate modal with data
-            document.getElementById('detail-date').textContent = window.utils.formatDate(log.clock_in);
+            // Use server-provided clock_in_display_date for consistency
+            document.getElementById('detail-date').textContent = log.clock_in_display_date || window.utils.formatDate(log.clock_in);
             document.getElementById('detail-start-time').textContent = log.clock_in_time || window.utils.formatTimeForDisplay(log.clock_in);
             document.getElementById('detail-end-time').textContent = log.clock_out
                 ? (log.clock_out_time || window.utils.formatTimeForDisplay(log.clock_out))

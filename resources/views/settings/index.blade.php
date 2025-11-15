@@ -3,7 +3,7 @@
 @section('title', 'Settings')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/timesheet/main.css') }}?v={{ time() }}">
+    <link rel="stylesheet" href="{{ asset_version('css/timesheet/main.css') }}">
     <style>
         .settings-container {
             max-width: 1200px;
@@ -271,5 +271,5 @@
 @endsection
 
 @push('scripts')
-    <script type="module" src="{{ asset('js/settings/index.js') }}?v={{ time() }}"></script>
+    <script type="module" src="{{ asset_version('js/settings/index.js') }}"></script>
 @endpush
