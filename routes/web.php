@@ -74,6 +74,33 @@ Route::get('/cron/test-reminders/{token}', function($token) {
     }
 })->name('cron.test-reminders');
 
+// Manual database backup trigger
+Route::get('/cron/backup/{token}', function($token) {
+    $expectedToken = substr(md5(config('app.key')), 0, 16);
+
+    if ($token !== $expectedToken) {
+        abort(403, 'Unauthorized');
+    }
+
+    try {
+        \Illuminate\Support\Facades\Artisan::call('backup:database');
+        $output = \Illuminate\Support\Facades\Artisan::output();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Database backup command executed',
+            'output' => $output,
+            'timestamp' => now()->toDateTimeString()
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'timestamp' => now()->toDateTimeString()
+        ], 500);
+    }
+})->name('cron.backup');
+
 // Main timesheet interface
 Route::get('/', [TimeLogController::class, 'index'])->name('timesheet.index');
 Route::get('/timesheet', [TimeLogController::class, 'index'])->name('timesheet.dashboard');
