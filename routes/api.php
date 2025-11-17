@@ -98,5 +98,7 @@ Route::prefix('settings')->name('settings.api.')->group(function () {
     Route::post('/', [SettingController::class, 'update'])->middleware('throttle:10,1')->name('update');
     // SECURITY: Rate limit test emails (3 per minute) to prevent spam
     Route::post('/test-email', [SettingController::class, 'testEmail'])->middleware('throttle:3,1')->name('test-email');
+    // Maintenance utilities
+    Route::post('/flush-cache', [SettingController::class, 'flushCache'])->middleware('throttle:3,1')->name('flush-cache');
     Route::get('/debug-email', [SettingController::class, 'debugEmail'])->name('debug-email');
 });

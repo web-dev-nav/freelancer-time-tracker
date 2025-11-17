@@ -42,3 +42,27 @@
         </small>
     </div>
 </div>
+
+<div class="settings-section">
+    <div class="section-header">
+        <h2><i class="fas fa-tools"></i> Maintenance Utilities</h2>
+        <p>Clear Laravel cache, config, and routes after deployments or .env changes</p>
+    </div>
+
+    <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 14px;">
+        Use this tool only when something appears out of sync after updating code or environment variables. It runs
+        <code>config:clear</code>, <code>cache:clear</code>, <code>route:clear</code>, <code>view:clear</code>, and <code>optimize:clear</code> together.
+    </p>
+
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+        <button type="button" id="clear-cache-btn" class="btn btn-warning" style="display: inline-flex; align-items: center; gap: 8px;">
+            <i class="fas fa-broom"></i>
+            Clear Cache / Config / Routes
+        </button>
+        <div id="clear-cache-status" style="display: none; font-size: 14px;"></div>
+    </div>
+
+    <small class="form-hint" style="margin-top: 10px;">
+        Tip: Run this after editing routes, config files, or environment variables on the server.
+    </small>
+</div>

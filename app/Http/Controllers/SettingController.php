@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Setting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
@@ -305,6 +306,48 @@ class SettingController extends Controller
             'from_address' => $emailSettings['email_from_address'] ?? config('mail.from.address'),
             'from_name' => $emailSettings['email_from_name'] ?? config('mail.from.name'),
         ];
+    }
+
+    /**
+     * Clear application caches (config, route, view) from the settings UI.
+     */
+    public function flushCache(Request $request)
+    {
+        try {
+            $commands = [
+                'config:clear',
+                'cache:clear',
+                'route:clear',
+                'view:clear',
+                'optimize:clear',
+            ];
+
+            $outputs = [];
+
+            foreach ($commands as $command) {
+                Artisan::call($command);
+                $outputs[$command] = trim(Artisan::output());
+            }
+
+            Log::info('Application caches cleared from settings UI', [
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Application caches cleared successfully.',
+                'commands' => $commands,
+                'output' => $outputs,
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to clear caches: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

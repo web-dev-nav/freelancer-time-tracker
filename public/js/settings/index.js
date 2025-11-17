@@ -6,6 +6,7 @@ let isLoading = false;
 
 const STRIPE_SECRET_INPUT_ID = 'stripe-secret-key';
 const STRIPE_SECRET_ACTIONS_ID = 'stripe-secret-actions';
+const CLEAR_CACHE_STATUS_ID = 'clear-cache-status';
 
 function getStripeSecretInput() {
     return document.getElementById(STRIPE_SECRET_INPUT_ID);
@@ -15,6 +16,91 @@ function toggleStripeSecretActions(show) {
     const actions = document.getElementById(STRIPE_SECRET_ACTIONS_ID);
     if (actions) {
         actions.style.display = show ? 'block' : 'none';
+    }
+}
+
+function updateClearCacheStatus(type, message) {
+    const status = document.getElementById(CLEAR_CACHE_STATUS_ID);
+    if (!status) {
+        return;
+    }
+
+    if (!message) {
+        status.style.display = 'none';
+        return;
+    }
+
+    status.style.display = 'flex';
+    status.style.alignItems = 'center';
+    status.style.gap = '8px';
+    status.style.padding = '8px 12px';
+    status.style.borderRadius = '6px';
+    status.style.fontWeight = '500';
+
+    let background = '#e5e7eb';
+    let color = '#374151';
+    let border = '#d1d5db';
+    let icon = 'info-circle';
+
+    if (type === 'success') {
+        background = '#d1fae5';
+        color = '#065f46';
+        border = '#10b981';
+        icon = 'check-circle';
+    } else if (type === 'error') {
+        background = '#fee2e2';
+        color = '#991b1b';
+        border = '#ef4444';
+        icon = 'exclamation-circle';
+    } else if (type === 'info') {
+        background = '#e0f2fe';
+        color = '#0c4a6e';
+        border = '#0284c7';
+        icon = 'spinner fa-spin';
+    }
+
+    status.style.background = background;
+    status.style.color = color;
+    status.style.border = `1px solid ${border}`;
+    status.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
+}
+
+async function clearApplicationCaches() {
+    const button = document.getElementById('clear-cache-btn');
+    if (!button || isLoading) {
+        return;
+    }
+
+    const originalLabel = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Clearing...';
+
+    updateClearCacheStatus('info', 'Clearing Laravel caches...');
+
+    try {
+        isLoading = true;
+        const response = await window.api.request('/api/settings/flush-cache', {
+            method: 'POST',
+        });
+
+        if (response && response.success) {
+            const successMessage = response.message || 'Application caches cleared successfully.';
+            updateClearCacheStatus('success', successMessage);
+            showMessage('success', successMessage);
+        } else {
+            const errorMessage = response?.message || 'Failed to clear caches. Please try again.';
+            updateClearCacheStatus('error', errorMessage);
+            showMessage('error', errorMessage);
+        }
+    } catch (error) {
+        console.error('Failed to clear caches:', error);
+        const message = 'Failed to clear caches: ' + (error.message || 'Unknown error');
+        updateClearCacheStatus('error', message);
+        showMessage('error', message);
+    } finally {
+        isLoading = false;
+        button.disabled = false;
+        button.innerHTML = originalLabel;
     }
 }
 
@@ -412,5 +498,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const stripeEnabled = document.getElementById('stripe-enabled');
     if (stripeEnabled) {
         stripeEnabled.addEventListener('change', toggleStripeFields);
+    }
+
+    const clearCacheBtn = document.getElementById('clear-cache-btn');
+    if (clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', clearApplicationCaches);
     }
 });
