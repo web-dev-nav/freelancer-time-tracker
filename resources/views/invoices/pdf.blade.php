@@ -356,8 +356,8 @@
         <div style="display: table-cell; width: 40%; vertical-align: top; text-align: right;">
             <div style="display: inline-block; background: white; padding: 12px; border-radius: 8px; border: 2px solid #8b5cf6; box-shadow: 0 2px 8px rgba(139, 92, 246, 0.15);">
                 <div style="font-size: 10px; color: #8b5cf6; text-transform: uppercase; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.5px; text-align: center;">💳 Scan to Pay</div>
-                <div style="width: 150px; height: 150px; display: block;">
-                    {!! str_replace('<svg', '<svg style="width:150px;height:150px;display:block;"', (string) $qrCode) !!}
+                <div style="width: 150px; height: 150px; display: flex; align-items: center; justify-content: center;">
+                    <img src="{{ $qrCode }}" alt="Stripe payment QR" style="width: 150px; height: 150px; display: block;" />
                 </div>
                 <div style="margin-top: 6px; font-size: 9px; color: #6b7280; text-align: center;">Secure Payment via Stripe</div>
             </div>

@@ -472,29 +472,7 @@ class InvoiceController extends Controller
         $companySettings = $this->getInvoiceSettings();
 
         try {
-            // Generate QR code for Stripe payment link if available
-            // Using SVG format to avoid imagick dependency
-            $qrCode = null;
-            if ($invoice->stripe_payment_link) {
-                try {
-                    $qrCode = QrCode::size(200)
-                        ->format('svg')
-                        ->generate($invoice->stripe_payment_link);
-
-                    \Log::info('QR code generated for invoice', [
-                        'invoice_id' => $id,
-                        'has_qr' => !empty($qrCode),
-                        'qr_length' => strlen($qrCode)
-                    ]);
-                } catch (\Exception $qrException) {
-                    \Log::warning('Failed to generate QR code for invoice', [
-                        'invoice_id' => $id,
-                        'error' => $qrException->getMessage()
-                    ]);
-                    // Continue without QR code
-                    $qrCode = null;
-                }
-            }
+            $qrCode = $this->generateQrCode($invoice->stripe_payment_link);
 
             $pdf = PDF::loadView('invoices.pdf', [
                 'invoice' => $invoice,
@@ -527,22 +505,7 @@ class InvoiceController extends Controller
         $companySettings = $this->getInvoiceSettings();
 
         try {
-            // Generate QR code for Stripe payment link if available
-            // Using SVG format to avoid imagick dependency
-            $qrCode = null;
-            if ($invoice->stripe_payment_link) {
-                try {
-                    $qrCode = QrCode::size(200)
-                        ->format('svg')
-                        ->generate($invoice->stripe_payment_link);
-                } catch (\Exception $qrException) {
-                    \Log::warning('Failed to generate QR code for preview', [
-                        'invoice_id' => $id,
-                        'error' => $qrException->getMessage()
-                    ]);
-                    $qrCode = null;
-                }
-            }
+            $qrCode = $this->generateQrCode($invoice->stripe_payment_link);
 
             $pdf = PDF::loadView('invoices.pdf', [
                 'invoice' => $invoice,
@@ -654,22 +617,7 @@ class InvoiceController extends Controller
                 $invoice->refresh();
             }
 
-            // Generate QR code for Stripe payment link if available
-            // Using SVG format to avoid imagick dependency
-            $qrCode = null;
-            if ($invoice->stripe_payment_link) {
-                try {
-                    $qrCode = QrCode::size(200)
-                        ->format('svg')
-                        ->generate($invoice->stripe_payment_link);
-                } catch (\Exception $qrException) {
-                    \Log::warning('Failed to generate QR code for email', [
-                        'invoice_id' => $invoice->id,
-                        'error' => $qrException->getMessage()
-                    ]);
-                    $qrCode = null;
-                }
-            }
+            $qrCode = $this->generateQrCode($invoice->stripe_payment_link);
 
             // Generate PDF with updated status
             $pdf = PDF::loadView('invoices.pdf', [
@@ -1209,6 +1157,32 @@ class InvoiceController extends Controller
         ]);
 
         return $settings;
+    }
+
+    /**
+     * Build a base64 PNG QR code for a Stripe payment link.
+     */
+    protected function generateQrCode(?string $url): ?string
+    {
+        if (!$url) {
+            return null;
+        }
+
+        try {
+            $binary = QrCode::format('png')
+                ->size(400)
+                ->margin(1)
+                ->errorCorrection('H')
+                ->generate($url);
+
+            return 'data:image/png;base64,' . base64_encode($binary);
+        } catch (\Throwable $e) {
+            \Log::warning('Failed to generate QR code image', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**
