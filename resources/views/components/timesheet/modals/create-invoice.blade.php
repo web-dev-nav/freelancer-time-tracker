@@ -95,10 +95,32 @@
                     <span>Tax (<span id="create-invoice-tax-rate">0</span>%):</span>
                     <strong id="create-invoice-tax-amount">$0.00</strong>
                 </div>
+                <div class="totals-row" id="stripe-fee-row" style="border-top: 1px solid #e5e7eb; padding-top: 8px; margin-top: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label style="display: flex; align-items: center; gap: 6px; margin: 0; cursor: pointer;">
+                            <input type="checkbox" id="include-stripe-fees" onchange="calculateCreateInvoiceTotals()" style="cursor: pointer;">
+                            <span style="font-size: 13px; color: #374151;">
+                                <i class="fab fa-stripe" style="color: #635BFF;"></i>
+                                Charge clients a Stripe processing fee (2.9% + $0.30) when they pay via Stripe
+                            </span>
+                        </label>
+                        <span style="font-size: 11px; color: #9ca3af;" title="Based on Stripe's standard pricing for Canadian transactions">
+                            <i class="fas fa-info-circle"></i>
+                        </span>
+                    </div>
+                    <strong id="create-invoice-stripe-fee">+$0.00</strong>
+                </div>
                 <div class="totals-row totals-total">
                     <span>Total:</span>
                     <strong id="create-invoice-total">$0.00</strong>
                 </div>
+                <div class="totals-row" id="stripe-payment-total-row" style="display: none; background: #eef2ff; border-radius: 6px; padding: 8px 12px; margin-top: 8px;">
+                    <span style="font-size: 13px; color: #312e81;">Stripe payment total:</span>
+                    <strong id="create-invoice-stripe-total" style="color: #312e81;">$0.00</strong>
+                </div>
+                <p id="stripe-payment-note" style="display: none; font-size: 12px; color: #6b7280; margin: 6px 0 0;">
+                    A Stripe processing fee (2.9% + $0.30 CAD) is only added when the client pays using the "Pay with Stripe" button.
+                </p>
             </div>
 
             <div class="form-row">

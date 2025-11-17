@@ -15,6 +15,108 @@ let createInvoiceProjects = [];
 let createInvoiceItems = []; // Temporary items for create mode
 let createItemIdCounter = 1; // Temporary ID counter for create mode items
 
+// Stripe publishes Canadian card pricing at 2.9% + $0.30 CAD.
+const STRIPE_CARD_PERCENTAGE = 0.029;
+const STRIPE_CARD_FIXED_FEE = 0.30;
+const STRIPE_FEE_NOTE_TEXT = 'A Stripe processing fee (2.9% + $0.30 CAD) applies only when you choose to pay via Stripe.';
+let stripePaymentsEnabled = false;
+
+function escapeRegExp(value) {
+    return value.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
+}
+
+function calculateStripePassThroughFee(baseAmount, percentage = STRIPE_CARD_PERCENTAGE, fixedFee = STRIPE_CARD_FIXED_FEE) {
+    if (!Number.isFinite(baseAmount) || baseAmount <= 0) {
+        return 0;
+    }
+
+    if (!Number.isFinite(percentage) || percentage < 0 || percentage >= 1) {
+        return 0;
+    }
+
+    const grossCharge = (baseAmount + fixedFee) / (1 - percentage);
+    const fee = grossCharge - baseAmount;
+    if (!Number.isFinite(fee) || fee <= 0) {
+        return 0;
+    }
+
+    return Math.round(fee * 100) / 100;
+}
+
+function applyStripePaymentAvailability(enabled) {
+    stripePaymentsEnabled = !!enabled;
+
+    const stripeRow = document.getElementById('stripe-fee-row');
+    const stripeCheckbox = document.getElementById('include-stripe-fees');
+    const stripeTotalRow = document.getElementById('stripe-payment-total-row');
+    const stripeNote = document.getElementById('stripe-payment-note');
+
+    if (stripeRow) {
+        stripeRow.hidden = !stripePaymentsEnabled;
+    }
+
+    if (stripeCheckbox) {
+        stripeCheckbox.disabled = !stripePaymentsEnabled;
+        if (!stripePaymentsEnabled && stripeCheckbox.checked) {
+            stripeCheckbox.checked = false;
+        }
+    }
+
+    if (!stripePaymentsEnabled) {
+        if (stripeTotalRow) {
+            stripeTotalRow.style.display = 'none';
+        }
+        if (stripeNote) {
+            stripeNote.style.display = 'none';
+        }
+        syncStripeFeeNote(false);
+    }
+}
+
+async function refreshStripePaymentAvailability() {
+    try {
+        const response = await window.api.request('/api/settings');
+        const data = response?.data || {};
+        const enabled =
+            data.stripe_enabled === true ||
+            data.stripe_enabled === '1' ||
+            data.stripe_enabled === 1;
+        applyStripePaymentAvailability(enabled);
+        return enabled;
+    } catch (error) {
+        console.error('Failed to determine Stripe availability:', error);
+        applyStripePaymentAvailability(false);
+        return false;
+    }
+}
+
+function syncStripeFeeNote(includeStripeFees) {
+    const noteField = document.getElementById('invoice-notes');
+    if (!noteField) {
+        return;
+    }
+
+    const note = STRIPE_FEE_NOTE_TEXT;
+    const currentValue = noteField.value || '';
+
+    if (includeStripeFees) {
+        if (!currentValue.includes(note)) {
+            const trimmed = currentValue.trim();
+            noteField.value = trimmed ? `${trimmed}\n\n${note}` : note;
+        }
+        return;
+    }
+
+    if (!currentValue.includes(note)) {
+        return;
+    }
+
+    const pattern = new RegExp(`(?:\\s*\\n\\s*)?${escapeRegExp(note)}(?:\\s*\\n\\s*)?`, 'g');
+    let updated = currentValue.replace(pattern, '\n').trim();
+    updated = updated.replace(/\n{3,}/g, '\n\n');
+    noteField.value = updated;
+}
+
 /**
  * Format a date string so it can be used in an <input type="date">
  * @param {string|null} value
@@ -279,6 +381,37 @@ export function displayInvoices(invoices) {
                             <p style="margin: 0; color: #78350f; font-size: 13px; line-height: 1.5;">${invoice.notes}</p>
                         </div>
                     ` : ''}
+
+                    ${invoice.stripe_payment_link && invoice.status !== 'paid' && invoice.status !== 'cancelled' ? `
+                        <div style="margin-top: 12px; padding: 14px; background: linear-gradient(135deg, #635BFF 0%, #5046E5 100%); border-radius: 8px; box-shadow: 0 4px 12px rgba(99, 91, 255, 0.2);">
+                            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                                <div style="flex: 1;">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                        <i class="fab fa-stripe" style="color: white; font-size: 18px;"></i>
+                                        <div style="font-size: 11px; color: rgba(255, 255, 255, 0.9); text-transform: uppercase; font-weight: 700; letter-spacing: 0.8px;">Pay with Stripe</div>
+                                    </div>
+                                    <div style="font-size: 12px; color: rgba(255, 255, 255, 0.85); line-height: 1.4;">
+                                        Client can pay securely online with credit card
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 6px;">
+                                    <button class="btn btn-sm"
+                                            onclick="copyToClipboard('${invoice.stripe_payment_link}', 'Payment link copied!')"
+                                            style="background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3); padding: 6px 12px; font-size: 12px; font-weight: 600;"
+                                            title="Copy payment link">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                    <a href="${invoice.stripe_payment_link}"
+                                       target="_blank"
+                                       class="btn btn-sm"
+                                       style="background: white; color: #635BFF; border: none; padding: 6px 12px; font-size: 12px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;"
+                                       title="Open payment page">
+                                        <i class="fas fa-external-link-alt"></i> Open
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
 
                 <div class="invoice-card-actions" style="padding: 12px 16px; background: #f9fafb; border-top: 1px solid #e5e7eb; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end;">
@@ -343,6 +476,8 @@ export async function showCreateInvoiceModal() {
         createInvoiceItems = [];
         createItemIdCounter = 1;
 
+        applyStripePaymentAvailability(false);
+
         const selector = document.getElementById('invoice-project-id');
         if (selector) {
             selector.innerHTML = '<option value="">Select a project...</option>';
@@ -374,6 +509,9 @@ export async function showCreateInvoiceModal() {
 
         document.getElementById('invoice-date').value = today;
         document.getElementById('due-date').value = dueDate.toISOString().split('T')[0];
+
+        await refreshStripePaymentAvailability();
+        updateCreateInvoiceTotals();
 
         // Show modal
         document.getElementById('create-invoice-modal').classList.add('show');
@@ -497,6 +635,11 @@ export async function createInvoice(e) {
         return;
     }
 
+    // Check if Stripe fees should be included
+    const includeStripeFees =
+        stripePaymentsEnabled &&
+        (document.getElementById('include-stripe-fees')?.checked || false);
+
     // Include invoice items
     const data = {
         project_id: projectId,
@@ -508,6 +651,7 @@ export async function createInvoice(e) {
         client_address: clientAddress || null,
         notes: notes || null,
         description: description || null,
+        stripe_fees_included: includeStripeFees,
         items: createInvoiceItems.map(item => ({
             description: item.description,
             work_date: item.work_date,
@@ -600,13 +744,67 @@ function updateCreateInvoiceTotals() {
 
     const subtotal = createInvoiceItems.reduce((sum, item) => sum + (item.hours * item.rate), 0);
     const taxAmount = subtotal * (taxRate / 100);
+
+    // Calculate Stripe fees if checkbox is checked
+    const includeStripeFees =
+        stripePaymentsEnabled &&
+        (document.getElementById('include-stripe-fees')?.checked || false);
+    let stripeFee = 0;
+
+    if (includeStripeFees) {
+        const baseAmount = subtotal + taxAmount;
+        stripeFee = calculateStripePassThroughFee(baseAmount);
+    }
+
     const total = subtotal + taxAmount;
+    const stripeTotal = total + stripeFee;
 
     document.getElementById('create-invoice-subtotal').textContent = '$' + subtotal.toFixed(2);
     document.getElementById('create-invoice-tax-rate').textContent = taxRate.toFixed(0);
     document.getElementById('create-invoice-tax-amount').textContent = '$' + taxAmount.toFixed(2);
+
+    const stripeFeeElement = document.getElementById('create-invoice-stripe-fee');
+    if (stripeFeeElement) {
+        stripeFeeElement.textContent = includeStripeFees ? '+$' + stripeFee.toFixed(2) : '+$0.00';
+    }
+
     document.getElementById('create-invoice-total').textContent = '$' + total.toFixed(2);
+
+    const stripeTotalRow = document.getElementById('stripe-payment-total-row');
+    const stripeTotalElement = document.getElementById('create-invoice-stripe-total');
+    const stripeNote = document.getElementById('stripe-payment-note');
+
+    if (stripeTotalRow && stripeTotalElement && stripeNote) {
+        if (includeStripeFees) {
+            stripeTotalRow.style.display = 'flex';
+            stripeTotalElement.textContent = '$' + stripeTotal.toFixed(2);
+            stripeNote.style.display = 'block';
+        } else {
+            stripeTotalRow.style.display = 'none';
+            stripeNote.style.display = 'none';
+        }
+    }
+
+    syncStripeFeeNote(includeStripeFees);
 }
+
+/**
+ * Calculate totals when stripe fees checkbox changes
+ * This is called by the onchange event of the checkbox
+ */
+export function calculateCreateInvoiceTotals() {
+    updateCreateInvoiceTotals();
+}
+
+// Expose calculator for inline handlers
+window.calculateCreateInvoiceTotals = calculateCreateInvoiceTotals;
+window.showAddItemModalForCreate = showAddItemModalForCreate;
+window.editCreateInvoiceItem = editCreateInvoiceItem;
+window.deleteCreateInvoiceItem = deleteCreateInvoiceItem;
+window.showAddItemModal = showAddItemModal;
+window.hideAddItemModal = hideAddItemModal;
+window.calculateItemAmount = calculateItemAmount;
+window.deleteInvoiceItem = deleteInvoiceItem;
 
 /**
  * Show add item modal for create invoice mode
@@ -637,6 +835,9 @@ export function showAddItemModalForCreate() {
     // Set default work date to today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('item-work-date').value = today;
+
+    // Default quantity to 1
+    document.getElementById('item-hours').value = '1.00';
 
     // Set default rate from project
     if (project) {
@@ -739,6 +940,14 @@ async function generateInvoiceEmailBody(invoice) {
                 }
             });
             body += '\n';
+            instructionNumber++;
+            hasPaymentInfo = true;
+        }
+
+        if (invoice.stripe_payment_link) {
+            body += `${instructionNumber}. Pay securely online via Stripe\n`;
+            body += `   Payment link: ${invoice.stripe_payment_link}\n`;
+            body += '   A Stripe processing fee (2.9% + $0.30 CAD) applies only when you choose this option.\n\n';
             instructionNumber++;
             hasPaymentInfo = true;
         }

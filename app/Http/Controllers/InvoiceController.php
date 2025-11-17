@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Carbon\Carbon;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class InvoiceController extends Controller
 {
@@ -46,9 +47,11 @@ class InvoiceController extends Controller
 
         // Search by invoice number or client name
         if ($request->has('search') && $request->search) {
-            $query->where(function ($q) use ($request) {
-                $q->where('invoice_number', 'like', '%' . $request->search . '%')
-                  ->orWhere('client_name', 'like', '%' . $request->search . '%');
+            // SECURITY: Escape LIKE wildcards to prevent search manipulation
+            $search = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $request->search);
+            $query->where(function ($q) use ($search) {
+                $q->where('invoice_number', 'like', '%' . $search . '%')
+                  ->orWhere('client_name', 'like', '%' . $search . '%');
             });
         }
 
@@ -98,6 +101,7 @@ class InvoiceController extends Controller
             'client_address' => 'nullable|string',
             'notes' => 'nullable|string',
             'description' => 'nullable|string',
+            'stripe_fees_included' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -136,6 +140,8 @@ class InvoiceController extends Controller
             $invoice->notes = $request->notes;
             $invoice->description = $request->description;
             $invoice->status = 'draft';
+            $invoice->stripe_fees_included = $request->stripe_fees_included ?? false;
+            $invoice->syncStripeFeeNote();
             $invoice->save();
 
             // Add time logs as invoice items
@@ -179,6 +185,22 @@ class InvoiceController extends Controller
 
             DB::commit();
 
+            // SECURITY: Generate Stripe payment link AFTER transaction commits
+            // This ensures the invoice is saved even if Stripe fails
+            $stripeService = new \App\Services\StripePaymentService();
+            if ($stripeService->isEnabled()) {
+                try {
+                    $stripeService->getPaymentLink($invoice);
+                    $invoice->refresh();
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to create Stripe payment link during invoice creation', [
+                        'invoice_id' => $invoice->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    // Invoice is already saved, so just continue
+                }
+            }
+
             return response()->json([
                 'message' => 'Invoice created successfully',
                 'invoice' => $invoice->load(['project', 'items'])
@@ -186,9 +208,14 @@ class InvoiceController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error('Failed to create invoice', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'message' => 'Failed to create invoice',
-                'error' => $e->getMessage()
+                // SECURITY: Don't expose internal errors in production
+                'error' => $this->sanitizeError($e)
             ], 500);
         }
     }
@@ -270,9 +297,13 @@ class InvoiceController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Failed to delete invoice', [
+                'invoice_id' => $id,
+                'error' => $e->getMessage()
+            ]);
             return response()->json([
                 'message' => 'Failed to delete invoice',
-                'error' => $e->getMessage()
+                'error' => $this->sanitizeError($e)
             ], 500);
         }
     }
@@ -441,17 +472,47 @@ class InvoiceController extends Controller
         $companySettings = $this->getInvoiceSettings();
 
         try {
+            // Generate QR code for Stripe payment link if available
+            // Using SVG format to avoid imagick dependency
+            $qrCode = null;
+            if ($invoice->stripe_payment_link) {
+                try {
+                    $qrCode = QrCode::size(200)
+                        ->format('svg')
+                        ->generate($invoice->stripe_payment_link);
+
+                    \Log::info('QR code generated for invoice', [
+                        'invoice_id' => $id,
+                        'has_qr' => !empty($qrCode),
+                        'qr_length' => strlen($qrCode)
+                    ]);
+                } catch (\Exception $qrException) {
+                    \Log::warning('Failed to generate QR code for invoice', [
+                        'invoice_id' => $id,
+                        'error' => $qrException->getMessage()
+                    ]);
+                    // Continue without QR code
+                    $qrCode = null;
+                }
+            }
+
             $pdf = PDF::loadView('invoices.pdf', [
                 'invoice' => $invoice,
                 'companySettings' => $companySettings,
+                'qrCode' => $qrCode,
             ]);
 
             return $pdf->download("invoice-{$invoice->invoice_number}.pdf");
 
         } catch (\Exception $e) {
+            \Log::error('Failed to generate PDF', [
+                'invoice_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'message' => 'Failed to generate PDF',
-                'error' => $e->getMessage()
+                'error' => $this->sanitizeError($e)
             ], 500);
         }
     }
@@ -466,17 +527,40 @@ class InvoiceController extends Controller
         $companySettings = $this->getInvoiceSettings();
 
         try {
+            // Generate QR code for Stripe payment link if available
+            // Using SVG format to avoid imagick dependency
+            $qrCode = null;
+            if ($invoice->stripe_payment_link) {
+                try {
+                    $qrCode = QrCode::size(200)
+                        ->format('svg')
+                        ->generate($invoice->stripe_payment_link);
+                } catch (\Exception $qrException) {
+                    \Log::warning('Failed to generate QR code for preview', [
+                        'invoice_id' => $id,
+                        'error' => $qrException->getMessage()
+                    ]);
+                    $qrCode = null;
+                }
+            }
+
             $pdf = PDF::loadView('invoices.pdf', [
                 'invoice' => $invoice,
                 'companySettings' => $companySettings,
+                'qrCode' => $qrCode,
             ]);
 
             return $pdf->stream("invoice-{$invoice->invoice_number}.pdf");
 
         } catch (\Exception $e) {
+            \Log::error('Failed to generate PDF preview', [
+                'invoice_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'message' => 'Failed to generate PDF',
-                'error' => $e->getMessage()
+                'error' => $this->sanitizeError($e)
             ], 500);
         }
     }
@@ -546,6 +630,22 @@ class InvoiceController extends Controller
         $emailSettings = $this->getEmailSettings();
         $mailerConfig = $this->prepareMailerConfiguration($emailSettings);
 
+        // Generate Stripe payment link if enabled
+        $stripeService = new \App\Services\StripePaymentService();
+        if ($stripeService->isEnabled()) {
+            try {
+                $stripeService->getPaymentLink($invoice);
+                // Refresh invoice to get the updated payment link
+                $invoice->refresh();
+            } catch (\Exception $e) {
+                \Log::warning('Failed to create Stripe payment link', [
+                    'invoice_id' => $invoice->id,
+                    'error' => $e->getMessage()
+                ]);
+                // Continue sending email even if Stripe fails
+            }
+        }
+
         try {
             // Mark invoice as sent BEFORE generating PDF
             if ($invoice->status === 'draft') {
@@ -554,10 +654,28 @@ class InvoiceController extends Controller
                 $invoice->refresh();
             }
 
+            // Generate QR code for Stripe payment link if available
+            // Using SVG format to avoid imagick dependency
+            $qrCode = null;
+            if ($invoice->stripe_payment_link) {
+                try {
+                    $qrCode = QrCode::size(200)
+                        ->format('svg')
+                        ->generate($invoice->stripe_payment_link);
+                } catch (\Exception $qrException) {
+                    \Log::warning('Failed to generate QR code for email', [
+                        'invoice_id' => $invoice->id,
+                        'error' => $qrException->getMessage()
+                    ]);
+                    $qrCode = null;
+                }
+            }
+
             // Generate PDF with updated status
             $pdf = PDF::loadView('invoices.pdf', [
                 'invoice' => $invoice,
                 'companySettings' => $companySettings,
+                'qrCode' => $qrCode,
             ]);
             $pdfContent = $pdf->output();
 
@@ -567,7 +685,7 @@ class InvoiceController extends Controller
             $message = $request->message ?? "Please find attached invoice {$invoice->invoice_number}.";
 
             // Convert plain text message to HTML for better formatting
-            $htmlMessage = $this->convertToHtmlEmail($message);
+            $htmlMessage = $this->convertToHtmlEmail($message, $invoice);
             $htmlMessage = $this->injectTrackingPixel($htmlMessage, $invoice);
 
             // Send email
@@ -601,9 +719,14 @@ class InvoiceController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Failed to send invoice', [
+                'invoice_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'message' => 'Failed to send invoice',
-                'error' => $e->getMessage()
+                'error' => $this->sanitizeError($e)
             ], 500);
         }
     }
@@ -803,7 +926,7 @@ class InvoiceController extends Controller
      * @param string $message
      * @return string
      */
-    protected function convertToHtmlEmail(string $message): string
+    protected function convertToHtmlEmail(string $message, ?Invoice $invoice = null): string
     {
         $html = '<!DOCTYPE html>
 <html>
@@ -879,6 +1002,29 @@ class InvoiceController extends Controller
             color: #8b5cf6;
             font-weight: bold;
         }
+        .stripe-payment-section {
+            margin: 30px 0;
+            text-align: center;
+        }
+        .stripe-button {
+            display: inline-block;
+            padding: 15px 40px;
+            background: #635BFF;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        .stripe-button:hover {
+            background: #5046e5;
+        }
+        .stripe-note {
+            margin-top: 10px;
+            color: #6b7280;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
@@ -952,6 +1098,21 @@ class InvoiceController extends Controller
 
         if ($inPaymentInstructions) {
             $html .= '</div><div class="email-content">';
+        }
+
+        // Add Stripe payment button if available
+        if ($invoice && $invoice->stripe_payment_link) {
+            $html .= '
+        </div>
+        <div class="stripe-payment-section">
+            <a href="' . htmlspecialchars($invoice->stripe_payment_link) . '" class="stripe-button">
+                Pay with Stripe
+            </a>
+            <div class="stripe-note">
+                Secure payment powered by Stripe
+            </div>
+        </div>
+        <div class="email-content">';
         }
 
         $html .= '
@@ -1100,6 +1261,24 @@ class InvoiceController extends Controller
             'from_address' => $emailSettings['email_from_address'] ?? config('mail.from.address'),
             'from_name' => $emailSettings['email_from_name'] ?? config('mail.from.name'),
         ];
+    }
+
+    /**
+     * Sanitize error messages for production environments
+     * SECURITY: Prevents exposing internal system details
+     *
+     * @param \Exception $e
+     * @return string
+     */
+    protected function sanitizeError(\Exception $e): string
+    {
+        // In production, return generic error message
+        if (config('app.env') === 'production') {
+            return 'An error occurred while processing your request.';
+        }
+
+        // In development, show the actual error
+        return $e->getMessage();
     }
 
 }

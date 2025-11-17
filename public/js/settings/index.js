@@ -4,6 +4,80 @@
 
 let isLoading = false;
 
+const STRIPE_SECRET_INPUT_ID = 'stripe-secret-key';
+const STRIPE_SECRET_ACTIONS_ID = 'stripe-secret-actions';
+
+function getStripeSecretInput() {
+    return document.getElementById(STRIPE_SECRET_INPUT_ID);
+}
+
+function toggleStripeSecretActions(show) {
+    const actions = document.getElementById(STRIPE_SECRET_ACTIONS_ID);
+    if (actions) {
+        actions.style.display = show ? 'block' : 'none';
+    }
+}
+
+function setupStripeSecretField(maskedSecret) {
+    const input = getStripeSecretInput();
+    if (!input) {
+        return;
+    }
+
+    if (!input.dataset.defaultPlaceholder) {
+        input.dataset.defaultPlaceholder = input.placeholder || '';
+    }
+
+    if (input.dataset.listenerAttached !== 'true') {
+        input.addEventListener('input', () => {
+            if (input.value.trim() !== '') {
+                input.dataset.cleared = 'false';
+                input.dataset.hasStoredValue = 'false';
+                toggleStripeSecretActions(false);
+            }
+        });
+        input.dataset.listenerAttached = 'true';
+    }
+
+    input.value = '';
+    input.dataset.cleared = 'false';
+
+    if (maskedSecret) {
+        input.dataset.hasStoredValue = 'true';
+        const preview = maskedSecret.slice(-4);
+        input.placeholder = `Secret key saved (ending ${preview}) — leave blank to keep`;
+        input.title = 'A Stripe secret key is already stored. Leave blank to keep it.';
+        toggleStripeSecretActions(true);
+    } else {
+        input.dataset.hasStoredValue = 'false';
+        input.placeholder = input.dataset.defaultPlaceholder || 'sk_test_... or sk_live_...';
+        input.title = '';
+        toggleStripeSecretActions(false);
+    }
+}
+
+function clearStripeSecretInternal() {
+    const input = getStripeSecretInput();
+    if (!input) {
+        return;
+    }
+
+    input.value = '';
+    input.dataset.hasStoredValue = 'true';
+    input.dataset.cleared = 'true';
+    if (input.dataset.defaultPlaceholder) {
+        input.placeholder = input.dataset.defaultPlaceholder;
+    }
+    input.title = '';
+    toggleStripeSecretActions(false);
+
+    if (window.notify?.info) {
+        window.notify.info('Stripe secret key will be removed once you save the settings.');
+    }
+}
+
+window.clearStripeSecret = clearStripeSecretInternal;
+
 /**
  * Switch between tabs
  */
@@ -40,6 +114,22 @@ async function loadSettings() {
             setValue('payment-etransfer-email', data.payment_etransfer_email);
             setValue('payment-bank-info', data.payment_bank_info);
             setValue('payment-instructions', data.payment_instructions);
+
+            // Stripe settings
+            const stripeEnabled = data.stripe_enabled === true || data.stripe_enabled === '1' || data.stripe_enabled === 1;
+            const stripeCheckbox = document.getElementById('stripe-enabled');
+            if (stripeCheckbox) {
+                stripeCheckbox.checked = stripeEnabled;
+            }
+            setValue('stripe-publishable-key', data.stripe_publishable_key);
+            // SECURITY: Never load secret key to frontend - it should only be on server
+            // setValue('stripe-secret-key', data.stripe_secret_key);
+            setupStripeSecretField(typeof data.stripe_secret_key === 'string' ? data.stripe_secret_key : null);
+
+            // Toggle Stripe fields visibility
+            if (typeof window.toggleStripeFields === 'function') {
+                window.toggleStripeFields();
+            }
 
             // Email settings
             setValue('email-mailer', data.email_mailer || 'default');
@@ -98,7 +188,7 @@ async function saveSettings(e) {
  * Collect form data
  */
 function collectFormData() {
-    return {
+    const payload = {
         // General
         invoice_company_name: getValue('invoice-company-name'),
         invoice_company_address: getValue('invoice-company-address'),
@@ -108,6 +198,10 @@ function collectFormData() {
         payment_etransfer_email: getValue('payment-etransfer-email'),
         payment_bank_info: getValue('payment-bank-info'),
         payment_instructions: getValue('payment-instructions'),
+
+        // Stripe
+        stripe_enabled: document.getElementById('stripe-enabled')?.checked || false,
+        stripe_publishable_key: getValue('stripe-publishable-key'),
 
         // Email
         email_mailer: getValue('email-mailer'),
@@ -119,6 +213,23 @@ function collectFormData() {
         email_from_address: getValue('email-from-address'),
         email_from_name: getValue('email-from-name'),
     };
+
+    const secretInput = getStripeSecretInput();
+    if (secretInput) {
+        const secretValue = secretInput.value.trim();
+
+        if (secretValue !== '') {
+            payload.stripe_secret_key = secretValue;
+        } else if (secretInput.dataset.hasStoredValue === 'true') {
+            if (secretInput.dataset.cleared === 'true') {
+                payload.stripe_secret_key = null;
+            }
+        } else {
+            payload.stripe_secret_key = null;
+        }
+    }
+
+    return payload;
 }
 
 /**
@@ -179,6 +290,18 @@ window.toggleSmtpFields = function() {
 
     if (mailerSelect && smtpSection) {
         smtpSection.style.display = mailerSelect.value === 'smtp' ? 'block' : 'none';
+    }
+};
+
+/**
+ * Toggle Stripe fields based on enable checkbox
+ * SECURITY: Moved from inline script to external JS file for CSP compliance
+ */
+window.toggleStripeFields = function() {
+    const enabled = document.getElementById('stripe-enabled')?.checked;
+    const stripeFields = document.getElementById('stripe-fields');
+    if (stripeFields) {
+        stripeFields.style.display = enabled ? 'block' : 'none';
     }
 };
 
@@ -283,5 +406,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const emailMailer = document.getElementById('email-mailer');
     if (emailMailer) {
         emailMailer.addEventListener('change', toggleSmtpFields);
+    }
+
+    // Initialize Stripe toggle
+    const stripeEnabled = document.getElementById('stripe-enabled');
+    if (stripeEnabled) {
+        stripeEnabled.addEventListener('change', toggleStripeFields);
     }
 });

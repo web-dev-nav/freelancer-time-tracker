@@ -11,6 +11,8 @@ class Invoice extends Model
 {
     use HasFactory;
 
+    public const STRIPE_FEE_NOTE = 'A Stripe processing fee (2.9% + $0.30 CAD) applies only when you choose to pay via Stripe.';
+
     protected $fillable = [
         'invoice_number',
         'project_id',
@@ -26,6 +28,10 @@ class Invoice extends Model
         'subtotal',
         'tax_rate',
         'tax_amount',
+        'stripe_fees_included',
+        'stripe_fee_amount',
+        'stripe_fee_percentage',
+        'stripe_fee_fixed',
         'total',
         'notes',
         'description',
@@ -40,6 +46,13 @@ class Invoice extends Model
         'opened_user_agent',
     ];
 
+    // SECURITY: Protect Stripe fields from mass assignment
+    // These should only be set programmatically by the StripePaymentService
+    protected $guarded = [
+        'stripe_payment_link',
+        'stripe_payment_intent_id',
+    ];
+
     protected $casts = [
         'invoice_date' => 'date',
         'due_date' => 'date',
@@ -50,6 +63,10 @@ class Invoice extends Model
         'subtotal' => 'decimal:2',
         'tax_rate' => 'decimal:2',
         'tax_amount' => 'decimal:2',
+        'stripe_fees_included' => 'boolean',
+        'stripe_fee_amount' => 'decimal:2',
+        'stripe_fee_percentage' => 'decimal:2',
+        'stripe_fee_fixed' => 'decimal:2',
         'total' => 'decimal:2',
         'opened_at' => 'datetime',
         'opened_count' => 'integer',
@@ -116,8 +133,93 @@ class Invoice extends Model
     {
         $this->subtotal = $this->items()->sum('amount');
         $this->tax_amount = $this->subtotal * ($this->tax_rate / 100);
+
+        // Calculate Stripe fees if included
+        if ($this->stripe_fees_included) {
+            $this->calculateStripeFees();
+        } else {
+            $this->stripe_fee_amount = 0;
+        }
+
+        // Invoice total should reflect the amount owing before any optional Stripe fees
         $this->total = $this->subtotal + $this->tax_amount;
         $this->save();
+    }
+
+    /**
+     * Calculate Stripe transaction fees
+     * Based on Stripe Canada pricing: 2.9% + $0.30 CAD per transaction
+     */
+    public function calculateStripeFees()
+    {
+        $baseAmount = $this->subtotal + $this->tax_amount;
+
+        if ($baseAmount <= 0) {
+            $this->stripe_fee_amount = 0;
+            return;
+        }
+
+        // Stripe fee percentage (default 2.9% for Canadian card payments)
+        $percentage = ($this->stripe_fee_percentage ?? 2.9) / 100;
+
+        // Stripe fixed fee (default $0.30 CAD)
+        $fixedFee = $this->stripe_fee_fixed ?? 0.30;
+
+        // Guard against invalid configuration to avoid division by zero
+        if ($percentage >= 1) {
+            $this->stripe_fee_amount = 0;
+            return;
+        }
+
+        // Solve for the gross amount so the merchant receives the base amount after Stripe fees:
+        // gross - (gross * percentage + fixedFee) = baseAmount  =>  gross = (baseAmount + fixedFee) / (1 - percentage)
+        $grossCharge = ($baseAmount + $fixedFee) / (1 - $percentage);
+        $fee = max(0, $grossCharge - $baseAmount);
+
+        $this->stripe_fee_amount = round($fee, 2);
+    }
+
+    public function syncStripeFeeNote(): void
+    {
+        if ($this->stripe_fees_included) {
+            $this->ensureStripeFeeNote();
+        } else {
+            $this->removeStripeFeeNote();
+        }
+    }
+
+    public function ensureStripeFeeNote(): void
+    {
+        if (!$this->stripe_fees_included) {
+            return;
+        }
+
+        $note = self::STRIPE_FEE_NOTE;
+        $existing = (string) ($this->notes ?? '');
+
+        if ($existing !== '' && str_contains($existing, $note)) {
+            return;
+        }
+
+        $trimmed = trim($existing);
+        $this->notes = $trimmed !== '' ? $trimmed . PHP_EOL . PHP_EOL . $note : $note;
+    }
+
+    public function removeStripeFeeNote(): void
+    {
+        if (!$this->notes) {
+            return;
+        }
+
+        $note = self::STRIPE_FEE_NOTE;
+
+        if (!str_contains($this->notes, $note)) {
+            return;
+        }
+
+        $parts = array_map(static fn ($part) => trim($part), explode($note, $this->notes));
+        $parts = array_filter($parts, static fn ($part) => $part !== '');
+        $this->notes = $parts ? implode(PHP_EOL . PHP_EOL, $parts) : null;
     }
 
     public function markAsSent()

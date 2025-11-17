@@ -176,6 +176,57 @@ export function formatDateForInput(date) {
 }
 
 /**
+ * Copy text to clipboard and show notification
+ * @param {string} text - Text to copy to clipboard
+ * @param {string} message - Success message to display
+ */
+export function copyToClipboard(text, message = 'Copied to clipboard!') {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            if (window.notify && window.notify.success) {
+                window.notify.success(message);
+            } else {
+                alert(message);
+            }
+        }).catch(err => {
+            console.error('Failed to copy text:', err);
+            fallbackCopyToClipboard(text, message);
+        });
+    } else {
+        fallbackCopyToClipboard(text, message);
+    }
+}
+
+/**
+ * Fallback copy method for older browsers
+ * @param {string} text - Text to copy
+ * @param {string} message - Success message
+ */
+function fallbackCopyToClipboard(text, message) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+        const successful = document.execCommand('copy');
+        if (successful && window.notify && window.notify.success) {
+            window.notify.success(message);
+        } else if (successful) {
+            alert(message);
+        }
+    } catch (err) {
+        console.error('Fallback: Failed to copy', err);
+    }
+
+    document.body.removeChild(textArea);
+}
+
+/**
  * Initialize utility functions on the window.utils namespace for backwards compatibility
  */
 export function initializeUtils() {
@@ -188,4 +239,5 @@ export function initializeUtils() {
     window.utils.formatDateTimeForDisplay = formatDateTimeForDisplay;
     window.utils.formatDate = formatDate;
     window.utils.getCurrentDateTime = getCurrentDateTime;
+    window.utils.copyToClipboard = copyToClipboard;
 }

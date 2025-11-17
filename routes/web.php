@@ -3,6 +3,7 @@
 // routes/web.php
 
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\TimeLogController;
 use Illuminate\Support\Facades\Route;
 
@@ -84,6 +85,9 @@ Route::get('/settings', function() {
 
 Route::get('/invoices/{invoice}/open/{token}.png', [InvoiceController::class, 'trackOpen'])
     ->name('invoices.track-open');
+
+Route::get('/payment/stripe/result', [PaymentController::class, 'stripeResult'])
+    ->name('payment.stripe.result');
 
 // Fallback route
 Route::fallback(function () {

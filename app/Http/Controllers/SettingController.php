@@ -30,10 +30,28 @@ class SettingController extends Controller
             'email_smtp_encryption'  => null,
             'email_from_address'     => config('mail.from.address'),
             'email_from_name'        => config('mail.from.name'),
+            'stripe_enabled'         => false,
+            'stripe_publishable_key' => null,
+            'stripe_secret_key'      => null,
         ];
 
         try {
             $settings = Setting::getValues(array_keys($defaults), $defaults);
+
+            // SECURITY: Decrypt Stripe secret key if it exists
+            if (!empty($settings['stripe_secret_key'])) {
+                try {
+                    $settings['stripe_secret_key'] = decrypt($settings['stripe_secret_key']);
+                } catch (\Exception $e) {
+                    // If decryption fails, value might not be encrypted (legacy data)
+                    Log::warning('Failed to decrypt Stripe secret key', ['error' => $e->getMessage()]);
+                }
+            }
+
+            // SECURITY: Never send secret key to frontend - mask it
+            if (!empty($settings['stripe_secret_key'])) {
+                $settings['stripe_secret_key'] = '••••••••' . substr($settings['stripe_secret_key'], -4);
+            }
         } catch (\Throwable $e) {
             report($e);
             $settings = $defaults;
@@ -65,6 +83,9 @@ class SettingController extends Controller
             'email_smtp_encryption'  => null,
             'email_from_address'     => config('mail.from.address'),
             'email_from_name'        => config('mail.from.name'),
+            'stripe_enabled'         => false,
+            'stripe_publishable_key' => null,
+            'stripe_secret_key'      => null,
         ];
 
         $keys = array_keys($defaults);
@@ -85,6 +106,10 @@ class SettingController extends Controller
                 'email_smtp_encryption'   => 'nullable|in:tls,ssl,starttls',
                 'email_from_address'      => 'nullable|email|max:255',
                 'email_from_name'         => 'nullable|string|max:255',
+                'stripe_enabled'          => 'nullable|boolean',
+                // SECURITY: Validate Stripe key formats
+                'stripe_publishable_key'  => ['nullable', 'string', 'max:255', 'regex:/^(pk_(test|live)_[a-zA-Z0-9]+)?$/'],
+                'stripe_secret_key'       => ['nullable', 'string', 'max:255', 'regex:/^(sk_(test|live)_[a-zA-Z0-9]+)?$/'],
             ]);
 
             foreach ($keys as $key) {
@@ -99,8 +124,43 @@ class SettingController extends Controller
                     continue;
                 }
 
+                // Handle boolean values (e.g., stripe_enabled)
+                if (is_bool($value)) {
+                    Setting::setValue($key, $value ? '1' : '0');
+
+                    // SECURITY: Audit log for Stripe settings changes
+                    if ($key === 'stripe_enabled') {
+                        Log::info('Stripe payment integration ' . ($value ? 'enabled' : 'disabled'), [
+                            'ip' => $request->ip(),
+                            'user_agent' => $request->userAgent()
+                        ]);
+                    }
+                    continue;
+                }
+
                 $sanitized = trim($value);
                 $finalValue = $sanitized !== '' ? $sanitized : null;
+
+                // SECURITY: Encrypt Stripe secret key before storing
+                if ($key === 'stripe_secret_key' && $finalValue !== null) {
+                    $finalValue = encrypt($finalValue);
+
+                    // SECURITY: Audit log for secret key changes
+                    Log::warning('Stripe secret key updated', [
+                        'ip' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
+                        'key_preview' => 'sk_****' . substr($sanitized, -4)
+                    ]);
+                }
+
+                // SECURITY: Audit log for publishable key changes
+                if ($key === 'stripe_publishable_key' && $finalValue !== null) {
+                    Log::info('Stripe publishable key updated', [
+                        'ip' => $request->ip(),
+                        'key_preview' => 'pk_****' . substr($sanitized, -4)
+                    ]);
+                }
+
                 Setting::setValue($key, $finalValue);
 
                 // Log email mailer changes
@@ -113,6 +173,16 @@ class SettingController extends Controller
             }
 
             $data = Setting::getValues($keys, $defaults);
+
+            // SECURITY: Decrypt and mask secret key before returning
+            if (!empty($data['stripe_secret_key'])) {
+                try {
+                    $decrypted = decrypt($data['stripe_secret_key']);
+                    $data['stripe_secret_key'] = '••••••••' . substr($decrypted, -4);
+                } catch (\Exception $e) {
+                    $data['stripe_secret_key'] = '••••••••';
+                }
+            }
 
             return response()->json([
                 'success' => true,

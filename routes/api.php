@@ -68,7 +68,8 @@ Route::prefix('invoices')->name('invoices.api.')->group(function () {
     Route::get('/unbilled-logs', [InvoiceController::class, 'getUnbilledLogs'])->name('unbilled-logs');
 
     // CRUD operations
-    Route::post('/', [InvoiceController::class, 'store'])->name('store');
+    // SECURITY: Rate limit invoice creation (10 per minute) to prevent abuse
+    Route::post('/', [InvoiceController::class, 'store'])->middleware('throttle:10,1')->name('store');
     Route::get('/{id}', [InvoiceController::class, 'show'])->name('show');
     Route::get('/{id}/history', [InvoiceController::class, 'history'])->name('history');
     Route::put('/{id}', [InvoiceController::class, 'update'])->name('update');
@@ -80,7 +81,8 @@ Route::prefix('invoices')->name('invoices.api.')->group(function () {
     Route::delete('/{id}/items/{itemId}', [InvoiceController::class, 'removeItem'])->name('remove-item');
 
     // Actions
-    Route::post('/{id}/send-email', [InvoiceController::class, 'sendEmail'])->name('send-email');
+    // SECURITY: Rate limit email sending (5 per minute) to prevent spam
+    Route::post('/{id}/send-email', [InvoiceController::class, 'sendEmail'])->middleware('throttle:5,1')->name('send-email');
     Route::post('/{id}/mark-as-paid', [InvoiceController::class, 'markAsPaid'])->name('mark-as-paid');
     Route::post('/{id}/cancel', [InvoiceController::class, 'cancel'])->name('cancel');
 
@@ -92,7 +94,9 @@ Route::prefix('invoices')->name('invoices.api.')->group(function () {
 // Application settings routes
 Route::prefix('settings')->name('settings.api.')->group(function () {
     Route::get('/', [SettingController::class, 'index'])->name('index');
-    Route::post('/', [SettingController::class, 'update'])->name('update');
-    Route::post('/test-email', [SettingController::class, 'testEmail'])->name('test-email');
+    // SECURITY: Rate limit settings updates (10 per minute)
+    Route::post('/', [SettingController::class, 'update'])->middleware('throttle:10,1')->name('update');
+    // SECURITY: Rate limit test emails (3 per minute) to prevent spam
+    Route::post('/test-email', [SettingController::class, 'testEmail'])->middleware('throttle:3,1')->name('test-email');
     Route::get('/debug-email', [SettingController::class, 'debugEmail'])->name('debug-email');
 });

@@ -109,6 +109,9 @@ window.createProjectBackup = Backups.createProjectBackup;
 // App functions (called from HTML)
 window.showTab = App.showTab;
 
+// Utility functions (called from HTML)
+window.copyToClipboard = Utils.copyToClipboard;
+
 // ====================
 // Setup Event Listeners for History Buttons
 // ====================
