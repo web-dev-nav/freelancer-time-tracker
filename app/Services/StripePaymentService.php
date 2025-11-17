@@ -65,7 +65,7 @@ class StripePaymentService
 
         try {
             // SECURITY: Use idempotency key to prevent duplicate resources
-            $idempotencyKey = 'invoice_' . $invoice->id . '_v1';
+            $idempotencyKey = $this->buildIdempotencyKey($invoice);
 
             // OPTIMIZATION: Use a single reusable product instead of creating one per invoice
             // Try to get existing product or create one
@@ -212,6 +212,24 @@ class StripePaymentService
 
         // Create a new payment link
         return $this->createPaymentLink($invoice);
+    }
+
+    /**
+     * Build an idempotency key that evolves when invoice totals change.
+     */
+    protected function buildIdempotencyKey(Invoice $invoice, string $suffix = 'v1'): string
+    {
+        $signatureParts = [
+            $invoice->id,
+            number_format((float) ($invoice->subtotal ?? 0), 2, '.', ''),
+            number_format((float) ($invoice->tax_amount ?? 0), 2, '.', ''),
+            number_format((float) ($invoice->stripe_fee_amount ?? 0), 2, '.', ''),
+            $invoice->updated_at?->getTimestamp() ?? $invoice->created_at?->getTimestamp() ?? time(),
+        ];
+
+        $hash = substr(hash('sha256', implode('|', $signatureParts)), 0, 16);
+
+        return "invoice_{$invoice->id}_{$suffix}_{$hash}";
     }
 
     /**
