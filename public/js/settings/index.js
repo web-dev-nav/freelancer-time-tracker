@@ -4,6 +4,7 @@
 
 let isLoading = false;
 let dailyActivityClientSchedules = [];
+let hasLoadedLogsTab = false;
 const ACTIVITY_COLUMN_OPTIONS = [
     { key: 'date', label: 'Date' },
     { key: 'project', label: 'Project' },
@@ -185,9 +186,23 @@ window.switchTab = function(tabName) {
         content.classList.remove('active');
     });
 
-    // Add active class to clicked tab and corresponding content
-    event.target.classList.add('active');
-    document.getElementById(tabName + '-tab').classList.add('active');
+    // Add active class to corresponding tab and content
+    const tabButton = document.querySelector(`.settings-tab[data-tab="${tabName}"]`);
+    if (tabButton) {
+        tabButton.classList.add('active');
+    } else if (typeof event !== 'undefined' && event?.target) {
+        event.target.classList.add('active');
+    }
+
+    const content = document.getElementById(tabName + '-tab');
+    if (content) {
+        content.classList.add('active');
+    }
+
+    if (tabName === 'logs' && !hasLoadedLogsTab) {
+        hasLoadedLogsTab = true;
+        window.loadAppLogs();
+    }
 };
 
 /**
@@ -484,6 +499,95 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+function setLogsStatus(message, type = 'info') {
+    const status = document.getElementById('logs-status');
+    if (!status) {
+        return;
+    }
+
+    if (!message) {
+        status.style.display = 'none';
+        status.textContent = '';
+        return;
+    }
+
+    status.style.display = 'block';
+    status.textContent = message;
+
+    if (type === 'error') {
+        status.style.background = '#fee2e2';
+        status.style.color = '#991b1b';
+        status.style.border = '1px solid #fecaca';
+    } else if (type === 'success') {
+        status.style.background = '#dcfce7';
+        status.style.color = '#166534';
+        status.style.border = '1px solid #bbf7d0';
+    } else {
+        status.style.background = '#e0f2fe';
+        status.style.color = '#0c4a6e';
+        status.style.border = '1px solid #bae6fd';
+    }
+}
+
+window.loadAppLogs = async function() {
+    const logsOutput = document.getElementById('logs-output');
+    const logsMeta = document.getElementById('logs-meta');
+    const fileSelect = document.getElementById('logs-file-select');
+    const linesSelect = document.getElementById('logs-lines-select');
+    const levelSelect = document.getElementById('logs-level-select');
+    const refreshBtn = document.getElementById('refresh-logs-btn');
+
+    if (!logsOutput || !logsMeta || !fileSelect || !linesSelect || !levelSelect) {
+        return;
+    }
+
+    const selectedFile = fileSelect.value || '';
+    const lines = linesSelect.value || '400';
+    const level = levelSelect.value || 'all';
+    const params = new URLSearchParams({ lines, level });
+    if (selectedFile) {
+        params.set('file', selectedFile);
+    }
+
+    if (refreshBtn) {
+        refreshBtn.disabled = true;
+        refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    }
+
+    setLogsStatus('Loading logs...');
+
+    try {
+        const response = await window.api.request(`/api/settings/logs?${params.toString()}`);
+        if (!response?.success) {
+            throw new Error(response?.message || 'Failed to load logs.');
+        }
+
+        const data = response.data || {};
+        const files = Array.isArray(data.available_files) ? data.available_files : [];
+        const currentFile = data.selected_file || '';
+        const options = files.map((file) => {
+            const selected = file.name === currentFile ? 'selected' : '';
+            const sizeKb = Math.max(1, Math.round((Number(file.size || 0) / 1024)));
+            return `<option value="${escapeHtml(file.name)}" ${selected}>${escapeHtml(file.name)} (${sizeKb} KB)</option>`;
+        }).join('');
+
+        fileSelect.innerHTML = options || '<option value="">No log files</option>';
+        logsOutput.textContent = data.content || 'No log lines found for the selected filters.';
+        logsMeta.textContent = `File: ${currentFile || '-'} | Level: ${data.level || level} | Lines: ${data.line_count ?? 0}`;
+        setLogsStatus('Logs loaded successfully.', 'success');
+    } catch (error) {
+        console.error('Failed to load logs:', error);
+        logsOutput.textContent = 'Unable to load logs.';
+        logsMeta.textContent = '';
+        setLogsStatus('Failed to load logs: ' + (error.message || 'Unknown error'), 'error');
+    } finally {
+        if (refreshBtn) {
+            refreshBtn.disabled = false;
+            refreshBtn.innerHTML = '<i class="fas fa-rotate"></i> Refresh';
+        }
+    }
+};
+
 function normalizeActivityColumns(raw) {
     const allowed = ACTIVITY_COLUMN_OPTIONS.map((option) => option.key);
     const values = String(raw || '')
@@ -675,5 +779,26 @@ document.addEventListener('DOMContentLoaded', function() {
             tag.classList.toggle('active');
             tag.setAttribute('aria-pressed', tag.classList.contains('active') ? 'true' : 'false');
         });
+    }
+
+    const refreshLogsBtn = document.getElementById('refresh-logs-btn');
+    const logsFileSelect = document.getElementById('logs-file-select');
+    const logsLinesSelect = document.getElementById('logs-lines-select');
+    const logsLevelSelect = document.getElementById('logs-level-select');
+
+    if (refreshLogsBtn) {
+        refreshLogsBtn.addEventListener('click', () => {
+            window.loadAppLogs();
+        });
+    }
+
+    if (logsFileSelect) {
+        logsFileSelect.addEventListener('change', () => window.loadAppLogs());
+    }
+    if (logsLinesSelect) {
+        logsLinesSelect.addEventListener('change', () => window.loadAppLogs());
+    }
+    if (logsLevelSelect) {
+        logsLevelSelect.addEventListener('change', () => window.loadAppLogs());
     }
 });

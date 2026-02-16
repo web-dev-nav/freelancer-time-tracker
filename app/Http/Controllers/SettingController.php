@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -666,6 +667,132 @@ class SettingController extends Controller
                 'MAIL_FROM_ADDRESS' => env('MAIL_FROM_ADDRESS'),
             ],
         ]);
+    }
+
+    /**
+     * Return application logs for the settings debug tab.
+     */
+    public function logs(Request $request)
+    {
+        $validated = $request->validate([
+            'lines' => 'nullable|integer|min:50|max:3000',
+            'file' => 'nullable|string|max:255',
+            'level' => 'nullable|in:all,debug,info,notice,warning,error,critical,alert,emergency',
+        ]);
+
+        $lineLimit = (int) ($validated['lines'] ?? 400);
+        $level = (string) ($validated['level'] ?? 'all');
+        $logsDir = storage_path('logs');
+
+        if (!File::isDirectory($logsDir)) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'selected_file' => null,
+                    'available_files' => [],
+                    'content' => '',
+                    'line_count' => 0,
+                    'level' => $level,
+                ],
+            ]);
+        }
+
+        $availableFiles = collect(File::files($logsDir))
+            ->filter(fn ($file) => str_ends_with($file->getFilename(), '.log'))
+            ->map(function ($file) {
+                return [
+                    'name' => $file->getFilename(),
+                    'size' => $file->getSize(),
+                    'modified_at' => date('Y-m-d H:i:s', $file->getMTime()),
+                    'modified_ts' => $file->getMTime(),
+                ];
+            })
+            ->sortByDesc('modified_ts')
+            ->values()
+            ->all();
+
+        if (empty($availableFiles)) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'selected_file' => null,
+                    'available_files' => [],
+                    'content' => '',
+                    'line_count' => 0,
+                    'level' => $level,
+                ],
+            ]);
+        }
+
+        $requestedFile = trim((string) ($validated['file'] ?? ''));
+        $selectedFile = $availableFiles[0]['name'];
+
+        foreach ($availableFiles as $fileMeta) {
+            if ($requestedFile !== '' && $fileMeta['name'] === $requestedFile) {
+                $selectedFile = $fileMeta['name'];
+                break;
+            }
+            if ($requestedFile === '' && $fileMeta['name'] === 'laravel.log') {
+                $selectedFile = 'laravel.log';
+                break;
+            }
+        }
+
+        $selectedPath = $logsDir . DIRECTORY_SEPARATOR . $selectedFile;
+        $lines = $this->tailFileLines($selectedPath, $lineLimit);
+
+        if ($level !== 'all') {
+            $needle = ".{$level}:";
+            $lines = array_values(array_filter($lines, function (string $line) use ($needle): bool {
+                return stripos($line, $needle) !== false;
+            }));
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'selected_file' => $selectedFile,
+                'available_files' => $availableFiles,
+                'content' => implode("\n", $lines),
+                'line_count' => count($lines),
+                'level' => $level,
+            ],
+        ]);
+    }
+
+    /**
+     * Read the last N lines of a text file efficiently.
+     *
+     * @return array<int, string>
+     */
+    protected function tailFileLines(string $path, int $lineLimit): array
+    {
+        if (!File::exists($path) || $lineLimit <= 0) {
+            return [];
+        }
+
+        try {
+            $file = new \SplFileObject($path, 'r');
+            $file->seek(PHP_INT_MAX);
+            $lastLine = $file->key();
+            $startLine = max(0, $lastLine - $lineLimit + 1);
+
+            $lines = [];
+            for ($lineNo = $startLine; $lineNo <= $lastLine; $lineNo++) {
+                $file->seek($lineNo);
+                if (!$file->eof()) {
+                    $line = rtrim((string) $file->current(), "\r\n");
+                    if ($line !== '') {
+                        $lines[] = $line;
+                    }
+                }
+            }
+
+            return $lines;
+        } catch (\Throwable $e) {
+            report($e);
+            return [];
+        }
     }
 
     /**

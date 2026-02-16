@@ -212,21 +212,25 @@
 
     {{-- Tabs --}}
     <div class="settings-tabs">
-        <button class="settings-tab active" onclick="switchTab('general')">
+        <button class="settings-tab active" data-tab="general" onclick="switchTab('general')">
             <i class="fas fa-building"></i>
             General
         </button>
-        <button class="settings-tab" onclick="switchTab('email')">
+        <button class="settings-tab" data-tab="email" onclick="switchTab('email')">
             <i class="fas fa-envelope"></i>
             Email
         </button>
-        <button class="settings-tab" onclick="switchTab('payment')">
+        <button class="settings-tab" data-tab="payment" onclick="switchTab('payment')">
             <i class="fas fa-money-check-alt"></i>
             Payment
         </button>
-        <button class="settings-tab" onclick="switchTab('automation')">
+        <button class="settings-tab" data-tab="automation" onclick="switchTab('automation')">
             <i class="fas fa-clock"></i>
             Automation
+        </button>
+        <button class="settings-tab" data-tab="logs" onclick="switchTab('logs')">
+            <i class="fas fa-file-lines"></i>
+            Logs
         </button>
     </div>
 
@@ -249,6 +253,11 @@
         {{-- Automation Tab --}}
         <div class="tab-content" id="automation-tab">
             @include('settings.tabs.automation')
+        </div>
+
+        {{-- Logs Tab --}}
+        <div class="tab-content" id="logs-tab">
+            @include('settings.tabs.logs')
         </div>
     </form>
 </div>
