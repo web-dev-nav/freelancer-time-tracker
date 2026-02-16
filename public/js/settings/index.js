@@ -4,6 +4,14 @@
 
 let isLoading = false;
 let dailyActivityClientSchedules = [];
+const ACTIVITY_COLUMN_OPTIONS = [
+    { key: 'date', label: 'Date' },
+    { key: 'project', label: 'Project' },
+    { key: 'clock_in', label: 'In' },
+    { key: 'clock_out', label: 'Out' },
+    { key: 'duration', label: 'Duration' },
+    { key: 'description', label: 'Description' },
+];
 
 const STRIPE_SECRET_INPUT_ID = 'stripe-secret-key';
 const STRIPE_SECRET_ACTIONS_ID = 'stripe-secret-actions';
@@ -383,7 +391,11 @@ function renderDailyActivityScheduleTable() {
         const enabledChecked = row.enabled ? 'checked' : '';
         const sendTime = escapeHtml(row.send_time || '18:00');
         const subject = escapeHtml(row.subject || '');
-        const activityColumns = escapeHtml(row.activity_columns || 'date,project,clock_in,clock_out,duration,description');
+        const selectedColumns = new Set(normalizeActivityColumns(row.activity_columns));
+        const activityTags = ACTIVITY_COLUMN_OPTIONS.map((option) => {
+            const activeClass = selectedColumns.has(option.key) ? 'active' : '';
+            return `<button type="button" class="automation-tag ${activeClass}" data-column-tag="${option.key}" aria-pressed="${selectedColumns.has(option.key) ? 'true' : 'false'}">${escapeHtml(option.label)}</button>`;
+        }).join('');
         const lastSent = escapeHtml(row.last_sent_date || '-');
 
         return `
@@ -407,14 +419,9 @@ function renderDailyActivityScheduleTable() {
                     >
                 </td>
                 <td>
-                    <input
-                        class="automation-input"
-                        type="text"
-                        data-schedule-columns
-                        data-index="${index}"
-                        value="${activityColumns}"
-                        placeholder="date,project,clock_in,clock_out,duration,description"
-                    >
+                    <div class="automation-tags" data-schedule-columns data-index="${index}">
+                        ${activityTags}
+                    </div>
                 </td>
                 <td class="automation-cell-center" style="color:#64748b;">
                     ${lastSent}
@@ -455,7 +462,13 @@ function collectDailyActivityClientSchedules() {
             enabled: Boolean(enabledEl.checked),
             send_time: (sendTimeEl.value || '18:00').trim() || '18:00',
             subject: (subjectEl?.value || '').trim() || null,
-            activity_columns: (columnsEl?.value || '').trim() || 'date,project,clock_in,clock_out,duration,description',
+            activity_columns: columnsEl
+                ? normalizeActivityColumns(
+                    Array.from(columnsEl.querySelectorAll('[data-column-tag].active'))
+                        .map((tag) => String(tag.getAttribute('data-column-tag') || '').trim())
+                        .join(',')
+                ).join(',')
+                : 'date,project,clock_in,clock_out,duration,description',
         });
     });
 
@@ -469,6 +482,17 @@ function escapeHtml(value) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+}
+
+function normalizeActivityColumns(raw) {
+    const allowed = ACTIVITY_COLUMN_OPTIONS.map((option) => option.key);
+    const values = String(raw || '')
+        .split(/[,\s;]+/)
+        .map((item) => item.trim().toLowerCase())
+        .filter((item) => item !== '' && allowed.includes(item));
+
+    const unique = Array.from(new Set(values));
+    return unique.length > 0 ? unique : allowed;
 }
 
 /**
@@ -638,5 +662,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearCacheBtn = document.getElementById('clear-cache-btn');
     if (clearCacheBtn) {
         clearCacheBtn.addEventListener('click', clearApplicationCaches);
+    }
+
+    const scheduleBody = document.getElementById('daily-activity-schedules-body');
+    if (scheduleBody) {
+        scheduleBody.addEventListener('click', (event) => {
+            const tag = event.target.closest('[data-column-tag]');
+            if (!tag) {
+                return;
+            }
+
+            tag.classList.toggle('active');
+            tag.setAttribute('aria-pressed', tag.classList.contains('active') ? 'true' : 'false');
+        });
     }
 });

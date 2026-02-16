@@ -129,6 +129,39 @@
         box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
     }
 
+    .automation-tags {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .automation-tag {
+        border: 1px solid #cbd5e1;
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: .02em;
+        background: #ffffff;
+        color: #334155;
+        cursor: pointer;
+        user-select: none;
+        transition: all .15s ease;
+    }
+
+    .automation-tag:hover {
+        border-color: #7dd3fc;
+        background: #f0f9ff;
+        color: #0c4a6e;
+    }
+
+    .automation-tag.active {
+        border-color: #0ea5e9;
+        background: #e0f2fe;
+        color: #075985;
+        box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.15) inset;
+    }
+
     .automation-time-input {
         max-width: 140px;
         text-align: center;
