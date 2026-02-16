@@ -1,9 +1,29 @@
 {{-- Logs Tab --}}
 <style>
+    .logs-toolbar {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .logs-toolbar .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+
+    .logs-toolbar-btn {
+        min-width: 110px;
+    }
+
     .logs-toolbar-btn-sm {
         padding: 7px 10px;
         font-size: 12px;
-        line-height: 1;
+        line-height: 1.1;
     }
 
     .logs-output {
@@ -99,6 +119,16 @@
         padding-left: 18px;
         background: rgba(15, 23, 42, 0.35);
     }
+
+    @media (max-width: 740px) {
+        .logs-toolbar {
+            justify-content: stretch;
+        }
+
+        .logs-toolbar .btn {
+            flex: 1 1 140px;
+        }
+    }
 </style>
 
 <div class="settings-section">
@@ -137,16 +167,16 @@
             </select>
         </div>
 
-        <div style="display:flex;gap:8px;align-items:center;">
-            <button type="button" id="refresh-logs-btn" class="btn btn-secondary">
+        <div class="logs-toolbar">
+            <button type="button" id="refresh-logs-btn" class="btn btn-secondary logs-toolbar-btn">
                 <i class="fas fa-rotate"></i>
                 Refresh
             </button>
-            <button type="button" id="copy-logs-btn" class="btn btn-secondary logs-toolbar-btn-sm">
+            <button type="button" id="copy-logs-btn" class="btn btn-secondary logs-toolbar-btn logs-toolbar-btn-sm">
                 <i class="fas fa-copy"></i>
                 Copy Logs
             </button>
-            <button type="button" id="delete-log-file-btn" class="btn btn-danger logs-toolbar-btn-sm">
+            <button type="button" id="delete-log-file-btn" class="btn btn-danger logs-toolbar-btn logs-toolbar-btn-sm">
                 <i class="fas fa-trash"></i>
                 Delete File
             </button>
