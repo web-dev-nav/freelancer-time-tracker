@@ -54,6 +54,9 @@
                         <button type="button" class="editor-btn" data-editor-command="underline" title="Underline (Ctrl+U)">
                             <i class="fas fa-underline"></i>
                         </button>
+                        <button type="button" class="editor-btn" data-editor-command="removeFormat" title="Clear Formatting">
+                            <i class="fas fa-eraser"></i>
+                        </button>
                         <span class="editor-separator"></span>
                         <button type="button" class="editor-btn" data-editor-command="insertUnorderedList" title="Bullet List">
                             <i class="fas fa-list-ul"></i>
