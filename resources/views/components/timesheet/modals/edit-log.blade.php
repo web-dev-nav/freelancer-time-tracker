@@ -43,39 +43,8 @@
                     <i class="fas fa-edit"></i>
                     Work Description
                 </label>
-                <div class="rich-editor" id="edit-work-description-editor-wrapper">
-                    <div class="rich-editor-toolbar" role="toolbar" aria-label="Work description formatting">
-                        <button type="button" class="editor-btn" data-editor-command="bold" title="Bold (Ctrl+B)">
-                            <i class="fas fa-bold"></i>
-                        </button>
-                        <button type="button" class="editor-btn" data-editor-command="italic" title="Italic (Ctrl+I)">
-                            <i class="fas fa-italic"></i>
-                        </button>
-                        <button type="button" class="editor-btn" data-editor-command="underline" title="Underline (Ctrl+U)">
-                            <i class="fas fa-underline"></i>
-                        </button>
-                        <button type="button" class="editor-btn" data-editor-command="removeFormat" title="Clear Formatting">
-                            <i class="fas fa-eraser"></i>
-                        </button>
-                        <span class="editor-separator"></span>
-                        <button type="button" class="editor-btn" data-editor-command="insertUnorderedList" title="Bullet List">
-                            <i class="fas fa-list-ul"></i>
-                        </button>
-                        <button type="button" class="editor-btn" data-editor-command="insertOrderedList" title="Numbered List">
-                            <i class="fas fa-list-ol"></i>
-                        </button>
-                        <span class="editor-separator"></span>
-                        <button type="button" class="editor-btn" data-editor-command="formatBlock" data-editor-value="blockquote" title="Quote">
-                            <i class="fas fa-quote-right"></i>
-                        </button>
-                    </div>
-                    <div id="edit-work-description-editor"
-                         class="rich-editor-content"
-                         contenteditable="true"
-                         data-placeholder="Describe what you accomplished during this work session..."
-                         aria-label="Work Description Editor"></div>
-                </div>
-                <textarea id="edit-work-description" class="form-control" rows="4" style="display:none;" required></textarea>
+                <textarea id="edit-work-description" class="form-control" rows="6"
+                         placeholder="Describe what you accomplished during this work session..." required></textarea>
             </div>
         </form>
 

@@ -9,48 +9,6 @@ import * as State from './state.js';
 import * as Utils from './utils.js';
 import { loadDashboardStats } from './dashboard.js';
 
-function escapeHtml(text) {
-    return String(text ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
-
-function normalizeDescriptionToEditorHtml(value) {
-    const raw = String(value || '');
-    if (raw.trim() === '') return '';
-    if (/<[a-z][\s\S]*>/i.test(raw)) {
-        return Utils.sanitizeRichTextHtml(raw);
-    }
-    return escapeHtml(raw).replace(/\n/g, '<br>');
-}
-
-function setRichDescriptionHtml(value) {
-    const editor = document.getElementById('edit-work-description-editor');
-    const hiddenField = document.getElementById('edit-work-description');
-    if (!editor || !hiddenField) return;
-
-    const normalized = normalizeDescriptionToEditorHtml(value);
-    editor.innerHTML = normalized;
-    hiddenField.value = normalized;
-}
-
-function getRichDescriptionHtml() {
-    const editor = document.getElementById('edit-work-description-editor');
-    const hiddenField = document.getElementById('edit-work-description');
-    if (!editor || !hiddenField) return '';
-
-    const sanitized = Utils.sanitizeRichTextHtml(editor.innerHTML || '');
-    const plain = Utils.htmlToPlainText(sanitized);
-    const normalized = plain ? sanitized : '';
-
-    hiddenField.value = normalized;
-    return normalized;
-}
-
-let richEditorInitialized = false;
 let timeInputsInitialized = false;
 
 function normalizeTimeInputValue(raw) {
@@ -80,40 +38,6 @@ function ensureTimeInputsInitialized() {
     });
 
     timeInputsInitialized = true;
-}
-
-function ensureRichEditorInitialized() {
-    if (richEditorInitialized) return;
-
-    const editor = document.getElementById('edit-work-description-editor');
-    if (!editor) return;
-
-    editor.addEventListener('input', () => {
-        // Keep hidden value in sync without rewriting editor HTML (preserves caret position).
-        getRichDescriptionHtml();
-    });
-
-    editor.addEventListener('paste', (event) => {
-        event.preventDefault();
-        const text = event.clipboardData?.getData('text/plain') || '';
-        document.execCommand('insertText', false, text);
-        getRichDescriptionHtml();
-    });
-
-    const toolbar = document.querySelector('#edit-work-description-editor-wrapper .rich-editor-toolbar');
-    if (toolbar) {
-        toolbar.addEventListener('click', (event) => {
-            const button = event.target.closest('[data-editor-command]');
-            if (!button) return;
-            event.preventDefault();
-
-            const command = button.getAttribute('data-editor-command');
-            const value = button.getAttribute('data-editor-value');
-            applyRichTextCommand(command, value);
-        });
-    }
-
-    richEditorInitialized = true;
 }
 
 /**
@@ -357,7 +281,6 @@ export function createNewEntry() {
     if (clockInField) clockInField.value = currentDateTime.time;
     if (clockOutField) clockOutField.value = currentDateTime.time;
     if (descField) descField.value = '';
-    setRichDescriptionHtml('');
 
     // Store the currently selected project for the new entry
     editLogId.setAttribute('data-create-project-id', State.selectedProjectId || '');
@@ -411,7 +334,8 @@ export async function editLog(id) {
                 document.getElementById('edit-clock-out-time').value = '';
             }
 
-            setRichDescriptionHtml(log.work_description || '');
+            const normalizedDescription = Utils.htmlToPlainText(log.work_description || '');
+            document.getElementById('edit-work-description').value = normalizedDescription || '';
 
             // Show the modal
             showEditLogModal();
@@ -432,7 +356,6 @@ export function showEditLogModal() {
 
     if (!modal || !overlay) return;
 
-    ensureRichEditorInitialized();
     ensureTimeInputsInitialized();
 
     modal.classList.add('show');
@@ -459,7 +382,6 @@ export function hideEditLogModal() {
     // Clear form
     const form = document.getElementById('edit-log-form');
     if (form) form.reset();
-    setRichDescriptionHtml('');
 }
 
 /**
@@ -470,8 +392,7 @@ export async function updateLog() {
     const date = document.getElementById('edit-clock-in-date').value;
     const clockInTime = document.getElementById('edit-clock-in-time').value;
     const clockOutTime = document.getElementById('edit-clock-out-time').value;
-    const descriptionHtml = getRichDescriptionHtml();
-    const description = Utils.htmlToPlainText(descriptionHtml).trim();
+    const description = document.getElementById('edit-work-description').value.trim();
 
     if (!date || !clockInTime || !clockOutTime || !description) {
         window.notify.error('Please fill in all required fields');
@@ -497,7 +418,7 @@ export async function updateLog() {
             date: date,
             clock_in_time: clockInTime,
             clock_out_time: clockOutTime,
-            work_description: descriptionHtml
+            work_description: description
         };
 
         // Add project_id only for new entries
@@ -572,8 +493,8 @@ export async function viewDetails(logId) {
                 : '-';
             document.getElementById('detail-duration').textContent = log.formatted_duration || (log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-');
             const detailDescription = document.getElementById('detail-work-description');
-            const sanitizedDescription = Utils.sanitizeRichTextHtml(log.work_description || '');
-            detailDescription.innerHTML = sanitizedDescription || 'No description provided';
+            const plainDescription = Utils.htmlToPlainText(log.work_description || '');
+            detailDescription.textContent = plainDescription || 'No description provided';
 
             // Show modal
             showViewDetailsModal();
@@ -583,173 +504,6 @@ export async function viewDetails(logId) {
     } catch (error) {
         window.notify.error('Failed to load entry details: ' + error.message);
     }
-}
-
-/**
- * Apply formatting command in rich text editor.
- * @param {string} command - Command for document.execCommand
- * @param {string|null} value - Optional command value
- */
-export function applyRichTextCommand(command, value = null) {
-    const editor = document.getElementById('edit-work-description-editor');
-    if (!editor) return;
-
-    editor.focus();
-
-    if (command === 'removeFormat') {
-        clearSelectedFormatting(editor);
-        getRichDescriptionHtml();
-        return;
-    }
-
-    if (command === 'formatBlock' && value === 'blockquote') {
-        toggleBlockquote(editor);
-        getRichDescriptionHtml();
-        return;
-    }
-
-    const commandValue = command === 'formatBlock' && value ? `<${value.replace(/[<>]/g, '')}>` : value;
-    document.execCommand(command, false, commandValue);
-    getRichDescriptionHtml();
-}
-
-function clearSelectedFormatting(editor) {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) {
-        document.execCommand('removeFormat', false);
-        return;
-    }
-
-    const range = selection.getRangeAt(0);
-    const anchorNode = range.commonAncestorContainer;
-    if (!editor.contains(anchorNode)) {
-        return;
-    }
-
-    const structuralTarget = getStructuralTarget(anchorNode, editor);
-    if (structuralTarget) {
-        replaceElementWithPlainText(structuralTarget);
-        return;
-    }
-
-    if (range.collapsed) {
-        document.execCommand('removeFormat', false);
-        return;
-    }
-
-    const selectedText = selection.toString();
-    const fragment = textToFragment(selectedText);
-
-    range.deleteContents();
-    range.insertNode(fragment);
-    editor.normalize();
-
-    selection.removeAllRanges();
-    const newRange = document.createRange();
-    newRange.selectNodeContents(editor);
-    newRange.collapse(false);
-    selection.addRange(newRange);
-}
-
-function toggleBlockquote(editor) {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-
-    const range = selection.getRangeAt(0);
-    const anchorNode = range.commonAncestorContainer;
-    if (!editor.contains(anchorNode)) {
-        return;
-    }
-
-    const existingQuote = findClosestElement(anchorNode, ['BLOCKQUOTE'], editor);
-    if (existingQuote) {
-        unwrapElement(existingQuote);
-        editor.normalize();
-        return;
-    }
-
-    if (range.collapsed) {
-        const quote = document.createElement('blockquote');
-        quote.appendChild(document.createElement('br'));
-        range.insertNode(quote);
-
-        selection.removeAllRanges();
-        const cursorRange = document.createRange();
-        cursorRange.setStart(quote, 0);
-        cursorRange.collapse(true);
-        selection.addRange(cursorRange);
-        return;
-    }
-
-    const extracted = range.extractContents();
-    const quote = document.createElement('blockquote');
-    quote.appendChild(extracted);
-    range.insertNode(quote);
-
-    selection.removeAllRanges();
-    const cursorRange = document.createRange();
-    cursorRange.selectNodeContents(quote);
-    cursorRange.collapse(false);
-    selection.addRange(cursorRange);
-}
-
-function getStructuralTarget(node, root) {
-    const found = findClosestElement(node, ['LI', 'UL', 'OL', 'BLOCKQUOTE'], root);
-    if (!found) return null;
-
-    if (found.tagName === 'LI') {
-        const parent = found.parentElement;
-        if (parent && (parent.tagName === 'UL' || parent.tagName === 'OL')) {
-            return parent;
-        }
-    }
-
-    return found;
-}
-
-function findClosestElement(node, tags, root) {
-    let current = node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
-    while (current && current !== root) {
-        if (tags.includes(current.tagName)) {
-            return current;
-        }
-        current = current.parentElement;
-    }
-    return null;
-}
-
-function replaceElementWithPlainText(element) {
-    const text = (element.innerText || element.textContent || '').trim();
-    const fragment = textToFragment(text);
-    const parent = element.parentNode;
-    if (!parent) return;
-
-    parent.insertBefore(fragment, element);
-    parent.removeChild(element);
-}
-
-function unwrapElement(element) {
-    const parent = element.parentNode;
-    if (!parent) return;
-
-    while (element.firstChild) {
-        parent.insertBefore(element.firstChild, element);
-    }
-    parent.removeChild(element);
-}
-
-function textToFragment(text) {
-    const fragment = document.createDocumentFragment();
-    const lines = String(text || '').split(/\r?\n/);
-
-    lines.forEach((line, index) => {
-        fragment.appendChild(document.createTextNode(line));
-        if (index < lines.length - 1) {
-            fragment.appendChild(document.createElement('br'));
-        }
-    });
-
-    return fragment;
 }
 
 /**

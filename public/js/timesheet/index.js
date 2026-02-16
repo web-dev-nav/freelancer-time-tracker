@@ -45,7 +45,6 @@ window.hideViewDetailsModal = History.hideViewDetailsModal;
 window.hideEditLogModal = History.hideEditLogModal;
 window.showEditLogModal = History.showEditLogModal;
 window.updateLog = History.updateLog;
-window.applyRichTextCommand = History.applyRichTextCommand;
 
 
 // Reports functions (called from HTML)

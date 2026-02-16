@@ -293,6 +293,7 @@
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 16px;
+    white-space: pre-wrap;
     word-wrap: break-word;
     line-height: 1.6;
     max-height: 300px;

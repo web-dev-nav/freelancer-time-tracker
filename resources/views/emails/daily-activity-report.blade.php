@@ -13,7 +13,7 @@
     $showProjectSummary = $showSummarySessions || $showSummaryHours;
     $summaryCardCount = ($showSummarySessions ? 1 : 0) + ($showSummaryHours ? 1 : 0);
     $summaryCardWidth = $summaryCardCount > 1 ? '50%' : '100%';
-    $descriptionCellStyle = 'padding:10px;border-bottom:1px solid #f3f4f6;line-height:1.55;';
+    $descriptionCellStyle = 'padding:10px;border-bottom:1px solid #f3f4f6;line-height:1.55;white-space:pre-wrap;';
 @endphp
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:24px 0;">
         <tr>
@@ -129,7 +129,7 @@
                                             @endif
                                             @if(in_array('description', $activityColumns, true))
                                                 <td style="{{ $descriptionCellStyle }}">
-                                                    {!! $log['description_html'] ?? '-' !!}
+                                                    {{ $log['description_text'] ?? '-' }}
                                                 </td>
                                             @endif
                                         </tr>

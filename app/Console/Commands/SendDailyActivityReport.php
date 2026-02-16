@@ -339,26 +339,24 @@ class SendDailyActivityReport extends Command
                 'clock_in' => $clockInLocal?->format('h:i A') ?? '-',
                 'clock_out' => $clockOutLocal?->format('h:i A') ?? '-',
                 'duration' => $this->formatMinutes((int) ($log->total_minutes ?? 0)),
-                'description_html' => $this->sanitizeDescriptionHtmlForEmail((string) ($log->work_description ?: '')),
+                'description_text' => $this->normalizeDescriptionForEmail((string) ($log->work_description ?: '')),
             ];
         })->all();
     }
 
-    private function sanitizeDescriptionHtmlForEmail(string $html): string
+    private function normalizeDescriptionForEmail(string $value): string
     {
-        $value = trim($html);
-        if ($value === '') {
+        $raw = trim($value);
+        if ($raw === '') {
             return '-';
         }
 
-        $withoutScripts = preg_replace('/<(script|style)\b[^>]*>.*?<\/\1>/is', '', $value) ?? $value;
-        $allowed = '<p><div><br><strong><b><em><i><u><ul><ol><li><blockquote>';
-        $filtered = strip_tags($withoutScripts, $allowed);
+        $withLineBreaks = preg_replace('/<br\s*\/?>/i', "\n", $raw) ?? $raw;
+        $plain = strip_tags($withLineBreaks);
+        $decoded = html_entity_decode($plain, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $normalized = preg_replace("/\r\n|\r/", "\n", $decoded) ?? $decoded;
 
-        // Strip all attributes from allowed tags for safe rendering in email clients.
-        $clean = preg_replace('/<(\/?)([a-z0-9]+)(?:\s[^>]*)?>/i', '<$1$2>', $filtered) ?? $filtered;
-
-        return trim($clean) !== '' ? trim($clean) : '-';
+        return trim($normalized) !== '' ? trim($normalized) : '-';
     }
 
     private function formatMinutes(int $minutes): string
