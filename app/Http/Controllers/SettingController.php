@@ -416,7 +416,6 @@ class SettingController extends Controller
         }
 
         $result = [];
-        $usedScheduleEmails = [];
 
         foreach ($profiles as $profile) {
             $email = strtolower(trim((string) ($profile['client_email'] ?? '')));
@@ -430,27 +429,6 @@ class SettingController extends Controller
                 'subject' => $hasSubjectColumn ? ($schedule?->subject) : null,
                 'activity_columns' => $hasActivityColumnsColumn ? ((string) ($schedule?->activity_columns ?? '')) : 'date,project,clock_in,clock_out,duration,description',
                 'last_sent_date' => $schedule?->last_sent_date?->toDateString(),
-            ];
-
-            if ($email !== '') {
-                $usedScheduleEmails[$email] = true;
-            }
-        }
-
-        foreach ($schedules as $schedule) {
-            $email = strtolower(trim((string) $schedule->client_email));
-            if ($email === '' || isset($usedScheduleEmails[$email])) {
-                continue;
-            }
-
-            $result[] = [
-                'client_email' => $schedule->client_email,
-                'client_name' => $schedule->client_name,
-                'enabled' => (bool) $schedule->enabled,
-                'send_time' => $schedule->send_time ?: '18:00',
-                'subject' => $hasSubjectColumn ? $schedule->subject : null,
-                'activity_columns' => $hasActivityColumnsColumn ? ((string) ($schedule->activity_columns ?? '')) : 'date,project,clock_in,clock_out,duration,description',
-                'last_sent_date' => $schedule->last_sent_date?->toDateString(),
             ];
         }
 
@@ -513,6 +491,7 @@ class SettingController extends Controller
         $projects = Project::query()
             ->with(['clientUser:id,name,email'])
             ->select(['client_name', 'client_email', 'client_user_id', 'updated_at'])
+            ->where('status', 'active')
             ->orderBy('updated_at', 'desc')
             ->get();
 
@@ -548,6 +527,9 @@ class SettingController extends Controller
         $clientUsers = User::query()
             ->select(['name', 'email'])
             ->where('role', 'client')
+            ->whereHas('clientProjects', function ($query) {
+                $query->where('status', 'active');
+            })
             ->orderBy('name')
             ->get();
 
