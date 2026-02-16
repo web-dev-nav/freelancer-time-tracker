@@ -10,6 +10,7 @@
     $activityColumns = $activityColumns ?? ['summary_sessions', 'summary_hours', 'project', 'clock_in', 'clock_out', 'duration', 'description'];
     $showSummarySessions = in_array('summary_sessions', $activityColumns, true);
     $showSummaryHours = in_array('summary_hours', $activityColumns, true);
+    $showProjectSummary = $showSummarySessions || $showSummaryHours;
     $summaryCardCount = ($showSummarySessions ? 1 : 0) + ($showSummaryHours ? 1 : 0);
     $summaryCardWidth = $summaryCardCount > 1 ? '50%' : '100%';
     $descriptionCellStyle = 'padding:10px;border-bottom:1px solid #f3f4f6;line-height:1.55;';
@@ -58,29 +59,31 @@
                                 </table>
                             @endif
 
-                            <h2 style="margin:0 0 10px;font-size:16px;">Project Summary</h2>
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-bottom:20px;">
-                                <thead>
-                                    <tr>
-                                        <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Project</th>
-                                        <th align="right" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Sessions</th>
-                                        <th align="right" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Time</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($summary['projects'] as $project)
+                            @if($showProjectSummary)
+                                <h2 style="margin:0 0 10px;font-size:16px;">Project Summary</h2>
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-bottom:20px;">
+                                    <thead>
                                         <tr>
-                                            <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $project['project_name'] }}</td>
-                                            <td align="right" style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $project['sessions'] }}</td>
-                                            <td align="right" style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ sprintf('%d:%02d', intdiv($project['minutes'], 60), $project['minutes'] % 60) }}</td>
+                                            <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Project</th>
+                                            <th align="right" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Sessions</th>
+                                            <th align="right" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Time</th>
                                         </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="3" style="padding:12px;color:#6b7280;">No completed sessions for today.</td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        @forelse($summary['projects'] as $project)
+                                            <tr>
+                                                <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $project['project_name'] }}</td>
+                                                <td align="right" style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $project['sessions'] }}</td>
+                                                <td align="right" style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ sprintf('%d:%02d', intdiv($project['minutes'], 60), $project['minutes'] % 60) }}</td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="3" style="padding:12px;color:#6b7280;">No completed sessions for today.</td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            @endif
 
                             <h2 style="margin:0 0 10px;font-size:16px;">Activity Details</h2>
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
