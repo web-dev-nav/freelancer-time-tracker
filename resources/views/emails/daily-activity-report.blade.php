@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Activity Report</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f6fb;font-family:Arial,sans-serif;color:#111827;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:24px 0;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="760" cellspacing="0" cellpadding="0" style="max-width:95%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e5e7eb;">
+                    <tr>
+                        <td style="padding:20px 24px;background:#111827;color:#ffffff;">
+                            <h1 style="margin:0;font-size:20px;font-weight:700;">Daily Activity Report</h1>
+                            <p style="margin:6px 0 0;font-size:13px;opacity:0.9;">Date: {{ $reportDate }} ({{ $timezone }})</p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:20px 24px;">
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:18px;">
+                                <tr>
+                                    <td style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;">
+                                        <strong style="display:block;font-size:12px;color:#6b7280;text-transform:uppercase;">Total Sessions</strong>
+                                        <span style="font-size:24px;font-weight:700;">{{ $summary['total_sessions'] }}</span>
+                                    </td>
+                                    <td width="12"></td>
+                                    <td style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;">
+                                        <strong style="display:block;font-size:12px;color:#6b7280;text-transform:uppercase;">Total Hours</strong>
+                                        <span style="font-size:24px;font-weight:700;">{{ number_format($summary['total_hours_decimal'], 2) }}</span>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <h2 style="margin:0 0 10px;font-size:16px;">Project Summary</h2>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-bottom:20px;">
+                                <thead>
+                                    <tr>
+                                        <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Project</th>
+                                        <th align="right" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Sessions</th>
+                                        <th align="right" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Time</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($summary['projects'] as $project)
+                                        <tr>
+                                            <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $project['project_name'] }}</td>
+                                            <td align="right" style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $project['sessions'] }}</td>
+                                            <td align="right" style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ sprintf('%d:%02d', intdiv($project['minutes'], 60), $project['minutes'] % 60) }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="3" style="padding:12px;color:#6b7280;">No completed sessions for today.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+
+                            <h2 style="margin:0 0 10px;font-size:16px;">Activity Details</h2>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+                                <thead>
+                                    <tr>
+                                        <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Project</th>
+                                        <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">In</th>
+                                        <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Out</th>
+                                        <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Duration</th>
+                                        <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($logs as $log)
+                                        <tr>
+                                            <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $log['project'] }}</td>
+                                            <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $log['clock_in'] }}</td>
+                                            <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $log['clock_out'] }}</td>
+                                            <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $log['duration'] }}</td>
+                                            <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $log['description'] }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="5" style="padding:12px;color:#6b7280;">No detailed activity entries for today.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

@@ -1,0 +1,246 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\Setting;
+use App\Models\TimeLog;
+use Carbon\Carbon;
+use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+
+class SendDailyActivityReport extends Command
+{
+    protected $signature = 'activity:send-daily-summary';
+
+    protected $description = 'Send daily activity summary email for today\'s completed work logs';
+
+    public function handle(): int
+    {
+        $timezone = config('app.timezone', 'UTC');
+        $nowLocal = Carbon::now($timezone);
+        $today = $nowLocal->toDateString();
+
+        if (!$this->isReportEnabled()) {
+            $this->line('Daily activity report is disabled.');
+            return self::SUCCESS;
+        }
+
+        $recipients = $this->parseRecipients((string) Setting::getValue('daily_activity_email_recipients', ''));
+        if (empty($recipients)) {
+            $this->warn('No daily activity report recipients configured.');
+            return self::SUCCESS;
+        }
+
+        $sendTime = (string) Setting::getValue('daily_activity_email_send_time', '18:00');
+        if (!preg_match('/^([01]\\d|2[0-3]):[0-5]\\d$/', $sendTime)) {
+            $this->warn('Invalid daily activity send time. Expected HH:MM.');
+            return self::SUCCESS;
+        }
+
+        $scheduledLocal = Carbon::createFromFormat('Y-m-d H:i', "{$today} {$sendTime}", $timezone);
+        if ($nowLocal->lt($scheduledLocal)) {
+            $this->line('Scheduled send time has not been reached yet.');
+            return self::SUCCESS;
+        }
+
+        $lastSentDate = (string) Setting::getValue('daily_activity_email_last_sent_date', '');
+        if ($lastSentDate === $today) {
+            $this->line('Daily activity report already sent for today.');
+            return self::SUCCESS;
+        }
+
+        [$startUtc, $endUtc] = $this->resolveDayUtcRange($today, $timezone);
+
+        $logs = TimeLog::with('project')
+            ->completed()
+            ->whereBetween('clock_in', [$startUtc, $endUtc])
+            ->orderBy('clock_in', 'asc')
+            ->get();
+
+        $summary = $this->buildSummary($logs);
+
+        $subject = sprintf(
+            'Daily Activity Report - %s',
+            Carbon::parse($today, $timezone)->format('M d, Y')
+        );
+
+        try {
+            $mailerConfig = $this->prepareMailerConfiguration($this->getEmailSettings());
+
+            Mail::mailer($mailerConfig['mailer'])->send('emails.daily-activity-report', [
+                'reportDate' => Carbon::parse($today, $timezone)->format('M d, Y'),
+                'timezone' => $timezone,
+                'summary' => $summary,
+                'logs' => $this->formatLogsForEmail($logs, $timezone),
+            ], function ($message) use ($recipients, $subject, $mailerConfig): void {
+                $message->to($recipients)
+                    ->subject($subject);
+
+                if ($mailerConfig['from_address']) {
+                    $message->from(
+                        $mailerConfig['from_address'],
+                        $mailerConfig['from_name'] ?: $mailerConfig['from_address']
+                    );
+                }
+            });
+
+            Setting::setValue('daily_activity_email_last_sent_date', $today);
+
+            Log::info('Daily activity report sent', [
+                'date' => $today,
+                'timezone' => $timezone,
+                'recipients' => $recipients,
+                'total_sessions' => $summary['total_sessions'],
+                'total_minutes' => $summary['total_minutes'],
+            ]);
+
+            $this->info('Daily activity report sent successfully.');
+
+            return self::SUCCESS;
+        } catch (\Throwable $e) {
+            Log::error('Failed to send daily activity report', [
+                'date' => $today,
+                'timezone' => $timezone,
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->error('Failed to send daily activity report: ' . $e->getMessage());
+            return self::FAILURE;
+        }
+    }
+
+    private function isReportEnabled(): bool
+    {
+        $value = Setting::getValue('daily_activity_email_enabled', '0');
+
+        return $value === true || $value === 1 || $value === '1' || $value === 'true';
+    }
+
+    private function resolveDayUtcRange(string $day, string $timezone): array
+    {
+        $startUtc = Carbon::parse($day, $timezone)->startOfDay()->setTimezone('UTC');
+        $endUtc = Carbon::parse($day, $timezone)->endOfDay()->setTimezone('UTC');
+
+        return [$startUtc, $endUtc];
+    }
+
+    private function parseRecipients(string $raw): array
+    {
+        if ($raw === '') {
+            return [];
+        }
+
+        $items = preg_split('/[;,]+/', $raw) ?: [];
+        $valid = [];
+
+        foreach ($items as $item) {
+            $email = trim($item);
+            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $valid[] = $email;
+            }
+        }
+
+        return array_values(array_unique($valid));
+    }
+
+    private function buildSummary(Collection $logs): array
+    {
+        $totalMinutes = (int) $logs->sum('total_minutes');
+        $projects = $logs->groupBy(function ($log) {
+            return $log->project?->name ?? 'No Project';
+        })->map(function ($projectLogs, $projectName) {
+            return [
+                'project_name' => $projectName,
+                'sessions' => $projectLogs->count(),
+                'minutes' => (int) $projectLogs->sum('total_minutes'),
+            ];
+        })->values()->all();
+
+        return [
+            'total_sessions' => $logs->count(),
+            'total_minutes' => $totalMinutes,
+            'total_hours_decimal' => round($totalMinutes / 60, 2),
+            'projects' => $projects,
+        ];
+    }
+
+    private function formatLogsForEmail(Collection $logs, string $timezone): array
+    {
+        return $logs->map(function ($log) use ($timezone) {
+            $clockInLocal = $log->clock_in?->copy()->setTimezone($timezone);
+            $clockOutLocal = $log->clock_out?->copy()->setTimezone($timezone);
+
+            return [
+                'project' => $log->project?->name ?? 'No Project',
+                'clock_in' => $clockInLocal?->format('h:i A') ?? '-',
+                'clock_out' => $clockOutLocal?->format('h:i A') ?? '-',
+                'duration' => $this->formatMinutes((int) ($log->total_minutes ?? 0)),
+                'description' => (string) ($log->work_description ?: '-'),
+            ];
+        })->all();
+    }
+
+    private function formatMinutes(int $minutes): string
+    {
+        $hours = intdiv(max($minutes, 0), 60);
+        $mins = max($minutes, 0) % 60;
+
+        return sprintf('%d:%02d', $hours, $mins);
+    }
+
+    private function getEmailSettings(): array
+    {
+        return Setting::getValues([
+            'email_mailer',
+            'email_smtp_host',
+            'email_smtp_port',
+            'email_smtp_username',
+            'email_smtp_password',
+            'email_smtp_encryption',
+            'email_from_address',
+            'email_from_name',
+        ], [
+            'email_mailer' => 'default',
+            'email_smtp_host' => null,
+            'email_smtp_port' => null,
+            'email_smtp_username' => null,
+            'email_smtp_password' => null,
+            'email_smtp_encryption' => null,
+            'email_from_address' => config('mail.from.address'),
+            'email_from_name' => config('mail.from.name'),
+        ]);
+    }
+
+    private function prepareMailerConfiguration(array $emailSettings): array
+    {
+        $mailer = config('mail.default');
+        $selectedMailer = $emailSettings['email_mailer'] ?? 'default';
+
+        if ($selectedMailer === 'smtp' && !empty($emailSettings['email_smtp_host'])) {
+            $dynamicMailer = 'settings_smtp';
+            Config::set("mail.mailers.{$dynamicMailer}", [
+                'transport' => 'smtp',
+                'host' => $emailSettings['email_smtp_host'],
+                'port' => (int) ($emailSettings['email_smtp_port'] ?? 587),
+                'encryption' => $emailSettings['email_smtp_encryption'] ?: null,
+                'username' => $emailSettings['email_smtp_username'],
+                'password' => $emailSettings['email_smtp_password'],
+                'timeout' => null,
+                'auth_mode' => null,
+            ]);
+
+            $mailer = $dynamicMailer;
+        } elseif ($selectedMailer === 'mail') {
+            $mailer = 'sendmail';
+        }
+
+        return [
+            'mailer' => $mailer,
+            'from_address' => $emailSettings['email_from_address'] ?? config('mail.from.address'),
+            'from_name' => $emailSettings['email_from_name'] ?? config('mail.from.name'),
+        ];
+    }
+}

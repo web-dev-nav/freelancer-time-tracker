@@ -227,6 +227,19 @@ async function loadSettings() {
             setValue('email-from-address', data.email_from_address);
             setValue('email-from-name', data.email_from_name);
 
+            // Daily activity email automation settings
+            const dailyEnabled = data.daily_activity_email_enabled === true || data.daily_activity_email_enabled === '1' || data.daily_activity_email_enabled === 1;
+            const dailyEnabledCheckbox = document.getElementById('daily-activity-email-enabled');
+            if (dailyEnabledCheckbox) {
+                dailyEnabledCheckbox.checked = dailyEnabled;
+            }
+            setValue('daily-activity-email-recipients', data.daily_activity_email_recipients);
+            setValue('daily-activity-email-send-time', data.daily_activity_email_send_time || '18:00');
+            const dailyLastSent = document.getElementById('daily-activity-email-last-sent');
+            if (dailyLastSent) {
+                dailyLastSent.value = data.daily_activity_email_last_sent_date || '';
+            }
+
             // Toggle SMTP fields visibility
             toggleSmtpFields();
         }
@@ -298,6 +311,11 @@ function collectFormData() {
         email_smtp_encryption: getValue('email-smtp-encryption'),
         email_from_address: getValue('email-from-address'),
         email_from_name: getValue('email-from-name'),
+
+        // Daily activity report automation
+        daily_activity_email_enabled: document.getElementById('daily-activity-email-enabled')?.checked || false,
+        daily_activity_email_recipients: getValue('daily-activity-email-recipients'),
+        daily_activity_email_send_time: getValue('daily-activity-email-send-time'),
     };
 
     const secretInput = getStripeSecretInput();

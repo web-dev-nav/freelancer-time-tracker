@@ -34,6 +34,10 @@ class SettingController extends Controller
             'stripe_enabled'         => false,
             'stripe_publishable_key' => null,
             'stripe_secret_key'      => null,
+            'daily_activity_email_enabled' => false,
+            'daily_activity_email_recipients' => null,
+            'daily_activity_email_send_time' => '18:00',
+            'daily_activity_email_last_sent_date' => null,
         ];
 
         try {
@@ -87,6 +91,10 @@ class SettingController extends Controller
             'stripe_enabled'         => false,
             'stripe_publishable_key' => null,
             'stripe_secret_key'      => null,
+            'daily_activity_email_enabled' => false,
+            'daily_activity_email_recipients' => null,
+            'daily_activity_email_send_time' => '18:00',
+            'daily_activity_email_last_sent_date' => null,
         ];
 
         $keys = array_keys($defaults);
@@ -108,6 +116,10 @@ class SettingController extends Controller
                 'email_from_address'      => 'nullable|email|max:255',
                 'email_from_name'         => 'nullable|string|max:255',
                 'stripe_enabled'          => 'nullable|boolean',
+                'daily_activity_email_enabled' => 'nullable|boolean',
+                'daily_activity_email_recipients' => 'nullable|string|max:2000',
+                'daily_activity_email_send_time' => ['nullable', 'string', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
+                'daily_activity_email_last_sent_date' => 'nullable|date',
                 // SECURITY: Validate Stripe key formats
                 'stripe_publishable_key'  => ['nullable', 'string', 'max:255', 'regex:/^(pk_(test|live)_[a-zA-Z0-9]+)?$/'],
                 'stripe_secret_key'       => ['nullable', 'string', 'max:255', 'regex:/^(sk_(test|live)_[a-zA-Z0-9]+)?$/'],

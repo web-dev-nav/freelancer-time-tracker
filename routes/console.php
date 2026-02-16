@@ -44,3 +44,15 @@ Schedule::command('invoices:send-scheduled')
     ->onFailure(function () {
         error_log('Scheduled invoices processing failed');
     });
+
+// Schedule daily activity report checks every 5 minutes.
+// Command sends once per day after configured send time.
+Schedule::command('activity:send-daily-summary')
+    ->everyFiveMinutes()
+    ->name('daily-activity-report')
+    ->onSuccess(function () {
+        info('Daily activity report scheduler check executed');
+    })
+    ->onFailure(function () {
+        error_log('Daily activity report scheduler check failed');
+    });
