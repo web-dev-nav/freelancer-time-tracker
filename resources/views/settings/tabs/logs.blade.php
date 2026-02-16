@@ -29,16 +29,28 @@
         margin-bottom: 2px;
     }
 
+    .log-line.parsed {
+        display: grid;
+        grid-template-columns: 190px 92px minmax(0, 1fr);
+        gap: 8px;
+        align-items: start;
+    }
+
     .log-line .log-ts {
         color: #93c5fd;
-        margin-right: 8px;
+        white-space: nowrap;
     }
 
     .log-line .log-level {
         font-weight: 700;
-        margin-right: 8px;
+        white-space: nowrap;
         text-transform: uppercase;
         letter-spacing: .03em;
+    }
+
+    .log-line .log-msg {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
     }
 
     .log-line.level-error,
@@ -82,6 +94,7 @@
     }
 
     .log-line.stack-line {
+        display: block;
         color: #94a3b8;
         padding-left: 18px;
         background: rgba(15, 23, 42, 0.35);

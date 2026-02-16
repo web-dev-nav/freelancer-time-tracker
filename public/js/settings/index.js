@@ -692,10 +692,10 @@ function renderLogsHtml(rawContent) {
         const line = String(rawLine || '');
         const parsed = parseLogLine(line);
         if (parsed) {
-            return `<div class="log-line level-${parsed.level}">
+            return `<div class="log-line parsed level-${parsed.level}">
                 <span class="log-ts">[${escapeHtml(parsed.timestamp)}]</span>
                 <span class="log-level">${escapeHtml(parsed.level)}</span>
-                <span>${escapeHtml(parsed.message)}</span>
+                <span class="log-msg">${escapeHtml(parsed.message)}</span>
             </div>`;
         }
 
