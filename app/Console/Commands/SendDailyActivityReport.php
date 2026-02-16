@@ -442,7 +442,7 @@ class SendDailyActivityReport extends Command
 
     private function parseActivityColumns(string $raw): array
     {
-        $allowed = ['date', 'project', 'clock_in', 'clock_out', 'duration', 'description'];
+        $allowed = ['summary_sessions', 'summary_hours', 'date', 'project', 'clock_in', 'clock_out', 'duration', 'description'];
         $items = preg_split('/[,\s;]+/', strtolower($raw)) ?: [];
         $result = [];
 
@@ -454,6 +454,10 @@ class SendDailyActivityReport extends Command
         }
 
         $result = array_values(array_unique($result));
+        if (!in_array('summary_sessions', $result, true) && !in_array('summary_hours', $result, true)) {
+            array_unshift($result, 'summary_hours');
+            array_unshift($result, 'summary_sessions');
+        }
 
         return !empty($result) ? $result : $allowed;
     }

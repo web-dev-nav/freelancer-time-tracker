@@ -437,7 +437,7 @@ class SettingController extends Controller
                 'send_date' => $hasSendDateColumn ? ($schedule?->send_date?->toDateString()) : null,
                 'working_days' => $hasWorkingDaysColumn ? ((string) ($schedule?->working_days ?? 'mon,tue,wed,thu,fri')) : 'mon,tue,wed,thu,fri',
                 'subject' => $hasSubjectColumn ? ($schedule?->subject) : null,
-                'activity_columns' => $hasActivityColumnsColumn ? ((string) ($schedule?->activity_columns ?? '')) : 'date,project,clock_in,clock_out,duration,description',
+                'activity_columns' => $hasActivityColumnsColumn ? ((string) ($schedule?->activity_columns ?? '')) : 'summary_sessions,summary_hours,date,project,clock_in,clock_out,duration,description',
                 'last_sent_date' => $schedule?->last_sent_date?->toDateString(),
             ];
         }
@@ -600,7 +600,7 @@ class SettingController extends Controller
 
     protected function sanitizeActivityColumns(string $raw): string
     {
-        $allowed = ['date', 'project', 'clock_in', 'clock_out', 'duration', 'description'];
+        $allowed = ['summary_sessions', 'summary_hours', 'date', 'project', 'clock_in', 'clock_out', 'duration', 'description'];
         $items = preg_split('/[,\s;]+/', strtolower($raw)) ?: [];
         $clean = [];
 
@@ -614,6 +614,13 @@ class SettingController extends Controller
         $clean = array_values(array_unique($clean));
         if (empty($clean)) {
             $clean = $allowed;
+        }
+
+        $hasSummarySessions = in_array('summary_sessions', $clean, true);
+        $hasSummaryHours = in_array('summary_hours', $clean, true);
+        if (!$hasSummarySessions && !$hasSummaryHours) {
+            array_unshift($clean, 'summary_hours');
+            array_unshift($clean, 'summary_sessions');
         }
 
         return implode(',', $clean);

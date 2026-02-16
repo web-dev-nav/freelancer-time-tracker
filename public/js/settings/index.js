@@ -8,6 +8,8 @@ let hasLoadedLogsTab = false;
 let latestLogPlainText = '';
 const SETTINGS_ACTIVE_TAB_KEY = 'settings.active_tab';
 const ACTIVITY_COLUMN_OPTIONS = [
+    { key: 'summary_sessions', label: 'Summary Sessions' },
+    { key: 'summary_hours', label: 'Summary Hours' },
     { key: 'date', label: 'Date' },
     { key: 'project', label: 'Project' },
     { key: 'clock_in', label: 'In' },
@@ -535,7 +537,7 @@ function collectDailyActivityClientSchedules() {
                         .map((tag) => String(tag.getAttribute('data-column-tag') || '').trim())
                         .join(',')
                 ).join(',')
-                : 'date,project,clock_in,clock_out,duration,description',
+                : 'summary_sessions,summary_hours,date,project,clock_in,clock_out,duration,description',
         });
     });
 
@@ -719,8 +721,16 @@ function normalizeActivityColumns(raw) {
         .map((item) => item.trim().toLowerCase())
         .filter((item) => item !== '' && allowed.includes(item));
 
-    const unique = Array.from(new Set(values));
-    return unique.length > 0 ? unique : allowed;
+    let unique = Array.from(new Set(values));
+    unique = unique.length > 0 ? unique : allowed;
+
+    const hasSummarySessions = unique.includes('summary_sessions');
+    const hasSummaryHours = unique.includes('summary_hours');
+    if (!hasSummarySessions && !hasSummaryHours) {
+        unique = ['summary_sessions', 'summary_hours', ...unique];
+    }
+
+    return unique;
 }
 
 function normalizeWorkingDays(raw) {

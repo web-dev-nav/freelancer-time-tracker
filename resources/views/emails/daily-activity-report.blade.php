@@ -6,6 +6,14 @@
     <title>Daily Activity Report</title>
 </head>
 <body style="margin:0;padding:0;background:#f4f6fb;font-family:Arial,sans-serif;color:#111827;">
+@php
+    $activityColumns = $activityColumns ?? ['summary_sessions', 'summary_hours', 'project', 'clock_in', 'clock_out', 'duration', 'description'];
+    $showSummarySessions = in_array('summary_sessions', $activityColumns, true);
+    $showSummaryHours = in_array('summary_hours', $activityColumns, true);
+    $summaryCardCount = ($showSummarySessions ? 1 : 0) + ($showSummaryHours ? 1 : 0);
+    $summaryCardWidth = $summaryCardCount > 1 ? '50%' : '100%';
+    $descriptionCellStyle = 'padding:10px;border-bottom:1px solid #f3f4f6;line-height:1.55;';
+@endphp
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding:24px 0;">
         <tr>
             <td align="center">
@@ -28,19 +36,27 @@
 
                     <tr>
                         <td style="padding:20px 24px;">
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:18px;">
-                                <tr>
-                                    <td style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;">
-                                        <strong style="display:block;font-size:12px;color:#6b7280;text-transform:uppercase;">Total Sessions</strong>
-                                        <span style="font-size:24px;font-weight:700;">{{ $summary['total_sessions'] }}</span>
-                                    </td>
-                                    <td width="12"></td>
-                                    <td style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;">
-                                        <strong style="display:block;font-size:12px;color:#6b7280;text-transform:uppercase;">Total Hours</strong>
-                                        <span style="font-size:24px;font-weight:700;">{{ number_format($summary['total_hours_decimal'], 2) }}</span>
-                                    </td>
-                                </tr>
-                            </table>
+                            @if($showSummarySessions || $showSummaryHours)
+                                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:18px;">
+                                    <tr>
+                                        @if($showSummarySessions)
+                                            <td width="{{ $summaryCardWidth }}" style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;">
+                                                <strong style="display:block;font-size:12px;color:#6b7280;text-transform:uppercase;">Total Sessions</strong>
+                                                <span style="font-size:24px;font-weight:700;">{{ $summary['total_sessions'] }}</span>
+                                            </td>
+                                        @endif
+                                        @if($showSummarySessions && $showSummaryHours)
+                                            <td width="12"></td>
+                                        @endif
+                                        @if($showSummaryHours)
+                                            <td width="{{ $summaryCardWidth }}" style="padding:12px;border:1px solid #e5e7eb;border-radius:8px;">
+                                                <strong style="display:block;font-size:12px;color:#6b7280;text-transform:uppercase;">Total Hours</strong>
+                                                <span style="font-size:24px;font-weight:700;">{{ number_format($summary['total_hours_decimal'], 2) }}</span>
+                                            </td>
+                                        @endif
+                                    </tr>
+                                </table>
+                            @endif
 
                             <h2 style="margin:0 0 10px;font-size:16px;">Project Summary</h2>
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-bottom:20px;">
@@ -70,12 +86,6 @@
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
                                 <thead>
                                     <tr>
-                                        @php
-                                            $activityColumns = $activityColumns ?? ['project', 'clock_in', 'clock_out', 'duration', 'description'];
-@endphp
-@php
-    $descriptionCellStyle = 'padding:10px;border-bottom:1px solid #f3f4f6;line-height:1.55;';
-@endphp
                                         @if(in_array('date', $activityColumns, true))
                                             <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Date</th>
                                         @endif
