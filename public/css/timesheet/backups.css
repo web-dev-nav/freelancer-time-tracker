@@ -32,13 +32,15 @@
 }
 
 .backups-container {
-    max-width: 1000px;
+    width: 100%;
+    max-width: none;
 }
 
 .backups-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    width: 100%;
 }
 
 .backup-item {
@@ -50,6 +52,8 @@
     border: 1px solid var(--border-color);
     border-radius: 8px;
     transition: all 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .backup-item:hover {
