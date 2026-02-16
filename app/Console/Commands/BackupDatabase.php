@@ -104,13 +104,18 @@ class BackupDatabase extends Command
             escapeshellarg($backupPath)
         );
 
-        exec($command, $output, $returnCode);
+        $output = [];
+        $returnCode = 1;
+        $commandExecuted = $this->runShellCommand($command, $output, $returnCode);
 
-        if ($returnCode === 0 && file_exists($backupPath)) {
+        if ($commandExecuted && $returnCode === 0 && file_exists($backupPath)) {
             $fileSize = $this->formatBytes(filesize($backupPath));
             $this->info("✓ SQL dump created: {$filename} ({$fileSize})");
         } else {
             // Fallback to manual SQL generation if sqlite3 command is not available
+            if (!$commandExecuted) {
+                $this->warn('Shell command execution is disabled. Falling back to manual SQLite SQL dump.');
+            }
             $this->createManualSqlDump($backupPath);
         }
     }
@@ -189,11 +194,17 @@ class BackupDatabase extends Command
             escapeshellarg($backupPath)
         );
 
-        exec($command, $output, $returnCode);
+        $output = [];
+        $returnCode = 1;
+        $commandExecuted = $this->runShellCommand($command, $output, $returnCode);
 
-        if ($returnCode !== 0 || !file_exists($backupPath)) {
+        if (!$commandExecuted || $returnCode !== 0 || !file_exists($backupPath)) {
             // Fallback to manual method
-            $this->info('mysqldump not available, using manual backup method...');
+            if (!$commandExecuted) {
+                $this->warn('Shell command execution is disabled. Using manual MySQL backup method.');
+            } else {
+                $this->info('mysqldump not available, using manual backup method...');
+            }
             $this->createManualMysqlDump($backupPath);
         } else {
             $fileSize = $this->formatBytes(filesize($backupPath));
@@ -270,7 +281,13 @@ class BackupDatabase extends Command
             escapeshellarg($config['database'])
         );
 
-        exec($command, $output, $returnCode);
+        $output = [];
+        $returnCode = 1;
+        $commandExecuted = $this->runShellCommand($command, $output, $returnCode);
+
+        if (!$commandExecuted) {
+            throw new \Exception('PostgreSQL backup requires shell command execution (pg_dump), but shell commands are disabled on this host.');
+        }
 
         if ($returnCode !== 0) {
             throw new \Exception("PostgreSQL backup failed: " . implode("\n", $output));
@@ -339,5 +356,38 @@ class BackupDatabase extends Command
         } else {
             $this->line('No old database backups to delete.');
         }
+    }
+
+    /**
+     * Run shell command when available on host.
+     */
+    private function runShellCommand(string $command, array &$output, int &$returnCode): bool
+    {
+        if (!$this->isExecAvailable()) {
+            $output = [];
+            $returnCode = 1;
+            return false;
+        }
+
+        @exec($command, $output, $returnCode);
+        return true;
+    }
+
+    /**
+     * Determine whether exec is available and not disabled by php.ini.
+     */
+    private function isExecAvailable(): bool
+    {
+        if (!function_exists('exec')) {
+            return false;
+        }
+
+        $disabled = (string) ini_get('disable_functions');
+        if ($disabled === '') {
+            return true;
+        }
+
+        $disabledFunctions = array_map('trim', explode(',', $disabled));
+        return !in_array('exec', $disabledFunctions, true);
     }
 }
