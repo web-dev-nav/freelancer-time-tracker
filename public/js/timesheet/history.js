@@ -46,7 +46,6 @@ function getRichDescriptionHtml() {
     const plain = Utils.htmlToPlainText(sanitized);
     const normalized = plain ? sanitized : '';
 
-    editor.innerHTML = normalized;
     hiddenField.value = normalized;
     return normalized;
 }
@@ -60,6 +59,7 @@ function ensureRichEditorInitialized() {
     if (!editor) return;
 
     editor.addEventListener('input', () => {
+        // Keep hidden value in sync without rewriting editor HTML (preserves caret position).
         getRichDescriptionHtml();
     });
 
