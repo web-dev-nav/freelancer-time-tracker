@@ -761,6 +761,56 @@ class SettingController extends Controller
     }
 
     /**
+     * Delete a log file from storage/logs.
+     */
+    public function deleteLogFile(Request $request)
+    {
+        $validated = $request->validate([
+            'file' => 'required|string|max:255',
+        ]);
+
+        $fileName = basename((string) $validated['file']);
+        $logsDir = storage_path('logs');
+        $targetPath = $logsDir . DIRECTORY_SEPARATOR . $fileName;
+
+        if (!str_ends_with(strtolower($fileName), '.log')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only .log files can be deleted.',
+            ], 422);
+        }
+
+        if (!File::isDirectory($logsDir) || !File::exists($targetPath)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Log file not found.',
+            ], 404);
+        }
+
+        try {
+            File::delete($targetPath);
+
+            Log::warning('Log file deleted from settings UI', [
+                'file' => $fileName,
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Deleted {$fileName}",
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete log file.',
+            ], 500);
+        }
+    }
+
+    /**
      * Read the last N lines of a text file efficiently.
      *
      * @return array<int, string>

@@ -101,5 +101,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/flush-cache', [SettingController::class, 'flushCache'])->middleware('throttle:3,1')->name('flush-cache');
         Route::get('/debug-email', [SettingController::class, 'debugEmail'])->name('debug-email');
         Route::get('/logs', [SettingController::class, 'logs'])->name('logs');
+        Route::post('/logs/delete', [SettingController::class, 'deleteLogFile'])->middleware('throttle:10,1')->name('logs.delete');
     });
 });

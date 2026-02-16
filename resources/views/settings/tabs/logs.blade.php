@@ -41,6 +41,10 @@
                 <i class="fas fa-rotate"></i>
                 Refresh
             </button>
+            <button type="button" id="delete-log-file-btn" class="btn btn-danger">
+                <i class="fas fa-trash"></i>
+                Delete File
+            </button>
         </div>
     </div>
 

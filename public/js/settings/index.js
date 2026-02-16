@@ -5,6 +5,7 @@
 let isLoading = false;
 let dailyActivityClientSchedules = [];
 let hasLoadedLogsTab = false;
+const SETTINGS_ACTIVE_TAB_KEY = 'settings.active_tab';
 const ACTIVITY_COLUMN_OPTIONS = [
     { key: 'date', label: 'Date' },
     { key: 'project', label: 'Project' },
@@ -202,6 +203,14 @@ window.switchTab = function(tabName) {
     if (tabName === 'logs' && !hasLoadedLogsTab) {
         hasLoadedLogsTab = true;
         window.loadAppLogs();
+    }
+
+    try {
+        localStorage.setItem(SETTINGS_ACTIVE_TAB_KEY, tabName);
+    } catch (_) {}
+
+    if (window.location.hash !== `#${tabName}`) {
+        window.location.hash = tabName;
     }
 };
 
@@ -588,6 +597,50 @@ window.loadAppLogs = async function() {
     }
 };
 
+window.deleteSelectedLogFile = async function() {
+    const fileSelect = document.getElementById('logs-file-select');
+    if (!fileSelect || !fileSelect.value) {
+        setLogsStatus('Select a log file first.', 'error');
+        return;
+    }
+
+    const file = fileSelect.value;
+    const confirmed = window.confirm(`Delete log file "${file}"? This cannot be undone.`);
+    if (!confirmed) {
+        return;
+    }
+
+    const deleteBtn = document.getElementById('delete-log-file-btn');
+    if (deleteBtn) {
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+    }
+
+    setLogsStatus('Deleting log file...');
+
+    try {
+        const response = await window.api.request('/api/settings/logs/delete', {
+            method: 'POST',
+            body: JSON.stringify({ file }),
+        });
+
+        if (!response?.success) {
+            throw new Error(response?.message || 'Failed to delete log file.');
+        }
+
+        setLogsStatus(response.message || 'Log file deleted.', 'success');
+        await window.loadAppLogs();
+    } catch (error) {
+        console.error('Failed to delete log file:', error);
+        setLogsStatus('Failed to delete log file: ' + (error.message || 'Unknown error'), 'error');
+    } finally {
+        if (deleteBtn) {
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete File';
+        }
+    }
+};
+
 function normalizeActivityColumns(raw) {
     const allowed = ACTIVITY_COLUMN_OPTIONS.map((option) => option.key);
     const values = String(raw || '')
@@ -782,6 +835,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const refreshLogsBtn = document.getElementById('refresh-logs-btn');
+    const deleteLogFileBtn = document.getElementById('delete-log-file-btn');
     const logsFileSelect = document.getElementById('logs-file-select');
     const logsLinesSelect = document.getElementById('logs-lines-select');
     const logsLevelSelect = document.getElementById('logs-level-select');
@@ -789,6 +843,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (refreshLogsBtn) {
         refreshLogsBtn.addEventListener('click', () => {
             window.loadAppLogs();
+        });
+    }
+    if (deleteLogFileBtn) {
+        deleteLogFileBtn.addEventListener('click', () => {
+            window.deleteSelectedLogFile();
         });
     }
 
@@ -801,4 +860,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if (logsLevelSelect) {
         logsLevelSelect.addEventListener('change', () => window.loadAppLogs());
     }
+
+    const hashTab = (window.location.hash || '').replace('#', '').trim();
+    const savedTab = (() => {
+        try {
+            return localStorage.getItem(SETTINGS_ACTIVE_TAB_KEY) || '';
+        } catch (_) {
+            return '';
+        }
+    })();
+    const initialTab = hashTab || savedTab || 'general';
+    const initialTabExists = document.querySelector(`.settings-tab[data-tab="${initialTab}"]`);
+    window.switchTab(initialTabExists ? initialTab : 'general');
 });
