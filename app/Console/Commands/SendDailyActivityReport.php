@@ -339,9 +339,26 @@ class SendDailyActivityReport extends Command
                 'clock_in' => $clockInLocal?->format('h:i A') ?? '-',
                 'clock_out' => $clockOutLocal?->format('h:i A') ?? '-',
                 'duration' => $this->formatMinutes((int) ($log->total_minutes ?? 0)),
-                'description' => (string) ($log->work_description ?: '-'),
+                'description_html' => $this->sanitizeDescriptionHtmlForEmail((string) ($log->work_description ?: '')),
             ];
         })->all();
+    }
+
+    private function sanitizeDescriptionHtmlForEmail(string $html): string
+    {
+        $value = trim($html);
+        if ($value === '') {
+            return '-';
+        }
+
+        $withoutScripts = preg_replace('/<(script|style)\b[^>]*>.*?<\/\1>/is', '', $value) ?? $value;
+        $allowed = '<p><div><br><strong><b><em><i><u><ul><ol><li><blockquote>';
+        $filtered = strip_tags($withoutScripts, $allowed);
+
+        // Strip all attributes from allowed tags for safe rendering in email clients.
+        $clean = preg_replace('/<(\/?)([a-z0-9]+)(?:\s[^>]*)?>/i', '<$1$2>', $filtered) ?? $filtered;
+
+        return trim($clean) !== '' ? trim($clean) : '-';
     }
 
     private function formatMinutes(int $minutes): string

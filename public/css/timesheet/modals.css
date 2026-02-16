@@ -150,6 +150,14 @@
     max-width: 760px;
 }
 
+#edit-log-modal {
+    max-width: 920px;
+}
+
+#view-details-modal {
+    max-width: 980px;
+}
+
 
 /* ============================================
    Modal Header
@@ -285,10 +293,108 @@
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 16px;
-    white-space: pre-wrap;
     word-wrap: break-word;
     line-height: 1.6;
     max-height: 300px;
     overflow-y: auto;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.work-description-content p {
+    margin: 0 0 10px;
+}
+
+.work-description-content p:last-child {
+    margin-bottom: 0;
+}
+
+.work-description-content ul,
+.work-description-content ol {
+    margin: 8px 0 8px 20px;
+}
+
+.work-description-content blockquote {
+    border-left: 3px solid var(--border-color);
+    margin: 8px 0;
+    padding: 8px 12px;
+    color: var(--text-secondary);
+    background: #ffffff;
+    border-radius: 0 6px 6px 0;
+}
+
+.rich-editor {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.rich-editor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color);
+    background: #f9fafb;
+}
+
+.editor-btn {
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: var(--text-primary);
+    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.editor-btn:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
+}
+
+.editor-separator {
+    width: 1px;
+    height: 20px;
+    background: #d1d5db;
+    margin: 0 2px;
+}
+
+.rich-editor-content {
+    min-height: 160px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 12px 14px;
+    line-height: 1.6;
+    outline: none;
+    font-size: 0.95rem;
+}
+
+.rich-editor-content:empty::before {
+    content: attr(data-placeholder);
+    color: #9ca3af;
+}
+
+.rich-editor-content p {
+    margin: 0 0 10px;
+}
+
+.rich-editor-content p:last-child {
+    margin-bottom: 0;
+}
+
+.rich-editor-content ul,
+.rich-editor-content ol {
+    margin: 8px 0 8px 20px;
+}
+
+@media (max-width: 768px) {
+    #edit-log-modal,
+    #view-details-modal {
+        max-width: 95%;
+    }
 }

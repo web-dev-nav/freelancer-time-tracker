@@ -140,6 +140,66 @@ export function truncateDescription(text, maxLength) {
 }
 
 /**
+ * Strip HTML tags and return readable text
+ * @param {string} html - HTML string
+ * @returns {string} Plain text
+ */
+export function htmlToPlainText(html) {
+    if (!html) return '';
+    const temp = document.createElement('div');
+    temp.innerHTML = String(html);
+    return (temp.textContent || temp.innerText || '').trim();
+}
+
+/**
+ * Sanitize rich text by allowing a small subset of tags and removing attributes.
+ * @param {string} html - Raw HTML
+ * @returns {string} Sanitized HTML
+ */
+export function sanitizeRichTextHtml(html) {
+    if (!html) return '';
+
+    const allowedTags = new Set([
+        'P', 'DIV', 'BR', 'STRONG', 'B', 'EM', 'I', 'U', 'UL', 'OL', 'LI', 'BLOCKQUOTE'
+    ]);
+
+    const template = document.createElement('template');
+    template.innerHTML = String(html);
+
+    const sanitizeNode = (node) => {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            const tagName = node.tagName.toUpperCase();
+            if (!allowedTags.has(tagName)) {
+                const parent = node.parentNode;
+                if (!parent) return;
+                while (node.firstChild) {
+                    parent.insertBefore(node.firstChild, node);
+                }
+                parent.removeChild(node);
+                return;
+            }
+
+            const attributes = Array.from(node.attributes);
+            for (const attr of attributes) {
+                node.removeAttribute(attr.name);
+            }
+        }
+
+        const children = Array.from(node.childNodes);
+        for (const child of children) {
+            sanitizeNode(child);
+        }
+    };
+
+    const rootChildren = Array.from(template.content.childNodes);
+    for (const child of rootChildren) {
+        sanitizeNode(child);
+    }
+
+    return template.innerHTML.trim();
+}
+
+/**
  * Get the start of the week for a given date
  * @param {Date} date - Reference date
  * @param {string} weekStartDay - 'sunday' or 'monday'
@@ -240,4 +300,6 @@ export function initializeUtils() {
     window.utils.formatDate = formatDate;
     window.utils.getCurrentDateTime = getCurrentDateTime;
     window.utils.copyToClipboard = copyToClipboard;
+    window.utils.htmlToPlainText = htmlToPlainText;
+    window.utils.sanitizeRichTextHtml = sanitizeRichTextHtml;
 }

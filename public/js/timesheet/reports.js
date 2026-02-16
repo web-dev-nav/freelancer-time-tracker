@@ -162,7 +162,8 @@ export function displayReport() {
                 : '-';
             const formattedDuration = log.formatted_duration || (log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-');
             const workDescription = log.work_description || '-';
-            const truncatedDescription = Utils.truncateDescription(workDescription, 100);
+            const workDescriptionText = Utils.htmlToPlainText(workDescription) || '-';
+            const truncatedDescription = Utils.truncateDescription(workDescriptionText, 100);
 
             // Use server-provided clock_in_display_date to avoid timezone issues
             const displayDate = log.clock_in_display_date || window.utils.formatDate(log.clock_in);
@@ -174,7 +175,7 @@ export function displayReport() {
                 <td>${formattedDuration}</td>
                 <td>
                     <div class="description-preview">${truncatedDescription}</div>
-                    ${workDescription.length > 100 ? `<a href="#" class="description-truncated" onclick="viewDetails(${log.id}); return false;">View Details</a>` : ''}
+                    ${workDescriptionText.length > 100 ? `<a href="#" class="description-truncated" onclick="viewDetails(${log.id}); return false;">View Details</a>` : ''}
                 </td>
             `;
         } catch (error) {
@@ -187,7 +188,8 @@ export function displayReport() {
             const formattedDuration = log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-';
 
             const workDesc = log.work_description || '-';
-            const truncatedDesc = Utils.truncateDescription(workDesc, 100);
+            const workDescText = Utils.htmlToPlainText(workDesc) || '-';
+            const truncatedDesc = Utils.truncateDescription(workDescText, 100);
 
             // Use server-provided clock_in_display_date to avoid timezone issues
             const displayDate = log.clock_in_display_date || new Date(log.clock_in).toLocaleDateString('en-CA', {
@@ -205,7 +207,7 @@ export function displayReport() {
                 <td>${formattedDuration}</td>
                 <td>
                     <div class="description-preview">${truncatedDesc}</div>
-                    ${workDesc.length > 100 ? `<a href="#" class="description-truncated" onclick="viewDetails(${log.id}); return false;">View Details</a>` : ''}
+                    ${workDescText.length > 100 ? `<a href="#" class="description-truncated" onclick="viewDetails(${log.id}); return false;">View Details</a>` : ''}
                 </td>
             `;
         }

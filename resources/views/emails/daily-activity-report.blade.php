@@ -72,7 +72,10 @@
                                     <tr>
                                         @php
                                             $activityColumns = $activityColumns ?? ['project', 'clock_in', 'clock_out', 'duration', 'description'];
-                                        @endphp
+@endphp
+@php
+    $descriptionCellStyle = 'padding:10px;border-bottom:1px solid #f3f4f6;line-height:1.55;';
+@endphp
                                         @if(in_array('date', $activityColumns, true))
                                             <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Date</th>
                                         @endif
@@ -112,7 +115,9 @@
                                                 <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $log['duration'] }}</td>
                                             @endif
                                             @if(in_array('description', $activityColumns, true))
-                                                <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $log['description'] }}</td>
+                                                <td style="{{ $descriptionCellStyle }}">
+                                                    {!! $log['description_html'] ?? '-' !!}
+                                                </td>
                                             @endif
                                         </tr>
                                     @empty

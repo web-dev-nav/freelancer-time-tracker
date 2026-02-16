@@ -9,6 +9,70 @@ import * as State from './state.js';
 import * as Utils from './utils.js';
 import { loadDashboardStats } from './dashboard.js';
 
+function escapeHtml(text) {
+    return String(text ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function normalizeDescriptionToEditorHtml(value) {
+    const raw = String(value || '');
+    if (raw.trim() === '') return '';
+    if (/<[a-z][\s\S]*>/i.test(raw)) {
+        return Utils.sanitizeRichTextHtml(raw);
+    }
+    return escapeHtml(raw).replace(/\n/g, '<br>');
+}
+
+function setRichDescriptionHtml(value) {
+    const editor = document.getElementById('edit-work-description-editor');
+    const hiddenField = document.getElementById('edit-work-description');
+    if (!editor || !hiddenField) return;
+
+    const normalized = normalizeDescriptionToEditorHtml(value);
+    editor.innerHTML = normalized;
+    hiddenField.value = normalized;
+}
+
+function getRichDescriptionHtml() {
+    const editor = document.getElementById('edit-work-description-editor');
+    const hiddenField = document.getElementById('edit-work-description');
+    if (!editor || !hiddenField) return '';
+
+    const sanitized = Utils.sanitizeRichTextHtml(editor.innerHTML || '');
+    const plain = Utils.htmlToPlainText(sanitized);
+    const normalized = plain ? sanitized : '';
+
+    editor.innerHTML = normalized;
+    hiddenField.value = normalized;
+    return normalized;
+}
+
+let richEditorInitialized = false;
+
+function ensureRichEditorInitialized() {
+    if (richEditorInitialized) return;
+
+    const editor = document.getElementById('edit-work-description-editor');
+    if (!editor) return;
+
+    editor.addEventListener('input', () => {
+        getRichDescriptionHtml();
+    });
+
+    editor.addEventListener('paste', (event) => {
+        event.preventDefault();
+        const text = event.clipboardData?.getData('text/plain') || '';
+        document.execCommand('insertText', false, text);
+        getRichDescriptionHtml();
+    });
+
+    richEditorInitialized = true;
+}
+
 /**
  * Load history with pagination
  * @param {number} page - Page number to load
@@ -44,7 +108,8 @@ export async function loadHistory(page = 1, perPage = null) {
                         : '-';
                     const formattedDuration = log.formatted_duration || (log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-');
                     const workDescription = log.work_description || '-';
-                    const truncatedDescription = Utils.truncateDescription(workDescription, 80);
+                    const workDescriptionText = Utils.htmlToPlainText(workDescription) || '-';
+                    const truncatedDescription = Utils.truncateDescription(workDescriptionText, 80);
 
                     // Use server-provided clock_in_display_date to avoid timezone issues
                     const displayDate = log.clock_in_display_date || window.utils.formatDate(log.clock_in);
@@ -74,7 +139,7 @@ export async function loadHistory(page = 1, perPage = null) {
                         <td>${formattedDuration}</td>
                         <td>
                             <div class="description-preview">${truncatedDescription}</div>
-                            ${workDescription.length > 80 ? `<a href="#" class="description-truncated" onclick="viewDetails(${log.id}); return false;">View Details</a>` : ''}
+                            ${workDescriptionText.length > 80 ? `<a href="#" class="description-truncated" onclick="viewDetails(${log.id}); return false;">View Details</a>` : ''}
                         </td>
                         ${isAuthor ? `<td>${actionButtons}</td>` : ''}
                     `;
@@ -88,7 +153,8 @@ export async function loadHistory(page = 1, perPage = null) {
                     const formattedDuration = log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-';
 
                     const workDesc = log.work_description || '-';
-                    const truncatedDesc = Utils.truncateDescription(workDesc, 80);
+                    const workDescText = Utils.htmlToPlainText(workDesc) || '-';
+                    const truncatedDesc = Utils.truncateDescription(workDescText, 80);
 
                     // Use server-provided clock_in_display_date to avoid timezone issues
                     const displayDate = log.clock_in_display_date || new Date(log.clock_in).toLocaleDateString('en-CA', {
@@ -124,7 +190,7 @@ export async function loadHistory(page = 1, perPage = null) {
                         <td>${formattedDuration}</td>
                         <td>
                             <div class="description-preview">${truncatedDesc}</div>
-                            ${workDesc.length > 80 ? `<a href="#" class="description-truncated" onclick="viewDetails(${log.id}); return false;">View Details</a>` : ''}
+                            ${workDescText.length > 80 ? `<a href="#" class="description-truncated" onclick="viewDetails(${log.id}); return false;">View Details</a>` : ''}
                         </td>
                         ${isAuthor ? `<td>${actionButtons}</td>` : ''}
                     `;
@@ -248,6 +314,7 @@ export function createNewEntry() {
     if (clockInField) clockInField.value = currentDateTime.time;
     if (clockOutField) clockOutField.value = currentDateTime.time;
     if (descField) descField.value = '';
+    setRichDescriptionHtml('');
 
     // Store the currently selected project for the new entry
     editLogId.setAttribute('data-create-project-id', State.selectedProjectId || '');
@@ -301,7 +368,7 @@ export async function editLog(id) {
                 document.getElementById('edit-clock-out-time').value = '';
             }
 
-            document.getElementById('edit-work-description').value = log.work_description || '';
+            setRichDescriptionHtml(log.work_description || '');
 
             // Show the modal
             showEditLogModal();
@@ -321,6 +388,8 @@ export function showEditLogModal() {
     const overlay = document.getElementById('modal-overlay');
 
     if (!modal || !overlay) return;
+
+    ensureRichEditorInitialized();
 
     modal.classList.add('show');
     overlay.classList.add('show');
@@ -346,6 +415,7 @@ export function hideEditLogModal() {
     // Clear form
     const form = document.getElementById('edit-log-form');
     if (form) form.reset();
+    setRichDescriptionHtml('');
 }
 
 /**
@@ -356,7 +426,8 @@ export async function updateLog() {
     const date = document.getElementById('edit-clock-in-date').value;
     const clockInTime = document.getElementById('edit-clock-in-time').value;
     const clockOutTime = document.getElementById('edit-clock-out-time').value;
-    const description = document.getElementById('edit-work-description').value.trim();
+    const descriptionHtml = getRichDescriptionHtml();
+    const description = Utils.htmlToPlainText(descriptionHtml).trim();
 
     if (!date || !clockInTime || !clockOutTime || !description) {
         window.notify.error('Please fill in all required fields');
@@ -377,7 +448,7 @@ export async function updateLog() {
             date: date,
             clock_in_time: clockInTime,
             clock_out_time: clockOutTime,
-            work_description: description
+            work_description: descriptionHtml
         };
 
         // Add project_id only for new entries
@@ -451,7 +522,9 @@ export async function viewDetails(logId) {
                 ? (log.clock_out_time || window.utils.formatTimeForDisplay(log.clock_out))
                 : '-';
             document.getElementById('detail-duration').textContent = log.formatted_duration || (log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-');
-            document.getElementById('detail-work-description').textContent = log.work_description || 'No description provided';
+            const detailDescription = document.getElementById('detail-work-description');
+            const sanitizedDescription = Utils.sanitizeRichTextHtml(log.work_description || '');
+            detailDescription.innerHTML = sanitizedDescription || 'No description provided';
 
             // Show modal
             showViewDetailsModal();
@@ -461,6 +534,21 @@ export async function viewDetails(logId) {
     } catch (error) {
         window.notify.error('Failed to load entry details: ' + error.message);
     }
+}
+
+/**
+ * Apply formatting command in rich text editor.
+ * @param {string} command - Command for document.execCommand
+ * @param {string|null} value - Optional command value
+ */
+export function applyRichTextCommand(command, value = null) {
+    const editor = document.getElementById('edit-work-description-editor');
+    if (!editor) return;
+
+    editor.focus();
+    const commandValue = command === 'formatBlock' && value ? `<${value.replace(/[<>]/g, '')}>` : value;
+    document.execCommand(command, false, commandValue);
+    getRichDescriptionHtml();
 }
 
 /**
