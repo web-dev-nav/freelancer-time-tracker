@@ -559,9 +559,55 @@ export function applyRichTextCommand(command, value = null) {
     if (!editor) return;
 
     editor.focus();
+
+    if (command === 'removeFormat') {
+        clearSelectedFormatting(editor);
+        getRichDescriptionHtml();
+        return;
+    }
+
     const commandValue = command === 'formatBlock' && value ? `<${value.replace(/[<>]/g, '')}>` : value;
     document.execCommand(command, false, commandValue);
     getRichDescriptionHtml();
+}
+
+function clearSelectedFormatting(editor) {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+        document.execCommand('removeFormat', false);
+        return;
+    }
+
+    const range = selection.getRangeAt(0);
+    const anchorNode = range.commonAncestorContainer;
+    if (!editor.contains(anchorNode)) {
+        return;
+    }
+
+    if (range.collapsed) {
+        document.execCommand('removeFormat', false);
+        return;
+    }
+
+    const selectedText = selection.toString();
+    const textLines = selectedText.split(/\r?\n/);
+    const fragment = document.createDocumentFragment();
+
+    textLines.forEach((line, index) => {
+        fragment.appendChild(document.createTextNode(line));
+        if (index < textLines.length - 1) {
+            fragment.appendChild(document.createElement('br'));
+        }
+    });
+
+    range.deleteContents();
+    range.insertNode(fragment);
+
+    selection.removeAllRanges();
+    const newRange = document.createRange();
+    newRange.selectNodeContents(editor);
+    newRange.collapse(false);
+    selection.addRange(newRange);
 }
 
 /**
