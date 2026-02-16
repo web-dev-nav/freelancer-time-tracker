@@ -206,6 +206,7 @@ export async function loadInvoiceStats() {
  */
 export function displayInvoices(invoices) {
     const list = document.getElementById('invoices-list');
+    const isAuthor = window.currentUser?.role === 'author';
 
     if (!invoices || invoices.length === 0) {
         list.innerHTML = `
@@ -415,7 +416,7 @@ export function displayInvoices(invoices) {
                 </div>
 
                 <div class="invoice-card-actions" style="padding: 12px 16px; background: #f9fafb; border-top: 1px solid #e5e7eb; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end;">
-                    ${invoice.status === 'draft' ? `
+                    ${isAuthor && invoice.status === 'draft' ? `
                         <button class="btn btn-sm btn-primary" onclick="showEditInvoiceModal(${invoice.id})" title="Edit Invoice">
                             <i class="fas fa-edit"></i>
                         </button>
@@ -429,22 +430,22 @@ export function displayInvoices(invoices) {
                     <button class="btn btn-sm btn-secondary" onclick="showInvoiceHistory(${invoice.id})" title="View History">
                         <i class="fas fa-history"></i>
                     </button>
-                    ${(invoice.status !== 'paid' && invoice.status !== 'cancelled') ? `
+                    ${isAuthor && (invoice.status !== 'paid' && invoice.status !== 'cancelled') ? `
                         <button class="btn btn-sm btn-primary" onclick="showSendInvoiceModal(${invoice.id})" title="Send via Email">
                             <i class="fas fa-paper-plane"></i>
                         </button>
                     ` : ''}
-                    ${(invoice.status !== 'paid' && invoice.status !== 'cancelled') ? `
+                    ${isAuthor && (invoice.status !== 'paid' && invoice.status !== 'cancelled') ? `
                         <button class="btn btn-sm btn-success" onclick="markInvoiceAsPaid(${invoice.id})" title="Mark as Paid">
                             <i class="fas fa-check"></i>
                         </button>
                     ` : ''}
-                    ${invoice.status === 'draft' ? `
+                    ${isAuthor && invoice.status === 'draft' ? `
                         <button class="btn btn-sm btn-danger" onclick="deleteInvoice(${invoice.id})" title="Delete">
                             <i class="fas fa-trash"></i>
                         </button>
                     ` : ''}
-                    ${(invoice.status === 'sent' || invoice.status === 'draft') ? `
+                    ${isAuthor && (invoice.status === 'sent' || invoice.status === 'draft') ? `
                         <button class="btn btn-sm btn-warning" onclick="cancelInvoice(${invoice.id})" title="Cancel Invoice">
                             <i class="fas fa-ban"></i>
                         </button>

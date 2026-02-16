@@ -8,12 +8,14 @@
             <select id="project-selector" class="project-select">
                 <option value="">Loading projects...</option>
             </select>
-            <button class="btn btn-sm btn-primary" onclick="showAddProjectModal()" title="Add New Project">
-                <i class="fas fa-plus"></i>
-            </button>
-            <a href="{{ route('settings.index') }}" target="_blank" class="btn btn-sm btn-secondary" title="Application Settings">
-                <i class="fas fa-cog"></i>
-            </a>
+            @if(auth()->user()?->isAuthor())
+                <button class="btn btn-sm btn-primary" onclick="showAddProjectModal()" title="Add New Project">
+                    <i class="fas fa-plus"></i>
+                </button>
+                <a href="{{ route('settings.index') }}" target="_blank" class="btn btn-sm btn-secondary" title="Application Settings">
+                    <i class="fas fa-cog"></i>
+                </a>
+            @endif
         </div>
     </div>
 </div>

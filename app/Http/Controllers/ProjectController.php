@@ -3,10 +3,73 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class ProjectController extends Controller
 {
+    public function clientAccount(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|max:255',
+        ]);
+
+        $email = trim((string) $request->input('email'));
+        $user = User::query()->where('email', $email)->first();
+
+        return response()->json([
+            'success' => true,
+            'exists' => (bool) $user,
+            'data' => $user ? [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+            ] : null,
+        ]);
+    }
+
+    public function clientProfiles()
+    {
+        $profiles = Project::query()
+            ->select([
+                'client_name',
+                'client_email',
+                'client_address',
+                'client_can_access_dashboard',
+                'client_can_access_history',
+                'client_can_access_reports',
+                'client_can_access_invoices',
+                'updated_at',
+            ])
+            ->whereNotNull('client_name')
+            ->where('client_name', '!=', '')
+            ->orderByDesc('updated_at')
+            ->get()
+            ->unique(function (Project $project) {
+                return mb_strtolower(trim((string) $project->client_name));
+            })
+            ->values()
+            ->map(function (Project $project) {
+                return [
+                    'client_name' => $project->client_name,
+                    'client_email' => $project->client_email,
+                    'client_address' => $project->client_address,
+                    'client_can_access_dashboard' => (bool) $project->client_can_access_dashboard,
+                    'client_can_access_history' => (bool) $project->client_can_access_history,
+                    'client_can_access_reports' => (bool) $project->client_can_access_reports,
+                    'client_can_access_invoices' => (bool) $project->client_can_access_invoices,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $profiles,
+        ]);
+    }
+
     /**
      * Get all projects with optional filtering by status
      */
@@ -14,7 +77,7 @@ class ProjectController extends Controller
     {
         $status = $request->get('status', 'active');
 
-        $query = Project::query();
+        $query = $this->accessibleProjectsQuery();
 
         if ($status === 'active') {
             $query->active();
@@ -44,7 +107,8 @@ class ProjectController extends Controller
      */
     public function active()
     {
-        $projects = Project::active()
+        $projects = $this->accessibleProjectsQuery()
+            ->active()
             ->orderBy('name')
             ->get([
                 'id',
@@ -52,6 +116,10 @@ class ProjectController extends Controller
                 'client_name',
                 'client_email',
                 'client_address',
+                'client_can_access_dashboard',
+                'client_can_access_history',
+                'client_can_access_reports',
+                'client_can_access_invoices',
                 'color',
                 'hourly_rate',
                 'has_tax',
@@ -68,7 +136,7 @@ class ProjectController extends Controller
      */
     public function show($id)
     {
-        $project = Project::findOrFail($id);
+        $project = $this->resolveAccessibleProject($id);
 
         $project->loadCount('timeLogs');
         $project->setAttribute('total_hours', $project->total_hours);
@@ -91,17 +159,30 @@ class ProjectController extends Controller
             'client_name' => 'nullable|string|max:255',
             'client_email' => 'nullable|email|max:255',
             'client_address' => 'nullable|string|max:2000',
+            'client_login_password' => 'nullable|string|min:8|max:255',
+            'client_can_access_dashboard' => 'nullable|boolean',
+            'client_can_access_history' => 'nullable|boolean',
+            'client_can_access_reports' => 'nullable|boolean',
+            'client_can_access_invoices' => 'nullable|boolean',
             'color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'hourly_rate' => 'nullable|numeric|min:0',
             'has_tax' => 'nullable|boolean',
             'description' => 'nullable|string|max:1000'
         ]);
 
+        $this->validateClientAccountInput($request);
+        $clientUserId = $this->resolveClientUserId($request);
+
         $project = Project::create([
             'name' => $request->name,
             'client_name' => $request->client_name,
             'client_email' => $request->client_email,
+            'client_user_id' => $clientUserId,
             'client_address' => $request->client_address,
+            'client_can_access_dashboard' => $request->boolean('client_can_access_dashboard', true),
+            'client_can_access_history' => $request->boolean('client_can_access_history', true),
+            'client_can_access_reports' => $request->boolean('client_can_access_reports', true),
+            'client_can_access_invoices' => $request->boolean('client_can_access_invoices', true),
             'color' => $request->color ?? '#8b5cf6',
             'hourly_rate' => $request->hourly_rate,
             'has_tax' => $request->has_tax ?? false,
@@ -121,11 +202,18 @@ class ProjectController extends Controller
      */
     public function update(Request $request, $id)
     {
+        $project = $this->resolveAccessibleProject($id);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'client_name' => 'nullable|string|max:255',
             'client_email' => 'nullable|email|max:255',
             'client_address' => 'nullable|string|max:2000',
+            'client_login_password' => 'nullable|string|min:8|max:255',
+            'client_can_access_dashboard' => 'nullable|boolean',
+            'client_can_access_history' => 'nullable|boolean',
+            'client_can_access_reports' => 'nullable|boolean',
+            'client_can_access_invoices' => 'nullable|boolean',
             'color' => 'nullable|string|regex:/^#[0-9A-Fa-f]{6}$/',
             'hourly_rate' => 'nullable|numeric|min:0',
             'has_tax' => 'nullable|boolean',
@@ -133,13 +221,19 @@ class ProjectController extends Controller
             'status' => 'nullable|in:active,archived'
         ]);
 
-        $project = Project::findOrFail($id);
+        $this->validateClientAccountInput($request);
+        $clientUserId = $this->resolveClientUserId($request);
 
         $project->update([
             'name' => $request->name,
             'client_name' => $request->client_name,
             'client_email' => $request->client_email,
+            'client_user_id' => $clientUserId,
             'client_address' => $request->client_address,
+            'client_can_access_dashboard' => $request->boolean('client_can_access_dashboard', $project->client_can_access_dashboard ?? true),
+            'client_can_access_history' => $request->boolean('client_can_access_history', $project->client_can_access_history ?? true),
+            'client_can_access_reports' => $request->boolean('client_can_access_reports', $project->client_can_access_reports ?? true),
+            'client_can_access_invoices' => $request->boolean('client_can_access_invoices', $project->client_can_access_invoices ?? true),
             'color' => $request->color ?? $project->color,
             'hourly_rate' => $request->hourly_rate,
             'has_tax' => $request->has_tax ?? $project->has_tax,
@@ -159,7 +253,7 @@ class ProjectController extends Controller
      */
     public function archive($id)
     {
-        $project = Project::findOrFail($id);
+        $project = $this->resolveAccessibleProject($id);
         $project->archive();
 
         return response()->json([
@@ -174,7 +268,7 @@ class ProjectController extends Controller
      */
     public function activate($id)
     {
-        $project = Project::findOrFail($id);
+        $project = $this->resolveAccessibleProject($id);
         $project->activate();
 
         return response()->json([
@@ -189,7 +283,7 @@ class ProjectController extends Controller
      */
     public function destroy($id)
     {
-        $project = Project::findOrFail($id);
+        $project = $this->resolveAccessibleProject($id);
 
         // Check if project has time logs
         if ($project->timeLogs()->count() > 0) {
@@ -212,7 +306,7 @@ class ProjectController extends Controller
      */
     public function stats($id)
     {
-        $project = Project::findOrFail($id);
+        $project = $this->resolveAccessibleProject($id);
 
         $timeLogs = $project->timeLogs()->completed()->get();
 
@@ -245,7 +339,7 @@ class ProjectController extends Controller
      */
     public function backup($id)
     {
-        $project = Project::findOrFail($id);
+        $project = $this->resolveAccessibleProject($id);
         $timeLogs = $project->timeLogs()->orderBy('clock_in', 'asc')->get();
 
         // Generate SQL dump
@@ -411,6 +505,90 @@ class ProjectController extends Controller
         $sql .= "-- Or import via phpMyAdmin, MySQL Workbench, etc.\n";
 
         return $sql;
+    }
+
+    private function accessibleProjectsQuery()
+    {
+        $query = Project::query();
+        $user = Auth::user();
+
+        if ($user && $user->isClient()) {
+            $query->where('client_user_id', $user->id);
+        }
+
+        return $query;
+    }
+
+    private function resolveAccessibleProject($id): Project
+    {
+        return $this->accessibleProjectsQuery()->findOrFail($id);
+    }
+
+    private function resolveClientUserId(Request $request): ?int
+    {
+        $email = $request->input('client_email');
+        $name = $request->input('client_name');
+        $password = $request->input('client_login_password');
+
+        if (is_string($email)) {
+            $email = trim($email);
+        }
+
+        if (!$email) {
+            return null;
+        }
+
+        $user = User::query()->firstOrNew(['email' => $email]);
+
+        if (!$user->exists) {
+            $user->name = $name ?: $email;
+            $user->role = 'client';
+            $user->password = $password ?: 'password123';
+        } else {
+            if ($name) {
+                $user->name = $name;
+            }
+
+            if ($user->role !== 'author') {
+                $user->role = 'client';
+            }
+        }
+
+        $user->save();
+
+        return $user->id;
+    }
+
+    private function validateClientAccountInput(Request $request): void
+    {
+        $email = $request->input('client_email');
+        $password = $request->input('client_login_password');
+
+        if (is_string($email)) {
+            $email = trim($email);
+        }
+
+        if (is_string($password)) {
+            $password = trim($password);
+        }
+
+        if (!$email) {
+            return;
+        }
+
+        $existingUser = User::query()->where('email', $email)->first();
+
+        if (!$existingUser && !$password) {
+            throw ValidationException::withMessages([
+                'client_login_password' => 'Password is required for a new client account.',
+            ]);
+        }
+
+        if ($existingUser && $password) {
+            throw ValidationException::withMessages([
+                'client_login_password' => 'Client already exists. Leave password blank here.',
+            ]);
+        }
     }
 
     /**

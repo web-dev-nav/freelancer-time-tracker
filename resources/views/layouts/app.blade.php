@@ -22,6 +22,17 @@
     @stack('styles')
 </head>
 <body>
+    @php
+        $currentUserPayload = auth()->check()
+            ? [
+                'id' => auth()->user()->id,
+                'name' => auth()->user()->name,
+                'email' => auth()->user()->email,
+                'role' => auth()->user()->role,
+            ]
+            : null;
+    @endphp
+
     <div class="container-xl py-2">
         <header class="app-header">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
@@ -32,10 +43,24 @@
                     </h1>
                     <p class="app-subtitle mb-0">Simple, reliable time tracking for professionals</p>
                 </div>
-                <button id="theme-toggle" type="button" class="btn btn-outline-secondary d-inline-flex align-items-center">
-                    <i class="bi bi-moon-stars-fill me-2"></i>
-                    <span>Dark Mode</span>
-                </button>
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    @auth
+                        <span class="badge text-bg-light border">
+                            {{ auth()->user()->name }} ({{ auth()->user()->role }})
+                        </span>
+                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                <i class="fas fa-sign-out-alt me-1"></i>
+                                Logout
+                            </button>
+                        </form>
+                    @endauth
+                    <button id="theme-toggle" type="button" class="btn btn-outline-secondary d-inline-flex align-items-center">
+                        <i class="bi bi-moon-stars-fill me-2"></i>
+                        <span>Dark Mode</span>
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -97,6 +122,7 @@
 
         // Application timezone (configurable via APP_TIMEZONE)
         window.appTimezone = @json(config('app.timezone', 'UTC'));
+        window.currentUser = @json($currentUserPayload);
         
         // Global API helper
         window.api = {
@@ -121,6 +147,11 @@
 
                 try {
                     const response = await fetch(url, config);
+                    if (response.status === 401) {
+                        window.location.href = '/login';
+                        throw new Error('Authentication required.');
+                    }
+
                     const data = await response.json();
                     
                     if (!response.ok) {

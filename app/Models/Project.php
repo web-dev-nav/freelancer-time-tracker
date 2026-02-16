@@ -13,7 +13,12 @@ class Project extends Model
         'name',
         'client_name',
         'client_email',
+        'client_user_id',
         'client_address',
+        'client_can_access_dashboard',
+        'client_can_access_history',
+        'client_can_access_reports',
+        'client_can_access_invoices',
         'color',
         'hourly_rate',
         'has_tax',
@@ -24,6 +29,10 @@ class Project extends Model
     protected $casts = [
         'hourly_rate' => 'decimal:2',
         'has_tax' => 'boolean',
+        'client_can_access_dashboard' => 'boolean',
+        'client_can_access_history' => 'boolean',
+        'client_can_access_reports' => 'boolean',
+        'client_can_access_invoices' => 'boolean',
     ];
 
     // Relationships
@@ -35,6 +44,11 @@ class Project extends Model
     public function invoices()
     {
         return $this->hasMany(Invoice::class);
+    }
+
+    public function clientUser()
+    {
+        return $this->belongsTo(User::class, 'client_user_id');
     }
 
     // Scopes

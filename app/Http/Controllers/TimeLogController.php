@@ -10,6 +10,8 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\TimeLogExport;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class TimeLogController extends Controller
 {
@@ -18,10 +20,11 @@ class TimeLogController extends Controller
      */
     public function index()
     {
-        $activeSession = TimeLog::getActiveSession();
-        
+        $activeSession = Auth::user()?->isAuthor() ? TimeLog::getActiveSession() : null;
+
         return view('timesheet.index', [
-            'activeSession' => $activeSession
+            'activeSession' => $activeSession,
+            'currentUser' => Auth::user(),
         ]);
     }
 
@@ -160,6 +163,13 @@ class TimeLogController extends Controller
      */
     public function getActiveSession()
     {
+        if (Auth::user()?->isClient()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No active session'
+            ], 404);
+        }
+
         $session = TimeLog::getActiveSession();
 
         if ($session) {
@@ -186,12 +196,7 @@ class TimeLogController extends Controller
 
         $query = TimeLog::with('project')->completed();
 
-        // Filter by project if specified, otherwise only show active projects
-        if ($projectId) {
-            $query->byProject($projectId);
-        } else {
-            $query->activeProjects();
-        }
+        $this->applyAccessibleProjectScope($query, $projectId, 'history');
 
         $logs = $query->orderBy('clock_in', 'desc')
                       ->paginate($perPage, ['*'], 'page', $page);
@@ -279,7 +284,7 @@ class TimeLogController extends Controller
      */
     public function getLog($id)
     {
-        $log = TimeLog::findOrFail($id);
+        $log = $this->resolveAccessibleLog($id, 'history');
 
         return response()->json([
             'success' => true,
@@ -375,13 +380,7 @@ class TimeLogController extends Controller
         $projectId = $request->project_id;
 
         $query = TimeLog::with('project')->completed()->byDateRange($startDate, $endDate);
-
-        // Filter by project if specified, otherwise only show active projects
-        if ($projectId) {
-            $query->byProject($projectId);
-        } else {
-            $query->activeProjects();
-        }
+        $this->applyAccessibleProjectScope($query, $projectId, 'reports');
 
         $logs = $query->orderBy('clock_in')->get();
         $totalHours = TimeLog::calculateTotalHours($logs);
@@ -441,13 +440,7 @@ class TimeLogController extends Controller
         $projectId = $request->project_id;
 
         $query = TimeLog::with('project')->completed()->byDateRange($startDate, $endDate);
-
-        // Filter by project if specified, otherwise only show active projects
-        if ($projectId) {
-            $query->byProject($projectId);
-        } else {
-            $query->activeProjects();
-        }
+        $this->applyAccessibleProjectScope($query, $projectId, 'reports');
 
         $logs = $query->orderBy('clock_in')->get();
 
@@ -476,12 +469,7 @@ class TimeLogController extends Controller
 
         // Build base query
         $baseQuery = TimeLog::completed();
-        if ($projectId) {
-            $baseQuery->byProject($projectId);
-        } else {
-            // Only show active projects when no specific project is selected
-            $baseQuery->activeProjects();
-        }
+        $this->applyAccessibleProjectScope($baseQuery, $projectId, 'dashboard');
 
         // Today stats - clone the base query for each operation
         $todayHours = (clone $baseQuery)->byDateRange($today, $today)->sum('total_minutes') / 60;
@@ -496,7 +484,7 @@ class TimeLogController extends Controller
         $monthSessions = (clone $baseQuery)->byDateRange($thisMonth, Carbon::now())->count();
 
         // Get active session with project relationship
-        $activeSession = TimeLog::getActiveSession();
+        $activeSession = Auth::user()?->isClient() ? null : TimeLog::getActiveSession();
         if ($activeSession) {
             $activeSession->load('project');
         }
@@ -521,5 +509,78 @@ class TimeLogController extends Controller
             'success' => true,
             'stats' => $stats
         ]);
+    }
+
+    private function applyAccessibleProjectScope(Builder $query, $projectId = null, ?string $tab = null): void
+    {
+        $user = Auth::user();
+        $projectId = $projectId ?: null;
+
+        if ($user && $user->isClient()) {
+            $clientProjectIds = $this->clientProjectIdsByTab($tab);
+
+            if ($projectId) {
+                $projectId = (int) $projectId;
+                if (!in_array($projectId, $clientProjectIds, true)) {
+                    $query->whereRaw('1 = 0');
+                    return;
+                }
+                $query->byProject($projectId);
+                return;
+            }
+
+            if (empty($clientProjectIds)) {
+                $query->whereRaw('1 = 0');
+                return;
+            }
+
+            $query->whereIn('project_id', $clientProjectIds);
+            return;
+        }
+
+        if ($projectId) {
+            $query->byProject($projectId);
+        } else {
+            $query->activeProjects();
+        }
+    }
+
+    private function clientProjectIdsByTab(?string $tab = null): array
+    {
+        $user = Auth::user();
+        if (!$user || !$user->isClient()) {
+            return [];
+        }
+
+        $query = $user->clientProjects();
+
+        if ($tab) {
+            $permissionColumn = match ($tab) {
+                'dashboard' => 'client_can_access_dashboard',
+                'history' => 'client_can_access_history',
+                'reports' => 'client_can_access_reports',
+                default => null,
+            };
+
+            if ($permissionColumn) {
+                $query->where($permissionColumn, true);
+            }
+        }
+
+        return $query->pluck('id')->map(fn ($id) => (int) $id)->all();
+    }
+
+    private function resolveAccessibleLog($id, ?string $tab = null): TimeLog
+    {
+        $query = TimeLog::query()->with('project');
+        if (Auth::user()?->isClient()) {
+            $clientProjectIds = $this->clientProjectIdsByTab($tab);
+            if (empty($clientProjectIds)) {
+                abort(404);
+            }
+            $query->whereIn('project_id', $clientProjectIds);
+        }
+
+        return $query->whereKey($id)->firstOrFail();
     }
 }

@@ -65,10 +65,12 @@
                     <option value="paid">Paid</option>
                     <option value="cancelled">Cancelled</option>
                 </select>
-                <button class="btn btn-primary" onclick="showCreateInvoiceModal()">
-                    <i class="fas fa-plus"></i>
-                    Create Invoice
-                </button>
+                @if(auth()->user()?->isAuthor())
+                    <button class="btn btn-primary" onclick="showCreateInvoiceModal()">
+                        <i class="fas fa-plus"></i>
+                        Create Invoice
+                    </button>
+                @endif
             </div>
         </div>
 

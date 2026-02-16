@@ -146,6 +146,10 @@
     overflow: hidden;
 }
 
+#project-modal {
+    max-width: 760px;
+}
+
 
 /* ============================================
    Modal Header

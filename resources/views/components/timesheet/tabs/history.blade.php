@@ -5,10 +5,12 @@
         <div class="history-header">
             <h2>Work History</h2>
             <div class="history-actions">
-                <button class="btn btn-primary" id="create-new-entry-btn" style="margin-right: 8px;">
-                    <i class="fas fa-plus"></i>
-                    Create New Entry
-                </button>
+                @if(auth()->user()?->isAuthor())
+                    <button class="btn btn-primary" id="create-new-entry-btn" style="margin-right: 8px;">
+                        <i class="fas fa-plus"></i>
+                        Create New Entry
+                    </button>
+                @endif
                 <button class="btn btn-secondary" id="refresh-history-btn">
                     <i class="fas fa-sync"></i>
                     Refresh
@@ -25,12 +27,14 @@
                         <th>Clock Out</th>
                         <th>Duration</th>
                         <th>Description</th>
-                        <th>Actions</th>
+                        @if(auth()->user()?->isAuthor())
+                            <th>Actions</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody id="history-tbody">
                     <tr>
-                        <td colspan="6" class="text-center">
+                        <td colspan="{{ auth()->user()?->isAuthor() ? '6' : '5' }}" class="text-center">
                             <div class="loading">
                                 <div class="spinner"></div>
                                 Loading history...

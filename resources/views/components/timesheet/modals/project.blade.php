@@ -32,8 +32,16 @@
                     <i class="fas fa-user"></i>
                     Client/Organization Name
                 </label>
-                <input type="text" id="client-name" class="form-control"
-                       placeholder="e.g., ABC Corporation">
+                <div class="client-name-combobox">
+                    <input type="text" id="client-name" class="form-control"
+                           placeholder="Type to search or enter new client name"
+                           autocomplete="off">
+                    <button type="button" id="client-name-toggle" class="client-name-toggle" aria-label="Toggle client suggestions">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div id="client-name-dropdown" class="client-name-dropdown" style="display: none;"></div>
+                </div>
+                <small class="text-muted">Search existing clients or type a new one.</small>
             </div>
 
             <div class="form-group">
@@ -43,6 +51,17 @@
                 </label>
                 <input type="email" id="client-email" class="form-control"
                        placeholder="e.g., billing@abccorp.com">
+                <small id="client-account-status" class="text-muted"></small>
+            </div>
+
+            <div class="form-group" id="client-password-group">
+                <label class="form-label" for="client-login-password">
+                    <i class="fas fa-lock"></i>
+                    Client Login Password
+                </label>
+                <input type="password" id="client-login-password" class="form-control"
+                       placeholder="Set password for new client login (min 8 chars)">
+                <small class="text-muted">Required only when creating a new client account.</small>
             </div>
 
             <div class="form-group">
@@ -81,6 +100,31 @@
                         Include 13% Tax
                     </span>
                 </label>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-user-shield"></i>
+                    Client Tab Permissions
+                </label>
+                <div class="d-grid gap-2">
+                    <label class="form-label checkbox-label mb-0">
+                        <input type="checkbox" id="client-can-access-dashboard" class="form-checkbox" checked>
+                        <span>Dashboard</span>
+                    </label>
+                    <label class="form-label checkbox-label mb-0">
+                        <input type="checkbox" id="client-can-access-history" class="form-checkbox" checked>
+                        <span>Work History</span>
+                    </label>
+                    <label class="form-label checkbox-label mb-0">
+                        <input type="checkbox" id="client-can-access-reports" class="form-checkbox" checked>
+                        <span>Reports</span>
+                    </label>
+                    <label class="form-label checkbox-label mb-0">
+                        <input type="checkbox" id="client-can-access-invoices" class="form-checkbox" checked>
+                        <span>Invoices</span>
+                    </label>
+                </div>
             </div>
 
             <div class="form-group">

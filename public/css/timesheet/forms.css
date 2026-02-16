@@ -65,6 +65,72 @@ input[type="color"].form-control {
     cursor: pointer;
 }
 
+.client-name-combobox {
+    position: relative;
+}
+
+.client-name-combobox .form-control {
+    padding-right: 42px;
+}
+
+.client-name-toggle {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 0;
+    background: transparent;
+    color: var(--text-secondary);
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.client-name-toggle:hover {
+    background: rgba(var(--primary-rgb), 0.12);
+    color: var(--primary-dark);
+}
+
+.client-name-dropdown {
+    position: absolute;
+    z-index: 10;
+    left: 0;
+    right: 0;
+    margin-top: 6px;
+    background: var(--light-color);
+    border: 1px solid var(--surface-border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.client-name-option,
+.client-name-empty {
+    width: 100%;
+    padding: 10px 12px;
+    text-align: left;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 0.92rem;
+}
+
+.client-name-option {
+    cursor: pointer;
+}
+
+.client-name-option:hover {
+    background: rgba(var(--primary-rgb), 0.12);
+}
+
+.client-name-empty {
+    color: var(--text-secondary);
+}
+
 
 /* ============================================
    Buttons

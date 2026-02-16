@@ -5,6 +5,7 @@
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\TimeLogController;
+use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -101,14 +102,23 @@ Route::get('/cron/backup/{token}', function($token) {
     }
 })->name('cron.backup');
 
-// Main timesheet interface
-Route::get('/', [TimeLogController::class, 'index'])->name('timesheet.index');
-Route::get('/timesheet', [TimeLogController::class, 'index'])->name('timesheet.dashboard');
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
+});
 
-// Settings page
-Route::get('/settings', function() {
-    return view('settings.index');
-})->name('settings.index');
+Route::middleware('auth')->group(function () {
+    // Main timesheet interface
+    Route::get('/', [TimeLogController::class, 'index'])->name('timesheet.index');
+    Route::get('/timesheet', [TimeLogController::class, 'index'])->name('timesheet.dashboard');
+
+    // Settings page (author only)
+    Route::get('/settings', function () {
+        return view('settings.index');
+    })->middleware('author')->name('settings.index');
+
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+});
 
 Route::get('/invoices/{invoice}/open/{token}.png', [InvoiceController::class, 'trackOpen'])
     ->name('invoices.track-open');

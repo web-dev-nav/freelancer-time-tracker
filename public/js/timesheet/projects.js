@@ -10,6 +10,277 @@ import { loadDashboardStats } from './dashboard.js';
 import { loadHistory } from './history.js';
 import { loadInvoices } from './invoices.js';
 
+let clientEmailLookupTimer = null;
+let clientEmailLookupRequest = 0;
+let clientProfiles = [];
+let clientProfilesLoaded = false;
+const collapsedOrganizationGroups = new Set();
+
+function setClientPasswordVisibility(visible) {
+    const passwordGroup = document.getElementById('client-password-group');
+    const passwordInput = document.getElementById('client-login-password');
+
+    if (!passwordGroup || !passwordInput) {
+        return;
+    }
+
+    passwordGroup.style.display = visible ? '' : 'none';
+    if (!visible) {
+        passwordInput.value = '';
+    }
+}
+
+function setClientAccountStatus(message = '', tone = 'muted') {
+    const statusEl = document.getElementById('client-account-status');
+    if (!statusEl) {
+        return;
+    }
+
+    statusEl.textContent = message;
+    statusEl.classList.remove('text-muted', 'text-success', 'text-warning', 'text-danger');
+    statusEl.classList.add(tone === 'success' ? 'text-success' : tone === 'warning' ? 'text-warning' : tone === 'danger' ? 'text-danger' : 'text-muted');
+}
+
+export async function checkClientAccountByEmail() {
+    const emailInput = document.getElementById('client-email');
+    if (!emailInput) {
+        return;
+    }
+
+    const email = emailInput.value.trim();
+    if (!email) {
+        setClientAccountStatus('');
+        setClientPasswordVisibility(true);
+        return;
+    }
+
+    const requestId = ++clientEmailLookupRequest;
+
+    try {
+        const response = await window.api.request(`/api/projects/client-account?email=${encodeURIComponent(email)}`);
+
+        if (requestId !== clientEmailLookupRequest) {
+            return;
+        }
+
+        const exists = !!response.exists;
+
+        if (exists) {
+            const clientName = response.data?.name || 'Client';
+            setClientAccountStatus(`${clientName} already exists. Password is not needed.`, 'success');
+            setClientPasswordVisibility(false);
+        } else {
+            setClientAccountStatus('New client account will be created. Set a password.', 'warning');
+            setClientPasswordVisibility(true);
+        }
+    } catch (error) {
+        if (requestId !== clientEmailLookupRequest) {
+            return;
+        }
+        setClientAccountStatus('Unable to verify client account right now.', 'danger');
+        setClientPasswordVisibility(true);
+    }
+}
+
+export function setupClientEmailWatcher() {
+    const emailInput = document.getElementById('client-email');
+    if (!emailInput || emailInput.dataset.lookupBound === '1') {
+        return;
+    }
+
+    emailInput.dataset.lookupBound = '1';
+    emailInput.addEventListener('input', () => {
+        if (clientEmailLookupTimer) {
+            clearTimeout(clientEmailLookupTimer);
+        }
+        clientEmailLookupTimer = setTimeout(() => {
+            checkClientAccountByEmail();
+        }, 300);
+    });
+
+    emailInput.addEventListener('blur', () => {
+        checkClientAccountByEmail();
+    });
+}
+
+function normalizeClientName(name) {
+    return (name || '').trim().toLowerCase();
+}
+
+function escapeHtml(value = '') {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function findClientProfileByName(name) {
+    const normalized = normalizeClientName(name);
+    if (!normalized) {
+        return null;
+    }
+
+    return clientProfiles.find(profile => normalizeClientName(profile.client_name) === normalized) || null;
+}
+
+function prefillFromClientProfile(profile) {
+    if (!profile) {
+        return;
+    }
+
+    const emailInput = document.getElementById('client-email');
+    const addressInput = document.getElementById('client-address');
+    const accessDashboard = document.getElementById('client-can-access-dashboard');
+    const accessHistory = document.getElementById('client-can-access-history');
+    const accessReports = document.getElementById('client-can-access-reports');
+    const accessInvoices = document.getElementById('client-can-access-invoices');
+
+    if (emailInput) {
+        emailInput.value = profile.client_email || '';
+    }
+    if (addressInput) {
+        addressInput.value = profile.client_address || '';
+    }
+    if (accessDashboard) {
+        accessDashboard.checked = profile.client_can_access_dashboard !== false;
+    }
+    if (accessHistory) {
+        accessHistory.checked = profile.client_can_access_history !== false;
+    }
+    if (accessReports) {
+        accessReports.checked = profile.client_can_access_reports !== false;
+    }
+    if (accessInvoices) {
+        accessInvoices.checked = profile.client_can_access_invoices !== false;
+    }
+}
+
+async function loadClientProfiles() {
+    if (clientProfilesLoaded) {
+        return;
+    }
+
+    try {
+        const response = await window.api.request('/api/projects/client-profiles');
+        clientProfiles = response?.data || [];
+        clientProfilesLoaded = true;
+    } catch (error) {
+        console.error('Failed to load client profiles:', error);
+    }
+}
+
+function renderClientNameDropdown(search = '') {
+    const dropdown = document.getElementById('client-name-dropdown');
+    if (!dropdown) {
+        return;
+    }
+
+    const query = normalizeClientName(search);
+    const matches = clientProfiles.filter(profile => {
+        if (!profile?.client_name) {
+            return false;
+        }
+        if (!query) {
+            return true;
+        }
+        return normalizeClientName(profile.client_name).includes(query);
+    });
+
+    if (matches.length === 0) {
+        dropdown.innerHTML = '<div class="client-name-empty">No existing client found</div>';
+        return;
+    }
+
+    dropdown.innerHTML = matches.map(profile => `
+        <button type="button" class="client-name-option" data-client-name="${encodeURIComponent(profile.client_name)}">
+            ${escapeHtml(profile.client_name)}${profile.client_email ? ` (${escapeHtml(profile.client_email)})` : ''}
+        </button>
+    `).join('');
+}
+
+function setClientNameDropdownVisible(visible) {
+    const dropdown = document.getElementById('client-name-dropdown');
+    if (!dropdown) {
+        return;
+    }
+    dropdown.style.display = visible ? 'block' : 'none';
+}
+
+function setupClientNameWatcher() {
+    const nameInput = document.getElementById('client-name');
+    const dropdown = document.getElementById('client-name-dropdown');
+    const toggle = document.getElementById('client-name-toggle');
+
+    if (!nameInput || !dropdown || !toggle || nameInput.dataset.lookupBound === '1') {
+        return;
+    }
+
+    nameInput.dataset.lookupBound = '1';
+
+    const applyIfKnown = async (name = null) => {
+        await loadClientProfiles();
+        const profile = findClientProfileByName(name ?? nameInput.value);
+        if (!profile) {
+            return;
+        }
+        nameInput.value = profile.client_name || nameInput.value;
+        prefillFromClientProfile(profile);
+        await checkClientAccountByEmail();
+    };
+
+    nameInput.addEventListener('input', async () => {
+        await loadClientProfiles();
+        renderClientNameDropdown(nameInput.value);
+        setClientNameDropdownVisible(true);
+    });
+
+    nameInput.addEventListener('focus', async () => {
+        await loadClientProfiles();
+        renderClientNameDropdown(nameInput.value);
+        setClientNameDropdownVisible(true);
+    });
+
+    nameInput.addEventListener('blur', async () => {
+        setTimeout(async () => {
+            setClientNameDropdownVisible(false);
+            await applyIfKnown();
+        }, 220);
+    });
+
+    toggle.addEventListener('click', async () => {
+        await loadClientProfiles();
+        const isOpen = dropdown.style.display === 'block';
+        if (isOpen) {
+            setClientNameDropdownVisible(false);
+            return;
+        }
+        renderClientNameDropdown(nameInput.value);
+        setClientNameDropdownVisible(true);
+        nameInput.focus();
+    });
+
+    dropdown.addEventListener('mousedown', async (event) => {
+        const option = event.target.closest('.client-name-option');
+        if (!option) {
+            return;
+        }
+        event.preventDefault();
+        const selectedName = decodeURIComponent(option.getAttribute('data-client-name') || '');
+        nameInput.value = selectedName;
+        await applyIfKnown(selectedName);
+        setClientNameDropdownVisible(false);
+    });
+
+    document.addEventListener('click', (event) => {
+        const combobox = event.target.closest('.client-name-combobox');
+        if (!combobox) {
+            setClientNameDropdownVisible(false);
+        }
+    });
+}
+
 /**
  * Load active projects for the selector dropdown
  */
@@ -30,6 +301,7 @@ export async function loadProjectsForSelector() {
             }
 
             document.getElementById('project-selector').value = State.selectedProjectId || '';
+            applyClientTabPermissions();
 
             // Load initial data for selected project
             if (State.selectedProjectId) {
@@ -49,7 +321,10 @@ export function updateProjectSelector() {
     const selector = document.getElementById('project-selector');
 
     if (State.allProjects.length === 0) {
-        selector.innerHTML = '<option value="">No projects - Create one!</option>';
+        const message = window.currentUser?.role === 'author'
+            ? 'No projects - Create one!'
+            : 'No assigned projects';
+        selector.innerHTML = `<option value="">${message}</option>`;
         return;
     }
 
@@ -63,6 +338,8 @@ export function updateProjectSelector() {
  * Reloads all data for the newly selected project
  */
 export function onProjectChange() {
+    applyClientTabPermissions();
+
     // Reload current tab data
     const activeTab = document.querySelector('.nav-tab.active');
     if (activeTab) {
@@ -114,7 +391,41 @@ export function displayProjects() {
         return;
     }
 
-    grid.innerHTML = State.currentProjects.map(project => `
+    const groupedProjects = State.currentProjects.reduce((groups, project) => {
+        const orgName = (project.client_name || '').trim() || 'Unassigned Organization';
+        if (!groups[orgName]) {
+            groups[orgName] = [];
+        }
+        groups[orgName].push(project);
+        return groups;
+    }, {});
+
+    const sortedOrganizations = Object.keys(groupedProjects).sort((a, b) => a.localeCompare(b));
+
+    grid.innerHTML = sortedOrganizations.map(orgName => {
+        const orgProjects = groupedProjects[orgName];
+        const orgKey = encodeURIComponent(orgName.toLowerCase());
+        const isCollapsed = collapsedOrganizationGroups.has(orgKey);
+        const totalOrgHours = orgProjects.reduce((sum, p) => sum + Number(p.total_hours || 0), 0);
+        const totalOrgSessions = orgProjects.reduce((sum, p) => sum + Number(p.total_sessions || 0), 0);
+
+        return `
+        <section class="organization-group ${isCollapsed ? 'collapsed' : ''}" data-org-key="${orgKey}">
+            <button type="button" class="organization-header" data-org-key="${orgKey}">
+                <div class="organization-title-wrap">
+                    <i class="fas fa-building"></i>
+                    <span class="organization-title">${orgName}</span>
+                </div>
+                <div class="organization-meta">
+                    <span class="organization-badge">${orgProjects.length} project${orgProjects.length === 1 ? '' : 's'}</span>
+                    <span class="organization-badge">${window.utils.formatTime(Math.round(totalOrgHours * 60))}</span>
+                    <span class="organization-badge">${totalOrgSessions} sessions</span>
+                    <i class="fas fa-chevron-down organization-chevron"></i>
+                </div>
+            </button>
+            <div class="organization-projects">
+                <div class="organization-projects-grid">
+                    ${orgProjects.map(project => `
         <div class="project-card" style="border-left-color: ${project.color};">
             <div class="project-card-header">
                 <div class="project-info">
@@ -181,16 +492,52 @@ export function displayProjects() {
                 ` : ''}
             </div>
         </div>
-    `).join('');
+                    `).join('')}
+                </div>
+            </div>
+        </section>
+    `;
+    }).join('');
+
+    grid.querySelectorAll('.organization-header').forEach(button => {
+        button.addEventListener('click', () => {
+            const orgKey = button.getAttribute('data-org-key');
+            toggleOrganizationGroup(orgKey);
+        });
+    });
+}
+
+function toggleOrganizationGroup(orgKey) {
+    if (!orgKey) {
+        return;
+    }
+
+    if (collapsedOrganizationGroups.has(orgKey)) {
+        collapsedOrganizationGroups.delete(orgKey);
+    } else {
+        collapsedOrganizationGroups.add(orgKey);
+    }
+
+    displayProjects();
 }
 
 /**
  * Show the add project modal
  */
 export function showAddProjectModal() {
+    setupClientEmailWatcher();
+    setupClientNameWatcher();
+    loadClientProfiles();
     document.getElementById('project-modal-title').textContent = 'Add New Project';
     document.getElementById('project-id').value = '';
     document.getElementById('project-form').reset();
+    document.getElementById('client-login-password').value = '';
+    document.getElementById('client-can-access-dashboard').checked = true;
+    document.getElementById('client-can-access-history').checked = true;
+    document.getElementById('client-can-access-reports').checked = true;
+    document.getElementById('client-can-access-invoices').checked = true;
+    setClientAccountStatus('');
+    setClientPasswordVisibility(true);
     document.getElementById('project-color').value = '#8b5cf6';
     document.getElementById('project-modal').classList.add('show');
     document.getElementById('modal-overlay').classList.add('show');
@@ -203,6 +550,9 @@ export function showAddProjectModal() {
  */
 export async function editProject(projectId) {
     try {
+        setupClientEmailWatcher();
+        setupClientNameWatcher();
+        await loadClientProfiles();
         const response = await window.api.request(`/api/projects/${projectId}`);
 
         if (response.success) {
@@ -213,10 +563,16 @@ export async function editProject(projectId) {
             document.getElementById('client-name').value = project.client_name || '';
             document.getElementById('client-email').value = project.client_email || '';
             document.getElementById('client-address').value = project.client_address || '';
+            document.getElementById('client-login-password').value = '';
+            document.getElementById('client-can-access-dashboard').checked = project.client_can_access_dashboard !== false;
+            document.getElementById('client-can-access-history').checked = project.client_can_access_history !== false;
+            document.getElementById('client-can-access-reports').checked = project.client_can_access_reports !== false;
+            document.getElementById('client-can-access-invoices').checked = project.client_can_access_invoices !== false;
             document.getElementById('project-color').value = project.color;
             document.getElementById('hourly-rate').value = project.hourly_rate || '';
             document.getElementById('has-tax').checked = project.has_tax || false;
             document.getElementById('project-description').value = project.description || '';
+            await checkClientAccountByEmail();
             document.getElementById('project-modal').classList.add('show');
             document.getElementById('modal-overlay').classList.add('show');
             document.body.style.overflow = 'hidden';
@@ -247,7 +603,12 @@ export async function saveProject(e) {
         name: document.getElementById('project-name').value,
         client_name: document.getElementById('client-name').value || null,
         client_email: document.getElementById('client-email').value || null,
+        client_login_password: document.getElementById('client-login-password').value || null,
         client_address: document.getElementById('client-address').value || null,
+        client_can_access_dashboard: document.getElementById('client-can-access-dashboard').checked,
+        client_can_access_history: document.getElementById('client-can-access-history').checked,
+        client_can_access_reports: document.getElementById('client-can-access-reports').checked,
+        client_can_access_invoices: document.getElementById('client-can-access-invoices').checked,
         color: document.getElementById('project-color').value,
         hourly_rate: document.getElementById('hourly-rate').value || null,
         has_tax: document.getElementById('has-tax').checked,
@@ -282,6 +643,50 @@ export async function saveProject(e) {
         }
     } catch (error) {
         window.notify.error('Failed to save project: ' + error.message);
+    }
+}
+
+export function applyClientTabPermissions() {
+    const currentUser = window.currentUser;
+    if (!currentUser || currentUser.role !== 'client') {
+        return;
+    }
+
+    const selectedProject = State.allProjects.find(p => String(p.id) === String(State.selectedProjectId));
+    if (!selectedProject) {
+        return;
+    }
+
+    const permissions = {
+        dashboard: selectedProject.client_can_access_dashboard !== false,
+        history: selectedProject.client_can_access_history !== false,
+        reports: selectedProject.client_can_access_reports !== false,
+        invoices: selectedProject.client_can_access_invoices !== false,
+    };
+
+    const clientTabs = ['dashboard', 'history', 'reports', 'invoices'];
+
+    clientTabs.forEach(tabName => {
+        const nav = document.querySelector(`.nav-tab[data-tab="${tabName}"]`);
+        const content = document.getElementById(`${tabName}-tab`);
+        const canAccess = permissions[tabName];
+
+        if (nav) {
+            nav.style.display = canAccess ? '' : 'none';
+        }
+
+        if (content) {
+            content.style.display = canAccess ? '' : 'none';
+        }
+    });
+
+    const activeTab = document.querySelector('.nav-tab.active');
+    const activeTabName = activeTab?.getAttribute('data-tab');
+    if (activeTabName && !permissions[activeTabName]) {
+        const fallback = clientTabs.find(tabName => permissions[tabName]);
+        if (fallback && typeof window.showTab === 'function') {
+            window.showTab(fallback);
+        }
     }
 }
 

@@ -9,9 +9,11 @@ use App\Models\Setting;
 use App\Models\TimeLog;
 use App\Services\InvoiceMailer;
 use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 use Carbon\Carbon;
@@ -28,7 +30,7 @@ class InvoiceController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Invoice::with('project');
+        $query = $this->accessibleInvoicesQuery()->with('project');
 
         // Hide cancelled invoices by default (unless specifically requested)
         if (!$request->has('show_cancelled') || $request->show_cancelled != 'true') {
@@ -66,7 +68,7 @@ class InvoiceController extends Controller
      */
     public function show($id)
     {
-        $invoice = Invoice::with(['project', 'items.timeLog'])->findOrFail($id);
+        $invoice = $this->resolveAccessibleInvoice($id)->load(['project', 'items.timeLog']);
         return response()->json($invoice);
     }
 
@@ -75,7 +77,7 @@ class InvoiceController extends Controller
      */
     public function history($id)
     {
-        $invoice = Invoice::findOrFail($id);
+        $invoice = $this->resolveAccessibleInvoice($id);
         $history = $invoice->history()->orderBy('created_at', 'desc')->get();
         return response()->json($history);
     }
@@ -467,7 +469,7 @@ class InvoiceController extends Controller
      */
     public function downloadPdf($id)
     {
-        $invoice = Invoice::with(['project', 'items'])->findOrFail($id);
+        $invoice = $this->resolveAccessibleInvoice($id)->load(['project', 'items']);
 
         $companySettings = $this->getInvoiceSettings();
 
@@ -500,7 +502,7 @@ class InvoiceController extends Controller
      */
     public function previewPdf($id)
     {
-        $invoice = Invoice::with(['project', 'items'])->findOrFail($id);
+        $invoice = $this->resolveAccessibleInvoice($id)->load(['project', 'items']);
 
         $companySettings = $this->getInvoiceSettings();
 
@@ -772,7 +774,7 @@ class InvoiceController extends Controller
      */
     public function stats(Request $request)
     {
-        $query = Invoice::query();
+        $query = $this->accessibleInvoicesQuery();
 
         // Exclude cancelled invoices from stats
         $query->where('status', '!=', 'cancelled');
@@ -866,6 +868,32 @@ class InvoiceController extends Controller
             ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
             ->header('Pragma', 'no-cache')
             ->header('Expires', '0');
+    }
+
+    private function accessibleInvoicesQuery(): Builder
+    {
+        $query = Invoice::query();
+        $user = Auth::user();
+
+        if ($user && $user->isClient()) {
+            $clientProjectIds = $user->clientProjects()
+                ->where('client_can_access_invoices', true)
+                ->pluck('id')
+                ->all();
+
+            if (empty($clientProjectIds)) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->whereIn('project_id', $clientProjectIds);
+            }
+        }
+
+        return $query;
+    }
+
+    private function resolveAccessibleInvoice($id): Invoice
+    {
+        return $this->accessibleInvoicesQuery()->findOrFail($id);
     }
 
     /**

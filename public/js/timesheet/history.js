@@ -16,12 +16,14 @@ import { loadDashboardStats } from './dashboard.js';
  */
 export async function loadHistory(page = 1, perPage = null) {
     const tbody = document.getElementById('history-tbody');
+    const isAuthor = window.currentUser?.role === 'author';
+    const columns = isAuthor ? 6 : 5;
 
     try {
         State.setCurrentPage(page);
         if (perPage) State.setCurrentPerPage(perPage);
 
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center"><div class="loading"><div class="spinner"></div>Loading history...</div></td></tr>';
+        tbody.innerHTML = `<tr><td colspan="${columns}" class="text-center"><div class="loading"><div class="spinner"></div>Loading history...</div></td></tr>`;
 
         const url = State.selectedProjectId
             ? `/api/timesheet/history?page=${State.currentPage}&per_page=${State.currentPerPage}&project_id=${State.selectedProjectId}`
@@ -47,6 +49,24 @@ export async function loadHistory(page = 1, perPage = null) {
                     // Use server-provided clock_in_display_date to avoid timezone issues
                     const displayDate = log.clock_in_display_date || window.utils.formatDate(log.clock_in);
 
+                    const actionButtons = isAuthor
+                        ? `
+                        <button class="btn btn-info" onclick="viewDetails(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-primary" onclick="editLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteLog(${log.id})" style="padding: 6px 12px; font-size: 12px;" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    `
+                        : `
+                        <button class="btn btn-info" onclick="viewDetails(${log.id})" style="padding: 6px 12px; font-size: 12px;" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    `;
+
                     row.innerHTML = `
                         <td>${displayDate}</td>
                         <td>${clockInDisplay}</td>
@@ -56,17 +76,7 @@ export async function loadHistory(page = 1, perPage = null) {
                             <div class="description-preview">${truncatedDescription}</div>
                             ${workDescription.length > 80 ? `<a href="#" class="description-truncated" onclick="viewDetails(${log.id}); return false;">View Details</a>` : ''}
                         </td>
-                        <td>
-                            <button class="btn btn-info" onclick="viewDetails(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="View Details">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn btn-primary" onclick="editLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-danger" onclick="deleteLog(${log.id})" style="padding: 6px 12px; font-size: 12px;" title="Delete">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
+                        ${isAuthor ? `<td>${actionButtons}</td>` : ''}
                     `;
                 } catch (error) {
                     // Fallback formatting - use server-provided formatted dates when available
@@ -89,6 +99,24 @@ export async function loadHistory(page = 1, perPage = null) {
                         day: 'numeric'
                     });
 
+                    const actionButtons = isAuthor
+                        ? `
+                        <button class="btn btn-info" onclick="viewDetails(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-primary" onclick="editLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteLog(${log.id})" style="padding: 6px 12px; font-size: 12px;" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    `
+                        : `
+                        <button class="btn btn-info" onclick="viewDetails(${log.id})" style="padding: 6px 12px; font-size: 12px;" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    `;
+
                     row.innerHTML = `
                         <td>${displayDate}</td>
                         <td>${clockInTime}</td>
@@ -98,17 +126,7 @@ export async function loadHistory(page = 1, perPage = null) {
                             <div class="description-preview">${truncatedDesc}</div>
                             ${workDesc.length > 80 ? `<a href="#" class="description-truncated" onclick="viewDetails(${log.id}); return false;">View Details</a>` : ''}
                         </td>
-                        <td>
-                            <button class="btn btn-info" onclick="viewDetails(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="View Details">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn btn-primary" onclick="editLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-danger" onclick="deleteLog(${log.id})" style="padding: 6px 12px; font-size: 12px;" title="Delete">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
+                        ${isAuthor ? `<td>${actionButtons}</td>` : ''}
                     `;
                 }
             });
@@ -116,11 +134,11 @@ export async function loadHistory(page = 1, perPage = null) {
             // Update pagination
             updatePagination(response.data.pagination);
         } else {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No work history found. Start tracking your time!</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="${columns}" class="text-center">No work history found.</td></tr>`;
             updatePagination(null);
         }
     } catch (error) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Failed to load history. Please try again.</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="${columns}" class="text-center text-danger">Failed to load history. Please try again.</td></tr>`;
         window.notify.error('Failed to load history: ' + error.message);
         updatePagination(null);
     }

@@ -6,23 +6,27 @@
         </button>
         <button class="nav-tab" data-tab="history">
             <i class="fas fa-history"></i>
-            History
+            Work History
         </button>
         <button class="nav-tab" data-tab="reports">
             <i class="fas fa-chart-bar"></i>
             Reports
         </button>
-        <button class="nav-tab" data-tab="projects">
-            <i class="fas fa-folder"></i>
-            Projects
-        </button>
+        @if(auth()->user()?->isAuthor())
+            <button class="nav-tab" data-tab="projects">
+                <i class="fas fa-folder"></i>
+                Projects
+            </button>
+        @endif
         <button class="nav-tab" data-tab="invoices">
             <i class="fas fa-file-invoice-dollar"></i>
             Invoices
         </button>
-        <button class="nav-tab" data-tab="backups">
-            <i class="fas fa-database"></i>
-            Backups
-        </button>
+        @if(auth()->user()?->isAuthor())
+            <button class="nav-tab" data-tab="backups">
+                <i class="fas fa-database"></i>
+                Backups
+            </button>
+        @endif
     </div>
 </div>

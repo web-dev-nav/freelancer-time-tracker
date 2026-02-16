@@ -10,7 +10,7 @@ import * as Utils from './utils.js';
 import { loadDashboardStats, checkActiveSession } from './dashboard.js';
 import { clockIn, clockOut } from './tracker.js';
 import { loadHistory, updateLog, hideEditLogModal, createNewEntry } from './history.js';
-import { generateReport } from './reports.js';
+import { generateReport, selectThisWeek } from './reports.js';
 import { loadProjectsForSelector, onProjectChange, loadProjects, saveProject, backupProject, backupDatabase } from './projects.js';
 import { loadInvoices } from './invoices.js';
 import { loadBackups } from './backups.js';
@@ -22,9 +22,16 @@ import { hideClockOutModal } from './tracker.js';
 export function initializeApp() {
     // Set current date and time
     const now = Utils.getCurrentDateTime();
-    document.getElementById('clock-in-date').value = now.date;
-    document.getElementById('clock-in-time').value = now.time;
-    document.getElementById('report-end-date').value = now.date;
+    const clockInDate = document.getElementById('clock-in-date');
+    const clockInTime = document.getElementById('clock-in-time');
+    const reportStartDate = document.getElementById('report-start-date');
+    const reportEndDate = document.getElementById('report-end-date');
+
+    if (clockInDate) clockInDate.value = now.date;
+    if (clockInTime) clockInTime.value = now.time;
+    if (reportStartDate && reportEndDate) {
+        selectThisWeek();
+    }
 }
 
 /**
@@ -32,11 +39,14 @@ export function initializeApp() {
  */
 export function setupEventListeners() {
     // Project selector change
-    document.getElementById('project-selector').addEventListener('change', function() {
-        State.setSelectedProjectId(this.value || null);
-        localStorage.setItem('selectedProjectId', State.selectedProjectId || '');
-        onProjectChange();
-    });
+    const projectSelector = document.getElementById('project-selector');
+    if (projectSelector) {
+        projectSelector.addEventListener('change', function() {
+            State.setSelectedProjectId(this.value || null);
+            localStorage.setItem('selectedProjectId', State.selectedProjectId || '');
+            onProjectChange();
+        });
+    }
 
     // Tab navigation
     document.querySelectorAll('.nav-tab').forEach(tab => {
@@ -47,40 +57,58 @@ export function setupEventListeners() {
     });
 
     // Clock in form
-    document.getElementById('clock-in-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        clockIn();
-    });
+    const clockInForm = document.getElementById('clock-in-form');
+    if (clockInForm) {
+        clockInForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            clockIn();
+        });
+    }
 
     // Clock out form
-    document.getElementById('clock-out-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        clockOut();
-    });
+    const clockOutForm = document.getElementById('clock-out-form');
+    if (clockOutForm) {
+        clockOutForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            clockOut();
+        });
+    }
 
     // Edit log form
-    document.getElementById('edit-log-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        updateLog();
-    });
+    const editLogForm = document.getElementById('edit-log-form');
+    if (editLogForm) {
+        editLogForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            updateLog();
+        });
+    }
 
     // Report form
-    document.getElementById('report-form').addEventListener('submit', function(e) {
-        e.preventDefault();
-        generateReport();
-    });
+    const reportForm = document.getElementById('report-form');
+    if (reportForm) {
+        reportForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            generateReport();
+        });
+    }
 
     // Modal overlay
-    document.getElementById('modal-overlay').addEventListener('click', function() {
-        hideClockOutModal();
-        hideEditLogModal();
-        if (typeof window.hideSettingsModal === 'function') {
-            window.hideSettingsModal();
-        }
-    });
+    const modalOverlay = document.getElementById('modal-overlay');
+    if (modalOverlay) {
+        modalOverlay.addEventListener('click', function() {
+            hideClockOutModal();
+            hideEditLogModal();
+            if (typeof window.hideSettingsModal === 'function') {
+                window.hideSettingsModal();
+            }
+        });
+    }
 
     // Project form
-    document.getElementById('project-form').addEventListener('submit', saveProject);
+    const projectForm = document.getElementById('project-form');
+    if (projectForm) {
+        projectForm.addEventListener('submit', saveProject);
+    }
 
     // Note: History button event listeners are now set up in index.js for better reliability
 }
@@ -94,13 +122,21 @@ export function showTab(tabName) {
     document.querySelectorAll('.nav-tab').forEach(tab => {
         tab.classList.remove('active');
     });
-    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    const navTab = document.querySelector(`[data-tab="${tabName}"]`);
+    if (!navTab) {
+        return;
+    }
+    navTab.classList.add('active');
 
     // Update tab content
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
     });
-    document.getElementById(`${tabName}-tab`).classList.add('active');
+    const tabContent = document.getElementById(`${tabName}-tab`);
+    if (!tabContent) {
+        return;
+    }
+    tabContent.classList.add('active');
 
     // Load data for specific tabs
     if (tabName === 'history') {
@@ -108,6 +144,13 @@ export function showTab(tabName) {
         loadHistory();
     } else if (tabName === 'dashboard') {
         loadDashboardStats(); // This already handles active session
+    } else if (tabName === 'reports') {
+        const reportStartDate = document.getElementById('report-start-date');
+        const reportEndDate = document.getElementById('report-end-date');
+        if (!reportStartDate?.value || !reportEndDate?.value) {
+            selectThisWeek();
+        }
+        generateReport();
     } else if (tabName === 'projects') {
         loadProjects();
     } else if (tabName === 'invoices') {
@@ -126,12 +169,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load week start preference
     const savedWeekStart = localStorage.getItem('weekStartDay') || 'monday';
-    document.getElementById('week-start-day').value = savedWeekStart;
+    const weekStartDay = document.getElementById('week-start-day');
+    if (weekStartDay) {
+        weekStartDay.value = savedWeekStart;
+    }
 
     // Save week start preference when changed
-    document.getElementById('week-start-day').addEventListener('change', function() {
-        localStorage.setItem('weekStartDay', this.value);
-    });
+    if (weekStartDay) {
+        weekStartDay.addEventListener('change', function() {
+            localStorage.setItem('weekStartDay', this.value);
+        });
+    }
 
     initializeApp();
     setupEventListeners();
