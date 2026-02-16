@@ -397,44 +397,52 @@ class SettingController extends Controller
         }
 
         $profiles = $this->knownClientProfiles();
-        $profileMap = [];
-
-        foreach ($profiles as $profile) {
-            $profileMap[strtolower($profile['client_email'])] = $profile;
-        }
-
         $schedules = DailyActivitySchedule::query()
             ->orderBy('client_email')
             ->get();
 
-        $result = [];
-
+        $scheduleMap = [];
         foreach ($schedules as $schedule) {
             $email = strtolower(trim((string) $schedule->client_email));
             if ($email === '') {
                 continue;
             }
 
-            $known = $profileMap[$email] ?? null;
+            $scheduleMap[$email] = $schedule;
+        }
+
+        $result = [];
+        $usedScheduleEmails = [];
+
+        foreach ($profiles as $profile) {
+            $email = strtolower(trim((string) ($profile['client_email'] ?? '')));
+            $schedule = $email !== '' ? ($scheduleMap[$email] ?? null) : null;
+
+            $result[] = [
+                'client_email' => $profile['client_email'] ?? '',
+                'client_name' => $profile['client_name'] ?? null,
+                'enabled' => (bool) ($schedule?->enabled ?? false),
+                'send_time' => $schedule?->send_time ?: '18:00',
+                'last_sent_date' => $schedule?->last_sent_date?->toDateString(),
+            ];
+
+            if ($email !== '') {
+                $usedScheduleEmails[$email] = true;
+            }
+        }
+
+        foreach ($schedules as $schedule) {
+            $email = strtolower(trim((string) $schedule->client_email));
+            if ($email === '' || isset($usedScheduleEmails[$email])) {
+                continue;
+            }
 
             $result[] = [
                 'client_email' => $schedule->client_email,
-                'client_name' => $known['client_name'] ?? $schedule->client_name,
+                'client_name' => $schedule->client_name,
                 'enabled' => (bool) $schedule->enabled,
                 'send_time' => $schedule->send_time ?: '18:00',
                 'last_sent_date' => $schedule->last_sent_date?->toDateString(),
-            ];
-
-            unset($profileMap[$email]);
-        }
-
-        foreach ($profileMap as $profile) {
-            $result[] = [
-                'client_email' => $profile['client_email'],
-                'client_name' => $profile['client_name'],
-                'enabled' => false,
-                'send_time' => '18:00',
-                'last_sent_date' => null,
             ];
         }
 
@@ -489,20 +497,30 @@ class SettingController extends Controller
             ->get();
 
         $profiles = [];
+        $dedupe = [];
 
         foreach ($projects as $project) {
             $projectEmail = trim((string) $project->client_email);
             $linkedUserEmail = trim((string) ($project->clientUser?->email ?? ''));
             $email = strtolower($projectEmail !== '' ? $projectEmail : $linkedUserEmail);
-            if ($email === '' || isset($profiles[$email])) {
-                continue;
-            }
 
             $projectName = trim((string) ($project->client_name ?? ''));
             $linkedUserName = trim((string) ($project->clientUser?->name ?? ''));
             $name = $projectName !== '' ? $projectName : $linkedUserName;
-            $profiles[$email] = [
-                'client_email' => $email,
+            $nameKey = mb_strtolower($name);
+            $key = $nameKey . '|' . $email;
+
+            if ($name === '' && $email === '') {
+                continue;
+            }
+
+            if (isset($dedupe[$key])) {
+                continue;
+            }
+
+            $dedupe[$key] = true;
+            $profiles[] = [
+                'client_email' => $email !== '' ? $email : '',
                 'client_name' => $name !== '' ? $name : null,
             ];
         }
@@ -515,18 +533,25 @@ class SettingController extends Controller
 
         foreach ($clientUsers as $clientUser) {
             $email = strtolower(trim((string) $clientUser->email));
-            if ($email === '' || isset($profiles[$email])) {
+            if ($email === '') {
                 continue;
             }
 
             $name = trim((string) ($clientUser->name ?? ''));
-            $profiles[$email] = [
+            $nameKey = mb_strtolower($name);
+            $key = $nameKey . '|' . $email;
+            if (isset($dedupe[$key])) {
+                continue;
+            }
+
+            $dedupe[$key] = true;
+            $profiles[] = [
                 'client_email' => $email,
                 'client_name' => $name !== '' ? $name : null,
             ];
         }
 
-        return array_values($profiles);
+        return $profiles;
     }
 
     /**
