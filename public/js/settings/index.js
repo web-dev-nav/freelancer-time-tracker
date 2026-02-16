@@ -369,7 +369,7 @@ function renderDailyActivityScheduleTable() {
     if (!Array.isArray(dailyActivityClientSchedules) || dailyActivityClientSchedules.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" style="padding:14px;color:#64748b;">No client emails found in projects yet.</td>
+                <td colspan="7" class="automation-empty-row">No client emails found in projects yet.</td>
             </tr>
         `;
         return;
@@ -388,37 +388,35 @@ function renderDailyActivityScheduleTable() {
 
         return `
             <tr data-schedule-index="${index}">
-                <td style="padding:10px 12px;border-top:1px solid #f1f5f9;">${clientName}</td>
-                <td style="padding:10px 12px;border-top:1px solid #f1f5f9;">
-                    ${clientEmail}
-                </td>
-                <td style="padding:10px 12px;border-top:1px solid #f1f5f9;text-align:center;">
+                <td><span class="automation-client-name">${clientName}</span></td>
+                <td><span class="automation-client-email">${clientEmail}</span></td>
+                <td class="automation-cell-center">
                     <input type="checkbox" data-schedule-enabled data-index="${index}" ${enabledChecked}>
                 </td>
-                <td style="padding:10px 12px;border-top:1px solid #f1f5f9;text-align:center;">
-                    <input type="time" data-schedule-send-time data-index="${index}" value="${sendTime}" style="max-width:140px;">
+                <td class="automation-cell-center">
+                    <input type="time" class="automation-input automation-time-input" data-schedule-send-time data-index="${index}" value="${sendTime}">
                 </td>
-                <td style="padding:10px 12px;border-top:1px solid #f1f5f9;">
+                <td>
                     <input
+                        class="automation-input"
                         type="text"
                         data-schedule-subject
                         data-index="${index}"
                         value="${subject}"
                         placeholder="Daily Activity Report - {date} ({client_name})"
-                        style="width:100%;min-width:280px;"
                     >
                 </td>
-                <td style="padding:10px 12px;border-top:1px solid #f1f5f9;">
+                <td>
                     <input
+                        class="automation-input"
                         type="text"
                         data-schedule-columns
                         data-index="${index}"
                         value="${activityColumns}"
                         placeholder="date,project,clock_in,clock_out,duration,description"
-                        style="width:100%;min-width:320px;"
                     >
                 </td>
-                <td style="padding:10px 12px;border-top:1px solid #f1f5f9;text-align:center;color:#64748b;">
+                <td class="automation-cell-center" style="color:#64748b;">
                     ${lastSent}
                 </td>
             </tr>
