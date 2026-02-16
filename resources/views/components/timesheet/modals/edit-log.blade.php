@@ -45,24 +45,24 @@
                 </label>
                 <div class="rich-editor" id="edit-work-description-editor-wrapper">
                     <div class="rich-editor-toolbar" role="toolbar" aria-label="Work description formatting">
-                        <button type="button" class="editor-btn" onclick="applyRichTextCommand('bold')" title="Bold (Ctrl+B)">
+                        <button type="button" class="editor-btn" data-editor-command="bold" title="Bold (Ctrl+B)">
                             <i class="fas fa-bold"></i>
                         </button>
-                        <button type="button" class="editor-btn" onclick="applyRichTextCommand('italic')" title="Italic (Ctrl+I)">
+                        <button type="button" class="editor-btn" data-editor-command="italic" title="Italic (Ctrl+I)">
                             <i class="fas fa-italic"></i>
                         </button>
-                        <button type="button" class="editor-btn" onclick="applyRichTextCommand('underline')" title="Underline (Ctrl+U)">
+                        <button type="button" class="editor-btn" data-editor-command="underline" title="Underline (Ctrl+U)">
                             <i class="fas fa-underline"></i>
                         </button>
                         <span class="editor-separator"></span>
-                        <button type="button" class="editor-btn" onclick="applyRichTextCommand('insertUnorderedList')" title="Bullet List">
+                        <button type="button" class="editor-btn" data-editor-command="insertUnorderedList" title="Bullet List">
                             <i class="fas fa-list-ul"></i>
                         </button>
-                        <button type="button" class="editor-btn" onclick="applyRichTextCommand('insertOrderedList')" title="Numbered List">
+                        <button type="button" class="editor-btn" data-editor-command="insertOrderedList" title="Numbered List">
                             <i class="fas fa-list-ol"></i>
                         </button>
                         <span class="editor-separator"></span>
-                        <button type="button" class="editor-btn" onclick="applyRichTextCommand('formatBlock', 'blockquote')" title="Quote">
+                        <button type="button" class="editor-btn" data-editor-command="formatBlock" data-editor-value="blockquote" title="Quote">
                             <i class="fas fa-quote-right"></i>
                         </button>
                     </div>

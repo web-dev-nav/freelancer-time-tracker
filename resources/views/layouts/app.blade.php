@@ -72,7 +72,7 @@
     {{-- Modals Stack (renders outside main-content) --}}
     @stack('modals')
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-Piv4xVNRyMGpqkH+6W2kQja1GaGLjm+rXhN3kLBYjgJv1bVbWcv16O3EO8PhB0uT" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <!-- Scripts -->
     <script>
         (function initThemeToggle() {

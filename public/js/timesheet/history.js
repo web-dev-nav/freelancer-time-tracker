@@ -70,6 +70,19 @@ function ensureRichEditorInitialized() {
         getRichDescriptionHtml();
     });
 
+    const toolbar = document.querySelector('#edit-work-description-editor-wrapper .rich-editor-toolbar');
+    if (toolbar) {
+        toolbar.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-editor-command]');
+            if (!button) return;
+            event.preventDefault();
+
+            const command = button.getAttribute('data-editor-command');
+            const value = button.getAttribute('data-editor-value');
+            applyRichTextCommand(command, value);
+        });
+    }
+
     richEditorInitialized = true;
 }
 
