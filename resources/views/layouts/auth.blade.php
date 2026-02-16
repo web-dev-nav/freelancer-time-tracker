@@ -13,9 +13,22 @@
     @stack('styles')
 </head>
 <body>
-    <main class="container py-5">
-        @yield('content')
-    </main>
+    <div class="container py-4">
+        <header class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-clock text-primary"></i>
+                <strong>Professional Timesheet</strong>
+            </div>
+        </header>
+
+        <main class="py-3">
+            @yield('content')
+        </main>
+
+        <footer class="text-center text-muted mt-4 pt-3 border-top">
+            <small>&copy; {{ date('Y') }} Professional Timesheet</small>
+        </footer>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     @stack('scripts')
