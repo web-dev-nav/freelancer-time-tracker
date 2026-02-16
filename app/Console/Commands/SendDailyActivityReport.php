@@ -81,10 +81,11 @@ class SendDailyActivityReport extends Command
             $reportDate = Carbon::parse($today, $timezone)->format('M d, Y');
             $clientName = trim((string) ($schedule->client_name ?? ''));
 
-            $subject = sprintf(
-                'Daily Activity Report - %s%s',
+            $subject = $this->resolvePerClientSubject(
+                $schedule->subject,
                 $reportDate,
-                $clientName !== '' ? " ({$clientName})" : ''
+                $clientName,
+                $clientEmail
             );
 
             try {
@@ -358,5 +359,23 @@ class SendDailyActivityReport extends Command
             'from_address' => $emailSettings['email_from_address'] ?? config('mail.from.address'),
             'from_name' => $emailSettings['email_from_name'] ?? config('mail.from.name'),
         ];
+    }
+
+    private function resolvePerClientSubject(?string $template, string $reportDate, string $clientName, string $clientEmail): string
+    {
+        $rawTemplate = trim((string) $template);
+        if ($rawTemplate === '') {
+            return sprintf(
+                'Daily Activity Report - %s%s',
+                $reportDate,
+                $clientName !== '' ? " ({$clientName})" : ''
+            );
+        }
+
+        return strtr($rawTemplate, [
+            '{date}' => $reportDate,
+            '{client_name}' => $clientName !== '' ? $clientName : 'Client',
+            '{client_email}' => $clientEmail,
+        ]);
     }
 }

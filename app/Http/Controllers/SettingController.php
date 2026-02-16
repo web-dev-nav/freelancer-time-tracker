@@ -137,6 +137,7 @@ class SettingController extends Controller
                 'daily_activity_client_schedules.*.client_name' => 'nullable|string|max:255',
                 'daily_activity_client_schedules.*.enabled' => 'nullable|boolean',
                 'daily_activity_client_schedules.*.send_time' => ['nullable', 'string', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
+                'daily_activity_client_schedules.*.subject' => 'nullable|string|max:255',
                 // SECURITY: Validate Stripe key formats
                 'stripe_publishable_key'  => ['nullable', 'string', 'max:255', 'regex:/^(pk_(test|live)_[a-zA-Z0-9]+)?$/'],
                 'stripe_secret_key'       => ['nullable', 'string', 'max:255', 'regex:/^(sk_(test|live)_[a-zA-Z0-9]+)?$/'],
@@ -388,13 +389,14 @@ class SettingController extends Controller
     /**
      * Return distinct clients from projects merged with configured schedules.
      *
-     * @return array<int, array{client_email: string, client_name: string|null, enabled: bool, send_time: string, last_sent_date: string|null}>
+     * @return array<int, array{client_email: string, client_name: string|null, enabled: bool, send_time: string, subject: string|null, last_sent_date: string|null}>
      */
     protected function getClientSchedulesForAutomation(): array
     {
         if (!Schema::hasTable('daily_activity_schedules')) {
             return [];
         }
+        $hasSubjectColumn = Schema::hasColumn('daily_activity_schedules', 'subject');
 
         $profiles = $this->knownClientProfiles();
         $schedules = DailyActivitySchedule::query()
@@ -423,6 +425,7 @@ class SettingController extends Controller
                 'client_name' => $profile['client_name'] ?? null,
                 'enabled' => (bool) ($schedule?->enabled ?? false),
                 'send_time' => $schedule?->send_time ?: '18:00',
+                'subject' => $hasSubjectColumn ? ($schedule?->subject) : null,
                 'last_sent_date' => $schedule?->last_sent_date?->toDateString(),
             ];
 
@@ -442,6 +445,7 @@ class SettingController extends Controller
                 'client_name' => $schedule->client_name,
                 'enabled' => (bool) $schedule->enabled,
                 'send_time' => $schedule->send_time ?: '18:00',
+                'subject' => $hasSubjectColumn ? $schedule->subject : null,
                 'last_sent_date' => $schedule->last_sent_date?->toDateString(),
             ];
         }
@@ -461,6 +465,7 @@ class SettingController extends Controller
         if (!Schema::hasTable('daily_activity_schedules')) {
             return;
         }
+        $hasSubjectColumn = Schema::hasColumn('daily_activity_schedules', 'subject');
 
         foreach ($rows as $row) {
             $email = strtolower(trim((string) ($row['client_email'] ?? '')));
@@ -474,13 +479,19 @@ class SettingController extends Controller
             }
 
             $name = trim((string) ($row['client_name'] ?? ''));
+            $subject = trim((string) ($row['subject'] ?? ''));
+            $payload = [
+                'client_name' => $name !== '' ? $name : null,
+                'enabled' => !empty($row['enabled']),
+                'send_time' => $sendTime,
+            ];
+            if ($hasSubjectColumn) {
+                $payload['subject'] = $subject !== '' ? $subject : null;
+            }
+
             DailyActivitySchedule::query()->updateOrCreate(
                 ['client_email' => $email],
-                [
-                    'client_name' => $name !== '' ? $name : null,
-                    'enabled' => !empty($row['enabled']),
-                    'send_time' => $sendTime,
-                ]
+                $payload
             );
         }
     }

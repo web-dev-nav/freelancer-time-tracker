@@ -369,7 +369,7 @@ function renderDailyActivityScheduleTable() {
     if (!Array.isArray(dailyActivityClientSchedules) || dailyActivityClientSchedules.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" style="padding:14px;color:#64748b;">No client emails found in projects yet.</td>
+                <td colspan="6" style="padding:14px;color:#64748b;">No client emails found in projects yet.</td>
             </tr>
         `;
         return;
@@ -382,6 +382,7 @@ function renderDailyActivityScheduleTable() {
         const clientEmail = escapeHtml(originalClientEmail);
         const enabledChecked = row.enabled ? 'checked' : '';
         const sendTime = escapeHtml(row.send_time || '18:00');
+        const subject = escapeHtml(row.subject || '');
         const lastSent = escapeHtml(row.last_sent_date || '-');
 
         return `
@@ -395,6 +396,16 @@ function renderDailyActivityScheduleTable() {
                 </td>
                 <td style="padding:10px 12px;border-top:1px solid #f1f5f9;text-align:center;">
                     <input type="time" data-schedule-send-time data-index="${index}" value="${sendTime}" style="max-width:140px;">
+                </td>
+                <td style="padding:10px 12px;border-top:1px solid #f1f5f9;">
+                    <input
+                        type="text"
+                        data-schedule-subject
+                        data-index="${index}"
+                        value="${subject}"
+                        placeholder="Daily Activity Report - {date} ({client_name})"
+                        style="width:100%;min-width:280px;"
+                    >
                 </td>
                 <td style="padding:10px 12px;border-top:1px solid #f1f5f9;text-align:center;color:#64748b;">
                     ${lastSent}
@@ -417,6 +428,7 @@ function collectDailyActivityClientSchedules() {
         const baseRow = Number.isInteger(index) && index >= 0 ? dailyActivityClientSchedules[index] : null;
         const enabledEl = tr.querySelector('[data-schedule-enabled]');
         const sendTimeEl = tr.querySelector('[data-schedule-send-time]');
+        const subjectEl = tr.querySelector('[data-schedule-subject]');
 
         if (!baseRow || !enabledEl || !sendTimeEl) {
             return;
@@ -432,6 +444,7 @@ function collectDailyActivityClientSchedules() {
             client_name: String(baseRow.client_name || '').trim() || null,
             enabled: Boolean(enabledEl.checked),
             send_time: (sendTimeEl.value || '18:00').trim() || '18:00',
+            subject: (subjectEl?.value || '').trim() || null,
         });
     });
 
