@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DailyActivitySchedule;
 use App\Models\Project;
 use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
@@ -482,21 +483,43 @@ class SettingController extends Controller
     protected function knownClientProfiles(): array
     {
         $projects = Project::query()
-            ->select(['client_name', 'client_email', 'updated_at'])
-            ->whereNotNull('client_email')
-            ->where('client_email', '!=', '')
+            ->with(['clientUser:id,name,email'])
+            ->select(['client_name', 'client_email', 'client_user_id', 'updated_at'])
             ->orderBy('updated_at', 'desc')
             ->get();
 
         $profiles = [];
 
         foreach ($projects as $project) {
-            $email = strtolower(trim((string) $project->client_email));
+            $projectEmail = trim((string) $project->client_email);
+            $linkedUserEmail = trim((string) ($project->clientUser?->email ?? ''));
+            $email = strtolower($projectEmail !== '' ? $projectEmail : $linkedUserEmail);
             if ($email === '' || isset($profiles[$email])) {
                 continue;
             }
 
-            $name = trim((string) ($project->client_name ?? ''));
+            $projectName = trim((string) ($project->client_name ?? ''));
+            $linkedUserName = trim((string) ($project->clientUser?->name ?? ''));
+            $name = $projectName !== '' ? $projectName : $linkedUserName;
+            $profiles[$email] = [
+                'client_email' => $email,
+                'client_name' => $name !== '' ? $name : null,
+            ];
+        }
+
+        $clientUsers = User::query()
+            ->select(['name', 'email'])
+            ->where('role', 'client')
+            ->orderBy('name')
+            ->get();
+
+        foreach ($clientUsers as $clientUser) {
+            $email = strtolower(trim((string) $clientUser->email));
+            if ($email === '' || isset($profiles[$email])) {
+                continue;
+            }
+
+            $name = trim((string) ($clientUser->name ?? ''));
             $profiles[$email] = [
                 'client_email' => $email,
                 'client_name' => $name !== '' ? $name : null,
