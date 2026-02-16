@@ -137,7 +137,10 @@ class SettingController extends Controller
                 'daily_activity_client_schedules.*.client_email' => 'required_with:daily_activity_client_schedules|email|max:255',
                 'daily_activity_client_schedules.*.client_name' => 'nullable|string|max:255',
                 'daily_activity_client_schedules.*.enabled' => 'nullable|boolean',
+                'daily_activity_client_schedules.*.schedule_type' => 'nullable|in:daily,date',
                 'daily_activity_client_schedules.*.send_time' => ['nullable', 'string', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
+                'daily_activity_client_schedules.*.send_date' => 'nullable|date',
+                'daily_activity_client_schedules.*.working_days' => 'nullable|string|max:255',
                 'daily_activity_client_schedules.*.subject' => 'nullable|string|max:255',
                 'daily_activity_client_schedules.*.activity_columns' => 'nullable|string|max:255',
                 // SECURITY: Validate Stripe key formats
@@ -391,13 +394,16 @@ class SettingController extends Controller
     /**
      * Return distinct clients from projects merged with configured schedules.
      *
-     * @return array<int, array{client_email: string, client_name: string|null, enabled: bool, send_time: string, subject: string|null, activity_columns: string, last_sent_date: string|null}>
+     * @return array<int, array{client_email: string, client_name: string|null, enabled: bool, schedule_type: string, send_time: string, send_date: string|null, working_days: string, subject: string|null, activity_columns: string, last_sent_date: string|null}>
      */
     protected function getClientSchedulesForAutomation(): array
     {
         if (!Schema::hasTable('daily_activity_schedules')) {
             return [];
         }
+        $hasScheduleTypeColumn = Schema::hasColumn('daily_activity_schedules', 'schedule_type');
+        $hasSendDateColumn = Schema::hasColumn('daily_activity_schedules', 'send_date');
+        $hasWorkingDaysColumn = Schema::hasColumn('daily_activity_schedules', 'working_days');
         $hasSubjectColumn = Schema::hasColumn('daily_activity_schedules', 'subject');
         $hasActivityColumnsColumn = Schema::hasColumn('daily_activity_schedules', 'activity_columns');
 
@@ -426,7 +432,10 @@ class SettingController extends Controller
                 'client_email' => $profile['client_email'] ?? '',
                 'client_name' => $profile['client_name'] ?? null,
                 'enabled' => (bool) ($schedule?->enabled ?? false),
+                'schedule_type' => $hasScheduleTypeColumn ? ((string) ($schedule?->schedule_type ?? 'daily')) : 'daily',
                 'send_time' => $schedule?->send_time ?: '18:00',
+                'send_date' => $hasSendDateColumn ? ($schedule?->send_date?->toDateString()) : null,
+                'working_days' => $hasWorkingDaysColumn ? ((string) ($schedule?->working_days ?? 'mon,tue,wed,thu,fri')) : 'mon,tue,wed,thu,fri',
                 'subject' => $hasSubjectColumn ? ($schedule?->subject) : null,
                 'activity_columns' => $hasActivityColumnsColumn ? ((string) ($schedule?->activity_columns ?? '')) : 'date,project,clock_in,clock_out,duration,description',
                 'last_sent_date' => $schedule?->last_sent_date?->toDateString(),
@@ -448,6 +457,9 @@ class SettingController extends Controller
         if (!Schema::hasTable('daily_activity_schedules')) {
             return;
         }
+        $hasScheduleTypeColumn = Schema::hasColumn('daily_activity_schedules', 'schedule_type');
+        $hasSendDateColumn = Schema::hasColumn('daily_activity_schedules', 'send_date');
+        $hasWorkingDaysColumn = Schema::hasColumn('daily_activity_schedules', 'working_days');
         $hasSubjectColumn = Schema::hasColumn('daily_activity_schedules', 'subject');
         $hasActivityColumnsColumn = Schema::hasColumn('daily_activity_schedules', 'activity_columns');
 
@@ -462,6 +474,9 @@ class SettingController extends Controller
                 $sendTime = '18:00';
             }
 
+            $scheduleType = $this->sanitizeScheduleType((string) ($row['schedule_type'] ?? 'daily'));
+            $sendDate = trim((string) ($row['send_date'] ?? ''));
+            $workingDays = $this->sanitizeWorkingDays((string) ($row['working_days'] ?? ''));
             $name = trim((string) ($row['client_name'] ?? ''));
             $subject = trim((string) ($row['subject'] ?? ''));
             $activityColumns = $this->sanitizeActivityColumns((string) ($row['activity_columns'] ?? ''));
@@ -470,6 +485,15 @@ class SettingController extends Controller
                 'enabled' => !empty($row['enabled']),
                 'send_time' => $sendTime,
             ];
+            if ($hasScheduleTypeColumn) {
+                $payload['schedule_type'] = $scheduleType;
+            }
+            if ($hasSendDateColumn) {
+                $payload['send_date'] = $scheduleType === 'date' && $sendDate !== '' ? $sendDate : null;
+            }
+            if ($hasWorkingDaysColumn) {
+                $payload['working_days'] = $workingDays;
+            }
             if ($hasSubjectColumn) {
                 $payload['subject'] = $subject !== '' ? $subject : null;
             }
@@ -484,8 +508,11 @@ class SettingController extends Controller
             if ($existing) {
                 $sendTimeChanged = (string) $existing->send_time !== $sendTime;
                 $enabledBecameTrue = !$existing->enabled && !empty($row['enabled']);
+                $scheduleTypeChanged = $hasScheduleTypeColumn && (string) ($existing->schedule_type ?? 'daily') !== $scheduleType;
+                $sendDateChanged = $hasSendDateColumn && (string) ($existing->send_date?->toDateString() ?? '') !== ($scheduleType === 'date' ? $sendDate : '');
+                $workingDaysChanged = $hasWorkingDaysColumn && (string) ($existing->working_days ?? 'mon,tue,wed,thu,fri') !== $workingDays;
 
-                if ($sendTimeChanged || $enabledBecameTrue) {
+                if ($sendTimeChanged || $enabledBecameTrue || $scheduleTypeChanged || $sendDateChanged || $workingDaysChanged) {
                     // Allow scheduler to send again today using the updated schedule.
                     $payload['last_sent_date'] = null;
                 }
@@ -587,6 +614,33 @@ class SettingController extends Controller
         $clean = array_values(array_unique($clean));
         if (empty($clean)) {
             $clean = $allowed;
+        }
+
+        return implode(',', $clean);
+    }
+
+    protected function sanitizeScheduleType(string $raw): string
+    {
+        $type = strtolower(trim($raw));
+        return in_array($type, ['daily', 'date'], true) ? $type : 'daily';
+    }
+
+    protected function sanitizeWorkingDays(string $raw): string
+    {
+        $allowed = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+        $items = preg_split('/[,\s;]+/', strtolower($raw)) ?: [];
+        $clean = [];
+
+        foreach ($items as $item) {
+            $key = trim($item);
+            if ($key !== '' && in_array($key, $allowed, true)) {
+                $clean[] = $key;
+            }
+        }
+
+        $clean = array_values(array_unique($clean));
+        if (empty($clean)) {
+            $clean = ['mon', 'tue', 'wed', 'thu', 'fri'];
         }
 
         return implode(',', $clean);

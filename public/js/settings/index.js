@@ -15,6 +15,15 @@ const ACTIVITY_COLUMN_OPTIONS = [
     { key: 'duration', label: 'Duration' },
     { key: 'description', label: 'Description' },
 ];
+const WORKING_DAY_OPTIONS = [
+    { key: 'mon', label: 'Mon' },
+    { key: 'tue', label: 'Tue' },
+    { key: 'wed', label: 'Wed' },
+    { key: 'thu', label: 'Thu' },
+    { key: 'fri', label: 'Fri' },
+    { key: 'sat', label: 'Sat' },
+    { key: 'sun', label: 'Sun' },
+];
 
 const STRIPE_SECRET_INPUT_ID = 'stripe-secret-key';
 const STRIPE_SECRET_ACTIONS_ID = 'stripe-secret-actions';
@@ -402,7 +411,7 @@ function renderDailyActivityScheduleTable() {
     if (!Array.isArray(dailyActivityClientSchedules) || dailyActivityClientSchedules.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="automation-empty-row">No client emails found in projects yet.</td>
+                <td colspan="10" class="automation-empty-row">No client emails found in projects yet.</td>
             </tr>
         `;
         return;
@@ -414,7 +423,14 @@ function renderDailyActivityScheduleTable() {
         const clientName = escapeHtml(originalClientName || 'Unnamed Client');
         const clientEmail = escapeHtml(originalClientEmail);
         const enabledChecked = row.enabled ? 'checked' : '';
+        const scheduleType = String(row.schedule_type || 'daily').toLowerCase() === 'date' ? 'date' : 'daily';
         const sendTime = escapeHtml(row.send_time || '18:00');
+        const sendDate = escapeHtml(row.send_date || '');
+        const selectedDays = new Set(normalizeWorkingDays(row.working_days));
+        const workingDayTags = WORKING_DAY_OPTIONS.map((option) => {
+            const activeClass = selectedDays.has(option.key) ? 'active' : '';
+            return `<button type="button" class="automation-day-tag ${activeClass}" data-working-day="${option.key}" aria-pressed="${selectedDays.has(option.key) ? 'true' : 'false'}">${escapeHtml(option.label)}</button>`;
+        }).join('');
         const subject = escapeHtml(row.subject || '');
         const selectedColumns = new Set(normalizeActivityColumns(row.activity_columns));
         const activityTags = ACTIVITY_COLUMN_OPTIONS.map((option) => {
@@ -431,7 +447,21 @@ function renderDailyActivityScheduleTable() {
                     <input type="checkbox" data-schedule-enabled data-index="${index}" ${enabledChecked}>
                 </td>
                 <td class="automation-cell-center">
+                    <select class="automation-select" data-schedule-type data-index="${index}">
+                        <option value="daily" ${scheduleType === 'daily' ? 'selected' : ''}>Daily</option>
+                        <option value="date" ${scheduleType === 'date' ? 'selected' : ''}>Date</option>
+                    </select>
+                </td>
+                <td class="automation-cell-center">
                     <input type="time" class="automation-input automation-time-input" data-schedule-send-time data-index="${index}" value="${sendTime}">
+                </td>
+                <td class="automation-cell-center">
+                    <input type="date" class="automation-input" data-schedule-date data-index="${index}" value="${sendDate}" ${scheduleType === 'daily' ? 'disabled' : ''}>
+                </td>
+                <td>
+                    <div class="automation-day-tags" data-schedule-working-days data-index="${index}" ${scheduleType === 'date' ? 'style="opacity:.55;pointer-events:none;"' : ''}>
+                        ${workingDayTags}
+                    </div>
                 </td>
                 <td>
                     <input
@@ -468,7 +498,10 @@ function collectDailyActivityClientSchedules() {
         const index = Number(tr.getAttribute('data-schedule-index'));
         const baseRow = Number.isInteger(index) && index >= 0 ? dailyActivityClientSchedules[index] : null;
         const enabledEl = tr.querySelector('[data-schedule-enabled]');
+        const typeEl = tr.querySelector('[data-schedule-type]');
         const sendTimeEl = tr.querySelector('[data-schedule-send-time]');
+        const sendDateEl = tr.querySelector('[data-schedule-date]');
+        const workingDaysEl = tr.querySelector('[data-schedule-working-days]');
         const subjectEl = tr.querySelector('[data-schedule-subject]');
         const columnsEl = tr.querySelector('[data-schedule-columns]');
 
@@ -485,7 +518,16 @@ function collectDailyActivityClientSchedules() {
             client_email: clientEmail,
             client_name: String(baseRow.client_name || '').trim() || null,
             enabled: Boolean(enabledEl.checked),
+            schedule_type: typeEl?.value === 'date' ? 'date' : 'daily',
             send_time: (sendTimeEl.value || '18:00').trim() || '18:00',
+            send_date: (sendDateEl?.value || '').trim() || null,
+            working_days: workingDaysEl
+                ? normalizeWorkingDays(
+                    Array.from(workingDaysEl.querySelectorAll('[data-working-day].active'))
+                        .map((tag) => String(tag.getAttribute('data-working-day') || '').trim())
+                        .join(',')
+                ).join(',')
+                : 'mon,tue,wed,thu,fri',
             subject: (subjectEl?.value || '').trim() || null,
             activity_columns: columnsEl
                 ? normalizeActivityColumns(
@@ -679,6 +721,17 @@ function normalizeActivityColumns(raw) {
 
     const unique = Array.from(new Set(values));
     return unique.length > 0 ? unique : allowed;
+}
+
+function normalizeWorkingDays(raw) {
+    const allowed = WORKING_DAY_OPTIONS.map((option) => option.key);
+    const values = String(raw || '')
+        .split(/[,\s;]+/)
+        .map((item) => item.trim().toLowerCase())
+        .filter((item) => item !== '' && allowed.includes(item));
+
+    const unique = Array.from(new Set(values));
+    return unique.length > 0 ? unique : ['mon', 'tue', 'wed', 'thu', 'fri'];
 }
 
 function renderLogsHtml(rawContent) {
@@ -896,12 +949,45 @@ document.addEventListener('DOMContentLoaded', function() {
     if (scheduleBody) {
         scheduleBody.addEventListener('click', (event) => {
             const tag = event.target.closest('[data-column-tag]');
-            if (!tag) {
+            if (tag) {
+                tag.classList.toggle('active');
+                tag.setAttribute('aria-pressed', tag.classList.contains('active') ? 'true' : 'false');
                 return;
             }
 
-            tag.classList.toggle('active');
-            tag.setAttribute('aria-pressed', tag.classList.contains('active') ? 'true' : 'false');
+            const dayTag = event.target.closest('[data-working-day]');
+            if (dayTag) {
+                dayTag.classList.toggle('active');
+                dayTag.setAttribute('aria-pressed', dayTag.classList.contains('active') ? 'true' : 'false');
+            }
+        });
+
+        scheduleBody.addEventListener('change', (event) => {
+            const typeSelect = event.target.closest('[data-schedule-type]');
+            if (!typeSelect) {
+                return;
+            }
+
+            const row = typeSelect.closest('tr[data-schedule-index]');
+            if (!row) {
+                return;
+            }
+
+            const sendDateInput = row.querySelector('[data-schedule-date]');
+            const workingDaysBox = row.querySelector('[data-schedule-working-days]');
+            const isDateMode = typeSelect.value === 'date';
+
+            if (sendDateInput) {
+                sendDateInput.disabled = !isDateMode;
+                if (!isDateMode) {
+                    sendDateInput.value = '';
+                }
+            }
+
+            if (workingDaysBox) {
+                workingDaysBox.style.opacity = isDateMode ? '.55' : '1';
+                workingDaysBox.style.pointerEvents = isDateMode ? 'none' : 'auto';
+            }
         });
     }
 

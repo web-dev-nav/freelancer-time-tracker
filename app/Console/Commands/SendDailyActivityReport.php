@@ -59,6 +59,26 @@ class SendDailyActivityReport extends Command
                 continue;
             }
 
+            $scheduleType = strtolower(trim((string) ($schedule->schedule_type ?? 'daily')));
+            if (!in_array($scheduleType, ['daily', 'date'], true)) {
+                $scheduleType = 'daily';
+            }
+
+            if (!$forceSend) {
+                if ($scheduleType === 'date') {
+                    $sendDate = $schedule->send_date?->toDateString();
+                    if (!$sendDate || $sendDate !== $today) {
+                        continue;
+                    }
+                } else {
+                    $workingDays = $this->parseWorkingDays((string) ($schedule->working_days ?? ''));
+                    $todayKey = strtolower($nowLocal->format('D')); // mon,tue,wed...
+                    if (!in_array($todayKey, $workingDays, true)) {
+                        continue;
+                    }
+                }
+            }
+
             $scheduledLocal = Carbon::createFromFormat('Y-m-d H:i', "{$today} {$sendTime}", $timezone);
             if (!$forceSend && $nowLocal->lt($scheduledLocal)) {
                 continue;
@@ -126,6 +146,7 @@ class SendDailyActivityReport extends Command
                     'date' => $today,
                     'timezone' => $timezone,
                     'client_email' => $clientEmail,
+                    'schedule_type' => $scheduleType,
                     'total_sessions' => $summary['total_sessions'],
                     'total_minutes' => $summary['total_minutes'],
                     'forced' => $forceSend,
@@ -418,5 +439,23 @@ class SendDailyActivityReport extends Command
         $result = array_values(array_unique($result));
 
         return !empty($result) ? $result : $allowed;
+    }
+
+    private function parseWorkingDays(string $raw): array
+    {
+        $allowed = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+        $items = preg_split('/[,\s;]+/', strtolower($raw)) ?: [];
+        $result = [];
+
+        foreach ($items as $item) {
+            $key = trim($item);
+            if ($key !== '' && in_array($key, $allowed, true)) {
+                $result[] = $key;
+            }
+        }
+
+        $result = array_values(array_unique($result));
+
+        return !empty($result) ? $result : ['mon', 'tue', 'wed', 'thu', 'fri'];
     }
 }

@@ -167,6 +167,42 @@
         text-align: center;
     }
 
+    .automation-select {
+        min-height: 36px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        padding: 6px 10px;
+        font-size: 13px;
+        background: #fff;
+        color: #0f172a;
+    }
+
+    .automation-day-tags {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .automation-day-tag {
+        border: 1px solid #cbd5e1;
+        border-radius: 999px;
+        padding: 3px 8px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .03em;
+        background: #ffffff;
+        color: #334155;
+        cursor: pointer;
+        user-select: none;
+        text-transform: uppercase;
+    }
+
+    .automation-day-tag.active {
+        border-color: #16a34a;
+        background: #dcfce7;
+        color: #166534;
+    }
+
     .automation-empty-row {
         text-align: center;
         color: #64748b;
@@ -256,7 +292,10 @@
                     <th>Client</th>
                     <th>Email</th>
                     <th class="automation-cell-center">Enabled</th>
+                    <th class="automation-cell-center">Mode</th>
                     <th class="automation-cell-center">Send Time</th>
+                    <th class="automation-cell-center">Date</th>
+                    <th>Working Days</th>
                     <th>Subject</th>
                     <th>Activity Columns</th>
                     <th class="automation-cell-center">Last Sent</th>
@@ -264,14 +303,14 @@
                 </thead>
                 <tbody id="daily-activity-schedules-body">
                 <tr>
-                    <td colspan="7" class="automation-empty-row">Loading client schedules...</td>
+                    <td colspan="10" class="automation-empty-row">Loading client schedules...</td>
                 </tr>
                 </tbody>
             </table>
         </div>
 
         <div class="automation-note">
-            Cron runs every minute, scheduler checks every 5 minutes, and each client is sent once per day after their configured time.
+            Daily mode ignores Date and uses only selected Working Days + Time. Date mode sends only on that specific date and time.
         </div>
     </div>
 

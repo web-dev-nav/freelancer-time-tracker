@@ -13,7 +13,10 @@ class DailyActivitySchedule extends Model
         'client_email',
         'client_name',
         'enabled',
+        'schedule_type',
         'send_time',
+        'send_date',
+        'working_days',
         'subject',
         'activity_columns',
         'last_sent_date',
@@ -21,6 +24,7 @@ class DailyActivitySchedule extends Model
 
     protected $casts = [
         'enabled' => 'boolean',
+        'send_date' => 'date',
         'last_sent_date' => 'date',
     ];
 }
