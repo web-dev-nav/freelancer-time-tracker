@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\DailyActivitySchedule;
 use App\Models\Setting;
 use App\Models\TimeLog;
 use Carbon\Carbon;
@@ -10,6 +11,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 
 class SendDailyActivityReport extends Command
 {
@@ -18,6 +20,120 @@ class SendDailyActivityReport extends Command
     protected $description = 'Send daily activity summary email for today\'s completed work logs';
 
     public function handle(): int
+    {
+        if (Schema::hasTable('daily_activity_schedules') && DailyActivitySchedule::query()->exists()) {
+            return $this->handlePerClientSchedules();
+        }
+
+        return $this->handleLegacyGlobalSchedule();
+    }
+
+    private function handlePerClientSchedules(): int
+    {
+        $timezone = config('app.timezone', 'UTC');
+        $nowLocal = Carbon::now($timezone);
+        $today = $nowLocal->toDateString();
+
+        [$startUtc, $endUtc] = $this->resolveDayUtcRange($today, $timezone);
+        $mailerConfig = $this->prepareMailerConfiguration($this->getEmailSettings());
+        $schedules = DailyActivitySchedule::query()
+            ->where('enabled', true)
+            ->orderBy('client_email')
+            ->get();
+
+        if ($schedules->isEmpty()) {
+            $this->line('No enabled per-client daily activity schedules.');
+            return self::SUCCESS;
+        }
+
+        $sentCount = 0;
+
+        foreach ($schedules as $schedule) {
+            $sendTime = (string) $schedule->send_time;
+            if (!preg_match('/^([01]\\d|2[0-3]):[0-5]\\d$/', $sendTime)) {
+                continue;
+            }
+
+            $scheduledLocal = Carbon::createFromFormat('Y-m-d H:i', "{$today} {$sendTime}", $timezone);
+            if ($nowLocal->lt($scheduledLocal)) {
+                continue;
+            }
+
+            if ($schedule->last_sent_date?->toDateString() === $today) {
+                continue;
+            }
+
+            $clientEmail = strtolower(trim((string) $schedule->client_email));
+            if ($clientEmail === '' || !filter_var($clientEmail, FILTER_VALIDATE_EMAIL)) {
+                continue;
+            }
+
+            $logs = TimeLog::with('project')
+                ->completed()
+                ->whereBetween('clock_in', [$startUtc, $endUtc])
+                ->whereHas('project', function ($query) use ($clientEmail) {
+                    $query->whereRaw('LOWER(client_email) = ?', [$clientEmail]);
+                })
+                ->orderBy('clock_in', 'asc')
+                ->get();
+
+            $summary = $this->buildSummary($logs);
+            $reportDate = Carbon::parse($today, $timezone)->format('M d, Y');
+            $clientName = trim((string) ($schedule->client_name ?? ''));
+
+            $subject = sprintf(
+                'Daily Activity Report - %s%s',
+                $reportDate,
+                $clientName !== '' ? " ({$clientName})" : ''
+            );
+
+            try {
+                Mail::mailer($mailerConfig['mailer'])->send('emails.daily-activity-report', [
+                    'reportDate' => $reportDate,
+                    'timezone' => $timezone,
+                    'summary' => $summary,
+                    'logs' => $this->formatLogsForEmail($logs, $timezone),
+                    'clientName' => $clientName !== '' ? $clientName : null,
+                    'clientEmail' => $clientEmail,
+                ], function ($message) use ($clientEmail, $subject, $mailerConfig): void {
+                    $message->to([$clientEmail])
+                        ->subject($subject);
+
+                    if ($mailerConfig['from_address']) {
+                        $message->from(
+                            $mailerConfig['from_address'],
+                            $mailerConfig['from_name'] ?: $mailerConfig['from_address']
+                        );
+                    }
+                });
+
+                $schedule->last_sent_date = $today;
+                $schedule->save();
+                $sentCount++;
+
+                Log::info('Daily activity report sent (per-client)', [
+                    'date' => $today,
+                    'timezone' => $timezone,
+                    'client_email' => $clientEmail,
+                    'total_sessions' => $summary['total_sessions'],
+                    'total_minutes' => $summary['total_minutes'],
+                ]);
+            } catch (\Throwable $e) {
+                Log::error('Failed to send daily activity report (per-client)', [
+                    'date' => $today,
+                    'timezone' => $timezone,
+                    'client_email' => $clientEmail,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $this->info("Daily activity per-client scheduler processed. Sent: {$sentCount}.");
+
+        return self::SUCCESS;
+    }
+
+    private function handleLegacyGlobalSchedule(): int
     {
         $timezone = config('app.timezone', 'UTC');
         $nowLocal = Carbon::now($timezone);

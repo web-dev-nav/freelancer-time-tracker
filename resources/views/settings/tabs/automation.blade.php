@@ -2,43 +2,41 @@
 
 <div class="settings-section" style="background:#f8fafc;border:2px solid #0ea5e9;">
     <div class="section-header">
-        <h2><i class="fas fa-paper-plane" style="color:#0369a1;"></i> Daily Activity Email Schedule</h2>
-        <p>Control when daily activity summary email is sent to client/company recipients.</p>
+        <h2><i class="fas fa-paper-plane" style="color:#0369a1;"></i> Per-Client Daily Activity Schedules</h2>
+        <p>Set different daily send times for each client. Reports include only that client's projects.</p>
     </div>
 
-    <div style="display:grid;gap:14px;">
-        <label class="form-label checkbox-label" style="margin-bottom:0;">
-            <input type="checkbox" id="daily-activity-email-enabled" class="form-checkbox">
-            <span>
-                <i class="fas fa-toggle-on"></i>
-                Enable Daily Activity Email
-            </span>
-        </label>
+    <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;background:white;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;">
+            <thead style="background:#f1f5f9;">
+                <tr>
+                    <th style="text-align:left;padding:10px 12px;font-size:12px;color:#475569;text-transform:uppercase;">Client</th>
+                    <th style="text-align:left;padding:10px 12px;font-size:12px;color:#475569;text-transform:uppercase;">Email</th>
+                    <th style="text-align:center;padding:10px 12px;font-size:12px;color:#475569;text-transform:uppercase;">Enabled</th>
+                    <th style="text-align:center;padding:10px 12px;font-size:12px;color:#475569;text-transform:uppercase;">Send Time</th>
+                    <th style="text-align:center;padding:10px 12px;font-size:12px;color:#475569;text-transform:uppercase;">Last Sent</th>
+                </tr>
+            </thead>
+            <tbody id="daily-activity-schedules-body">
+                <tr>
+                    <td colspan="5" style="padding:14px;color:#64748b;">Loading client schedules...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 
+    <div style="margin-top:10px;">
+        <small class="text-muted">
+            Cron runs every minute, scheduler checks every 5 minutes, and each client is sent once per day after their configured time.
+        </small>
+    </div>
+
+    <div style="display:none;">
+        <input type="checkbox" id="daily-activity-email-enabled" class="form-checkbox">
+        <input type="text" id="daily-activity-email-recipients" class="form-control">
+        <input type="time" id="daily-activity-email-send-time" class="form-control" value="18:00">
         <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label" for="daily-activity-email-recipients">
-                <i class="fas fa-envelope"></i>
-                Recipient Email(s)
-            </label>
-            <input type="text" id="daily-activity-email-recipients" class="form-control"
-                   placeholder="billing@client.com, manager@company.com">
-            <small class="text-muted">Separate multiple emails using comma or semicolon.</small>
-        </div>
-
-        <div class="form-group" style="margin-bottom:0;max-width:280px;">
-            <label class="form-label" for="daily-activity-email-send-time">
-                <i class="fas fa-clock"></i>
-                Send Time (Daily)
-            </label>
-            <input type="time" id="daily-activity-email-send-time" class="form-control" value="18:00">
-        </div>
-
-        <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label" for="daily-activity-email-last-sent">
-                <i class="fas fa-calendar-check"></i>
-                Last Sent Date
-            </label>
-            <input type="text" id="daily-activity-email-last-sent" class="form-control" readonly placeholder="Not sent yet">
+            <input type="text" id="daily-activity-email-last-sent" class="form-control" readonly>
         </div>
     </div>
 </div>

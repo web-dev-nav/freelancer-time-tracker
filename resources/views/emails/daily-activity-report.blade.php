@@ -14,6 +14,15 @@
                         <td style="padding:20px 24px;background:#111827;color:#ffffff;">
                             <h1 style="margin:0;font-size:20px;font-weight:700;">Daily Activity Report</h1>
                             <p style="margin:6px 0 0;font-size:13px;opacity:0.9;">Date: {{ $reportDate }} ({{ $timezone }})</p>
+                            @if(!empty($clientName) || !empty($clientEmail))
+                                <p style="margin:6px 0 0;font-size:13px;opacity:0.9;">
+                                    Client:
+                                    {{ $clientName ?: 'Client' }}
+                                    @if(!empty($clientEmail))
+                                        ({{ $clientEmail }})
+                                    @endif
+                                </p>
+                            @endif
                         </td>
                     </tr>
 

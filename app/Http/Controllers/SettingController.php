@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DailyActivitySchedule;
 use App\Models\Project;
 use App\Models\Setting;
 use Illuminate\Http\Request;
@@ -9,6 +10,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class SettingController extends Controller
 {
@@ -61,9 +63,12 @@ class SettingController extends Controller
             if (!empty($settings['stripe_secret_key'])) {
                 $settings['stripe_secret_key'] = '••••••••' . substr($settings['stripe_secret_key'], -4);
             }
+
+            $settings['daily_activity_client_schedules'] = $this->getClientSchedulesForAutomation();
         } catch (\Throwable $e) {
             report($e);
             $settings = $defaults;
+            $settings['daily_activity_client_schedules'] = [];
         }
 
         return response()->json([
@@ -126,6 +131,11 @@ class SettingController extends Controller
                 'daily_activity_email_recipients' => 'nullable|string|max:2000',
                 'daily_activity_email_send_time' => ['nullable', 'string', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
                 'daily_activity_email_last_sent_date' => 'nullable|date',
+                'daily_activity_client_schedules' => 'nullable|array',
+                'daily_activity_client_schedules.*.client_email' => 'required_with:daily_activity_client_schedules|email|max:255',
+                'daily_activity_client_schedules.*.client_name' => 'nullable|string|max:255',
+                'daily_activity_client_schedules.*.enabled' => 'nullable|boolean',
+                'daily_activity_client_schedules.*.send_time' => ['nullable', 'string', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
                 // SECURITY: Validate Stripe key formats
                 'stripe_publishable_key'  => ['nullable', 'string', 'max:255', 'regex:/^(pk_(test|live)_[a-zA-Z0-9]+)?$/'],
                 'stripe_secret_key'       => ['nullable', 'string', 'max:255', 'regex:/^(sk_(test|live)_[a-zA-Z0-9]+)?$/'],
@@ -191,8 +201,11 @@ class SettingController extends Controller
                 }
             }
 
+            $this->syncDailyActivityClientSchedules($validated['daily_activity_client_schedules'] ?? []);
+
             $data = Setting::getValues($keys, $defaults);
             $this->ensureActivityRecipientsDefault($data, $defaultActivityRecipients);
+            $data['daily_activity_client_schedules'] = $this->getClientSchedulesForAutomation();
 
             // SECURITY: Decrypt and mask secret key before returning
             if (!empty($data['stripe_secret_key'])) {
@@ -369,6 +382,128 @@ class SettingController extends Controller
         if ($currentRecipients === '' && $defaultRecipients !== null) {
             $settings['daily_activity_email_recipients'] = $defaultRecipients;
         }
+    }
+
+    /**
+     * Return distinct clients from projects merged with configured schedules.
+     *
+     * @return array<int, array{client_email: string, client_name: string|null, enabled: bool, send_time: string, last_sent_date: string|null}>
+     */
+    protected function getClientSchedulesForAutomation(): array
+    {
+        if (!Schema::hasTable('daily_activity_schedules')) {
+            return [];
+        }
+
+        $profiles = $this->knownClientProfiles();
+        $profileMap = [];
+
+        foreach ($profiles as $profile) {
+            $profileMap[strtolower($profile['client_email'])] = $profile;
+        }
+
+        $schedules = DailyActivitySchedule::query()
+            ->orderBy('client_email')
+            ->get();
+
+        $result = [];
+
+        foreach ($schedules as $schedule) {
+            $email = strtolower(trim((string) $schedule->client_email));
+            if ($email === '') {
+                continue;
+            }
+
+            $known = $profileMap[$email] ?? null;
+
+            $result[] = [
+                'client_email' => $schedule->client_email,
+                'client_name' => $known['client_name'] ?? $schedule->client_name,
+                'enabled' => (bool) $schedule->enabled,
+                'send_time' => $schedule->send_time ?: '18:00',
+                'last_sent_date' => $schedule->last_sent_date?->toDateString(),
+            ];
+
+            unset($profileMap[$email]);
+        }
+
+        foreach ($profileMap as $profile) {
+            $result[] = [
+                'client_email' => $profile['client_email'],
+                'client_name' => $profile['client_name'],
+                'enabled' => false,
+                'send_time' => '18:00',
+                'last_sent_date' => null,
+            ];
+        }
+
+        usort($result, function (array $a, array $b): int {
+            return strcasecmp($a['client_name'] ?: $a['client_email'], $b['client_name'] ?: $b['client_email']);
+        });
+
+        return $result;
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     */
+    protected function syncDailyActivityClientSchedules(array $rows): void
+    {
+        if (!Schema::hasTable('daily_activity_schedules')) {
+            return;
+        }
+
+        foreach ($rows as $row) {
+            $email = strtolower(trim((string) ($row['client_email'] ?? '')));
+            if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                continue;
+            }
+
+            $sendTime = trim((string) ($row['send_time'] ?? '18:00'));
+            if (!preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $sendTime)) {
+                $sendTime = '18:00';
+            }
+
+            $name = trim((string) ($row['client_name'] ?? ''));
+            DailyActivitySchedule::query()->updateOrCreate(
+                ['client_email' => $email],
+                [
+                    'client_name' => $name !== '' ? $name : null,
+                    'enabled' => !empty($row['enabled']),
+                    'send_time' => $sendTime,
+                ]
+            );
+        }
+    }
+
+    /**
+     * @return array<int, array{client_email: string, client_name: string|null}>
+     */
+    protected function knownClientProfiles(): array
+    {
+        $projects = Project::query()
+            ->select(['client_name', 'client_email', 'updated_at'])
+            ->whereNotNull('client_email')
+            ->where('client_email', '!=', '')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        $profiles = [];
+
+        foreach ($projects as $project) {
+            $email = strtolower(trim((string) $project->client_email));
+            if ($email === '' || isset($profiles[$email])) {
+                continue;
+            }
+
+            $name = trim((string) ($project->client_name ?? ''));
+            $profiles[$email] = [
+                'client_email' => $email,
+                'client_name' => $name !== '' ? $name : null,
+            ];
+        }
+
+        return array_values($profiles);
     }
 
     /**

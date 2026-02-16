@@ -3,6 +3,7 @@
  */
 
 let isLoading = false;
+let dailyActivityClientSchedules = [];
 
 const STRIPE_SECRET_INPUT_ID = 'stripe-secret-key';
 const STRIPE_SECRET_ACTIONS_ID = 'stripe-secret-actions';
@@ -239,6 +240,10 @@ async function loadSettings() {
             if (dailyLastSent) {
                 dailyLastSent.value = data.daily_activity_email_last_sent_date || '';
             }
+            dailyActivityClientSchedules = Array.isArray(data.daily_activity_client_schedules)
+                ? data.daily_activity_client_schedules
+                : [];
+            renderDailyActivityScheduleTable();
 
             // Toggle SMTP fields visibility
             toggleSmtpFields();
@@ -316,6 +321,7 @@ function collectFormData() {
         daily_activity_email_enabled: document.getElementById('daily-activity-email-enabled')?.checked || false,
         daily_activity_email_recipients: getValue('daily-activity-email-recipients'),
         daily_activity_email_send_time: getValue('daily-activity-email-send-time'),
+        daily_activity_client_schedules: collectDailyActivityClientSchedules(),
     };
 
     const secretInput = getStripeSecretInput();
@@ -352,6 +358,93 @@ function setValue(id, value) {
     if (element) {
         element.value = value || '';
     }
+}
+
+function renderDailyActivityScheduleTable() {
+    const tbody = document.getElementById('daily-activity-schedules-body');
+    if (!tbody) {
+        return;
+    }
+
+    if (!Array.isArray(dailyActivityClientSchedules) || dailyActivityClientSchedules.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" style="padding:14px;color:#64748b;">No client emails found in projects yet.</td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = dailyActivityClientSchedules.map((row, index) => {
+        const originalClientName = row.client_name || null;
+        const originalClientEmail = (row.client_email || '').toLowerCase();
+        const clientName = escapeHtml(originalClientName || 'Unnamed Client');
+        const clientEmail = escapeHtml(originalClientEmail);
+        const enabledChecked = row.enabled ? 'checked' : '';
+        const sendTime = escapeHtml(row.send_time || '18:00');
+        const lastSent = escapeHtml(row.last_sent_date || '-');
+
+        return `
+            <tr data-schedule-index="${index}">
+                <td style="padding:10px 12px;border-top:1px solid #f1f5f9;">${clientName}</td>
+                <td style="padding:10px 12px;border-top:1px solid #f1f5f9;">
+                    ${clientEmail}
+                </td>
+                <td style="padding:10px 12px;border-top:1px solid #f1f5f9;text-align:center;">
+                    <input type="checkbox" data-schedule-enabled data-index="${index}" ${enabledChecked}>
+                </td>
+                <td style="padding:10px 12px;border-top:1px solid #f1f5f9;text-align:center;">
+                    <input type="time" data-schedule-send-time data-index="${index}" value="${sendTime}" style="max-width:140px;">
+                </td>
+                <td style="padding:10px 12px;border-top:1px solid #f1f5f9;text-align:center;color:#64748b;">
+                    ${lastSent}
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function collectDailyActivityClientSchedules() {
+    const rows = [];
+    const tableBody = document.getElementById('daily-activity-schedules-body');
+    if (!tableBody) {
+        return rows;
+    }
+
+    const trElements = Array.from(tableBody.querySelectorAll('tr'));
+    trElements.forEach((tr) => {
+        const index = Number(tr.getAttribute('data-schedule-index'));
+        const baseRow = Number.isInteger(index) && index >= 0 ? dailyActivityClientSchedules[index] : null;
+        const enabledEl = tr.querySelector('[data-schedule-enabled]');
+        const sendTimeEl = tr.querySelector('[data-schedule-send-time]');
+
+        if (!baseRow || !enabledEl || !sendTimeEl) {
+            return;
+        }
+
+        const clientEmail = String(baseRow.client_email || '').trim().toLowerCase();
+        if (!clientEmail) {
+            return;
+        }
+
+        rows.push({
+            client_email: clientEmail,
+            client_name: String(baseRow.client_name || '').trim() || null,
+            enabled: Boolean(enabledEl.checked),
+            send_time: (sendTimeEl.value || '18:00').trim() || '18:00',
+        });
+    });
+
+    return rows;
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 /**
