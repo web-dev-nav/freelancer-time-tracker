@@ -220,6 +220,67 @@
         line-height: 1.5;
     }
 
+    .automation-card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+        gap: 12px;
+    }
+
+    .automation-card {
+        background: #ffffff;
+        border: 1px solid #dbeafe;
+        border-radius: 14px;
+        padding: 14px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    }
+
+    .automation-card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .automation-card-status {
+        font-size: 12px;
+        color: #64748b;
+        white-space: nowrap;
+    }
+
+    .automation-field {
+        margin-bottom: 10px;
+    }
+
+    .automation-field:last-child {
+        margin-bottom: 0;
+    }
+
+    .automation-label {
+        display: block;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        color: #64748b;
+        margin-bottom: 6px;
+        font-weight: 700;
+    }
+
+    .automation-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .automation-enabled-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #334155;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
     .cron-shell {
         border: 1px solid #bbf7d0;
         border-radius: 16px;
@@ -267,6 +328,14 @@
         .cron-grid {
             padding: 12px;
         }
+
+        .automation-card-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .automation-row {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
@@ -285,28 +354,8 @@
     </div>
 
     <div class="automation-body">
-        <div class="automation-table-wrap">
-            <table class="automation-table">
-                <thead>
-                <tr>
-                    <th>Client</th>
-                    <th>Email</th>
-                    <th class="automation-cell-center">Enabled</th>
-                    <th class="automation-cell-center">Mode</th>
-                    <th class="automation-cell-center">Send Time</th>
-                    <th class="automation-cell-center">Date</th>
-                    <th>Working Days</th>
-                    <th>Subject</th>
-                    <th>Activity Columns</th>
-                    <th class="automation-cell-center">Last Sent</th>
-                </tr>
-                </thead>
-                <tbody id="daily-activity-schedules-body">
-                <tr>
-                    <td colspan="10" class="automation-empty-row">Loading client schedules...</td>
-                </tr>
-                </tbody>
-            </table>
+        <div id="daily-activity-schedules-body" class="automation-card-grid">
+            <div class="automation-empty-row">Loading client schedules...</div>
         </div>
 
         <div class="automation-note">

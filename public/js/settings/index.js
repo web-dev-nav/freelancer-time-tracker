@@ -405,21 +405,17 @@ function setValue(id, value) {
 }
 
 function renderDailyActivityScheduleTable() {
-    const tbody = document.getElementById('daily-activity-schedules-body');
-    if (!tbody) {
+    const container = document.getElementById('daily-activity-schedules-body');
+    if (!container) {
         return;
     }
 
     if (!Array.isArray(dailyActivityClientSchedules) || dailyActivityClientSchedules.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="10" class="automation-empty-row">No client emails found in projects yet.</td>
-            </tr>
-        `;
+        container.innerHTML = `<div class="automation-empty-row">No client emails found in projects yet.</div>`;
         return;
     }
 
-    tbody.innerHTML = dailyActivityClientSchedules.map((row, index) => {
+    container.innerHTML = dailyActivityClientSchedules.map((row, index) => {
         const originalClientName = row.client_name || null;
         const originalClientEmail = (row.client_email || '').toLowerCase();
         const clientName = escapeHtml(originalClientName || 'Unnamed Client');
@@ -442,30 +438,50 @@ function renderDailyActivityScheduleTable() {
         const lastSent = escapeHtml(row.last_sent_date || '-');
 
         return `
-            <tr data-schedule-index="${index}">
-                <td><span class="automation-client-name">${clientName}</span></td>
-                <td><span class="automation-client-email">${clientEmail}</span></td>
-                <td class="automation-cell-center">
-                    <input type="checkbox" data-schedule-enabled data-index="${index}" ${enabledChecked}>
-                </td>
-                <td class="automation-cell-center">
-                    <select class="automation-select" data-schedule-type data-index="${index}">
-                        <option value="daily" ${scheduleType === 'daily' ? 'selected' : ''}>Daily</option>
-                        <option value="date" ${scheduleType === 'date' ? 'selected' : ''}>Date</option>
-                    </select>
-                </td>
-                <td class="automation-cell-center">
-                    <input type="time" class="automation-input automation-time-input" data-schedule-send-time data-index="${index}" value="${sendTime}">
-                </td>
-                <td class="automation-cell-center">
+            <div class="automation-card" data-schedule-index="${index}">
+                <div class="automation-card-head">
+                    <div>
+                        <div class="automation-client-name">${clientName}</div>
+                        <div class="automation-client-email">${clientEmail}</div>
+                    </div>
+                    <div class="automation-card-status">Last Sent: ${lastSent}</div>
+                </div>
+
+                <div class="automation-field">
+                    <label class="automation-enabled-wrap">
+                        <input type="checkbox" data-schedule-enabled data-index="${index}" ${enabledChecked}>
+                        Enabled
+                    </label>
+                </div>
+
+                <div class="automation-row">
+                    <div class="automation-field">
+                        <label class="automation-label">Mode</label>
+                        <select class="automation-select automation-input" data-schedule-type data-index="${index}">
+                            <option value="daily" ${scheduleType === 'daily' ? 'selected' : ''}>Daily</option>
+                            <option value="date" ${scheduleType === 'date' ? 'selected' : ''}>Date</option>
+                        </select>
+                    </div>
+                    <div class="automation-field">
+                        <label class="automation-label">Send Time</label>
+                        <input type="time" class="automation-input automation-time-input" data-schedule-send-time data-index="${index}" value="${sendTime}">
+                    </div>
+                </div>
+
+                <div class="automation-field">
+                    <label class="automation-label">Date</label>
                     <input type="date" class="automation-input" data-schedule-date data-index="${index}" value="${sendDate}" ${scheduleType === 'daily' ? 'disabled' : ''}>
-                </td>
-                <td>
+                </div>
+
+                <div class="automation-field">
+                    <label class="automation-label">Working Days</label>
                     <div class="automation-day-tags" data-schedule-working-days data-index="${index}" ${scheduleType === 'date' ? 'style="opacity:.55;pointer-events:none;"' : ''}>
                         ${workingDayTags}
                     </div>
-                </td>
-                <td>
+                </div>
+
+                <div class="automation-field">
+                    <label class="automation-label">Subject</label>
                     <input
                         class="automation-input"
                         type="text"
@@ -474,38 +490,37 @@ function renderDailyActivityScheduleTable() {
                         value="${subject}"
                         placeholder="Daily Activity Report - {date} ({client_name})"
                     >
-                </td>
-                <td>
+                </div>
+
+                <div class="automation-field">
+                    <label class="automation-label">Activity Columns</label>
                     <div class="automation-tags" data-schedule-columns data-index="${index}">
                         ${activityTags}
                     </div>
-                </td>
-                <td class="automation-cell-center" style="color:#64748b;">
-                    ${lastSent}
-                </td>
-            </tr>
+                </div>
+            </div>
         `;
     }).join('');
 }
 
 function collectDailyActivityClientSchedules() {
     const rows = [];
-    const tableBody = document.getElementById('daily-activity-schedules-body');
-    if (!tableBody) {
+    const cardsContainer = document.getElementById('daily-activity-schedules-body');
+    if (!cardsContainer) {
         return rows;
     }
 
-    const trElements = Array.from(tableBody.querySelectorAll('tr'));
-    trElements.forEach((tr) => {
-        const index = Number(tr.getAttribute('data-schedule-index'));
+    const cardElements = Array.from(cardsContainer.querySelectorAll('[data-schedule-index]'));
+    cardElements.forEach((card) => {
+        const index = Number(card.getAttribute('data-schedule-index'));
         const baseRow = Number.isInteger(index) && index >= 0 ? dailyActivityClientSchedules[index] : null;
-        const enabledEl = tr.querySelector('[data-schedule-enabled]');
-        const typeEl = tr.querySelector('[data-schedule-type]');
-        const sendTimeEl = tr.querySelector('[data-schedule-send-time]');
-        const sendDateEl = tr.querySelector('[data-schedule-date]');
-        const workingDaysEl = tr.querySelector('[data-schedule-working-days]');
-        const subjectEl = tr.querySelector('[data-schedule-subject]');
-        const columnsEl = tr.querySelector('[data-schedule-columns]');
+        const enabledEl = card.querySelector('[data-schedule-enabled]');
+        const typeEl = card.querySelector('[data-schedule-type]');
+        const sendTimeEl = card.querySelector('[data-schedule-send-time]');
+        const sendDateEl = card.querySelector('[data-schedule-date]');
+        const workingDaysEl = card.querySelector('[data-schedule-working-days]');
+        const subjectEl = card.querySelector('[data-schedule-subject]');
+        const columnsEl = card.querySelector('[data-schedule-columns]');
 
         if (!baseRow || !enabledEl || !sendTimeEl) {
             return;
@@ -970,13 +985,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            const row = typeSelect.closest('tr[data-schedule-index]');
-            if (!row) {
+            const card = typeSelect.closest('[data-schedule-index]');
+            if (!card) {
                 return;
             }
 
-            const sendDateInput = row.querySelector('[data-schedule-date]');
-            const workingDaysBox = row.querySelector('[data-schedule-working-days]');
+            const sendDateInput = card.querySelector('[data-schedule-date]');
+            const workingDaysBox = card.querySelector('[data-schedule-working-days]');
             const isDateMode = typeSelect.value === 'date';
 
             if (sendDateInput) {
