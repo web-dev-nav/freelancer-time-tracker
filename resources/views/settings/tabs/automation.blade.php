@@ -1,4 +1,47 @@
-{{-- Automation Tab - Hostinger Steps Only --}}
+{{-- Automation Tab --}}
+
+<div class="settings-section" style="background:#f8fafc;border:2px solid #0ea5e9;">
+    <div class="section-header">
+        <h2><i class="fas fa-paper-plane" style="color:#0369a1;"></i> Daily Activity Email Schedule</h2>
+        <p>Control when daily activity summary email is sent to client/company recipients.</p>
+    </div>
+
+    <div style="display:grid;gap:14px;">
+        <label class="form-label checkbox-label" style="margin-bottom:0;">
+            <input type="checkbox" id="daily-activity-email-enabled" class="form-checkbox">
+            <span>
+                <i class="fas fa-toggle-on"></i>
+                Enable Daily Activity Email
+            </span>
+        </label>
+
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="daily-activity-email-recipients">
+                <i class="fas fa-envelope"></i>
+                Recipient Email(s)
+            </label>
+            <input type="text" id="daily-activity-email-recipients" class="form-control"
+                   placeholder="billing@client.com, manager@company.com">
+            <small class="text-muted">Separate multiple emails using comma or semicolon.</small>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;max-width:280px;">
+            <label class="form-label" for="daily-activity-email-send-time">
+                <i class="fas fa-clock"></i>
+                Send Time (Daily)
+            </label>
+            <input type="time" id="daily-activity-email-send-time" class="form-control" value="18:00">
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label" for="daily-activity-email-last-sent">
+                <i class="fas fa-calendar-check"></i>
+                Last Sent Date
+            </label>
+            <input type="text" id="daily-activity-email-last-sent" class="form-control" readonly placeholder="Not sent yet">
+        </div>
+    </div>
+</div>
 
 <div class="settings-section" style="background:#f0fdf4;border:2px solid #10b981;">
     <div class="section-header">
