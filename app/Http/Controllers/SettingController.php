@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Project;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -16,6 +17,8 @@ class SettingController extends Controller
      */
     public function index()
     {
+        $defaultActivityRecipients = $this->defaultActivityRecipients();
+
         $defaults = [
             'invoice_company_name'   => config('app.name'),
             'invoice_company_address'=> null,
@@ -35,13 +38,14 @@ class SettingController extends Controller
             'stripe_publishable_key' => null,
             'stripe_secret_key'      => null,
             'daily_activity_email_enabled' => false,
-            'daily_activity_email_recipients' => null,
+            'daily_activity_email_recipients' => $defaultActivityRecipients,
             'daily_activity_email_send_time' => '18:00',
             'daily_activity_email_last_sent_date' => null,
         ];
 
         try {
             $settings = Setting::getValues(array_keys($defaults), $defaults);
+            $this->ensureActivityRecipientsDefault($settings, $defaultActivityRecipients);
 
             // SECURITY: Decrypt Stripe secret key if it exists
             if (!empty($settings['stripe_secret_key'])) {
@@ -73,6 +77,8 @@ class SettingController extends Controller
      */
     public function update(Request $request)
     {
+        $defaultActivityRecipients = $this->defaultActivityRecipients();
+
         $defaults = [
             'invoice_company_name'   => config('app.name'),
             'invoice_company_address'=> null,
@@ -92,7 +98,7 @@ class SettingController extends Controller
             'stripe_publishable_key' => null,
             'stripe_secret_key'      => null,
             'daily_activity_email_enabled' => false,
-            'daily_activity_email_recipients' => null,
+            'daily_activity_email_recipients' => $defaultActivityRecipients,
             'daily_activity_email_send_time' => '18:00',
             'daily_activity_email_last_sent_date' => null,
         ];
@@ -186,6 +192,7 @@ class SettingController extends Controller
             }
 
             $data = Setting::getValues($keys, $defaults);
+            $this->ensureActivityRecipientsDefault($data, $defaultActivityRecipients);
 
             // SECURITY: Decrypt and mask secret key before returning
             if (!empty($data['stripe_secret_key'])) {
@@ -318,6 +325,50 @@ class SettingController extends Controller
             'from_address' => $emailSettings['email_from_address'] ?? config('mail.from.address'),
             'from_name' => $emailSettings['email_from_name'] ?? config('mail.from.name'),
         ];
+    }
+
+    /**
+     * Derive default daily activity recipients from known client emails.
+     */
+    protected function defaultActivityRecipients(): ?string
+    {
+        try {
+            $emails = Project::query()
+                ->whereNotNull('client_email')
+                ->where('client_email', '!=', '')
+                ->orderBy('updated_at', 'desc')
+                ->limit(5)
+                ->pluck('client_email')
+                ->map(fn ($email) => trim((string) $email))
+                ->filter(fn ($email) => $email !== '')
+                ->unique()
+                ->values()
+                ->all();
+
+            if (empty($emails)) {
+                return null;
+            }
+
+            // Pre-fill with the most recently used client email.
+            return $emails[0];
+        } catch (\Throwable $e) {
+            report($e);
+            return null;
+        }
+    }
+
+    /**
+     * Guarantee daily activity recipients are prefilled from DB when blank.
+     *
+     * @param array<string, mixed> $settings
+     */
+    protected function ensureActivityRecipientsDefault(array &$settings, ?string $defaultRecipients): void
+    {
+        $currentRecipients = trim((string) ($settings['daily_activity_email_recipients'] ?? ''));
+
+        if ($currentRecipients === '' && $defaultRecipients !== null) {
+            $settings['daily_activity_email_recipients'] = $defaultRecipients;
+        }
     }
 
     /**
