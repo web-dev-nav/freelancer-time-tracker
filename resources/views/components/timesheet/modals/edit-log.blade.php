@@ -26,7 +26,7 @@
                         <i class="fas fa-clock"></i>
                         Clock In Time
                     </label>
-                    <input type="time" id="edit-clock-in-time" class="form-control" required>
+                    <input type="text" id="edit-clock-in-time" class="form-control" placeholder="HH:MM" pattern="^([01]\d|2[0-3]):[0-5]\d$" inputmode="numeric" autocomplete="off" required>
                 </div>
             </div>
 
@@ -35,7 +35,7 @@
                     <i class="fas fa-clock"></i>
                     Clock Out Time
                 </label>
-                <input type="time" id="edit-clock-out-time" class="form-control" required>
+                <input type="text" id="edit-clock-out-time" class="form-control" placeholder="HH:MM" pattern="^([01]\d|2[0-3]):[0-5]\d$" inputmode="numeric" autocomplete="off" required>
             </div>
 
             <div class="form-group">

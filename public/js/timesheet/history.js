@@ -51,6 +51,36 @@ function getRichDescriptionHtml() {
 }
 
 let richEditorInitialized = false;
+let timeInputsInitialized = false;
+
+function normalizeTimeInputValue(raw) {
+    const digits = String(raw || '').replace(/\D/g, '').slice(0, 4);
+    if (digits.length <= 2) return digits;
+    return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+}
+
+function isValidTimeValue(value) {
+    return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(value || '').trim());
+}
+
+function ensureTimeInputsInitialized() {
+    if (timeInputsInitialized) return;
+
+    const timeInputIds = ['edit-clock-in-time', 'edit-clock-out-time'];
+    timeInputIds.forEach((id) => {
+        const input = document.getElementById(id);
+        if (!input) return;
+
+        input.addEventListener('input', () => {
+            const normalized = normalizeTimeInputValue(input.value);
+            if (input.value !== normalized) {
+                input.value = normalized;
+            }
+        });
+    });
+
+    timeInputsInitialized = true;
+}
 
 function ensureRichEditorInitialized() {
     if (richEditorInitialized) return;
@@ -403,6 +433,7 @@ export function showEditLogModal() {
     if (!modal || !overlay) return;
 
     ensureRichEditorInitialized();
+    ensureTimeInputsInitialized();
 
     modal.classList.add('show');
     overlay.classList.add('show');
@@ -444,6 +475,11 @@ export async function updateLog() {
 
     if (!date || !clockInTime || !clockOutTime || !description) {
         window.notify.error('Please fill in all required fields');
+        return;
+    }
+
+    if (!isValidTimeValue(clockInTime) || !isValidTimeValue(clockOutTime)) {
+        window.notify.error('Please enter valid time in HH:MM format (24-hour).');
         return;
     }
 
