@@ -16,6 +16,25 @@ import { loadInvoices } from './invoices.js';
 import { loadBackups } from './backups.js';
 import { hideClockOutModal } from './tracker.js';
 
+const ACTIVE_TAB_STORAGE_KEY = 'timesheetActiveTab';
+
+function getAvailableTabs() {
+    return Array.from(document.querySelectorAll('.nav-tab'))
+        .map(tab => tab.getAttribute('data-tab'))
+        .filter(Boolean);
+}
+
+function resolveInitialTab() {
+    const availableTabs = getAvailableTabs();
+    const savedTab = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+
+    if (savedTab && availableTabs.includes(savedTab)) {
+        return savedTab;
+    }
+
+    return availableTabs.includes('dashboard') ? 'dashboard' : (availableTabs[0] || null);
+}
+
 /**
  * Initialize the application on DOM content loaded
  */
@@ -127,6 +146,7 @@ export function showTab(tabName) {
         return;
     }
     navTab.classList.add('active');
+    localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, tabName);
 
     // Update tab content
     document.querySelectorAll('.tab-content').forEach(content => {
@@ -184,4 +204,9 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupEventListeners();
     loadProjectsForSelector();  // Load projects first
+
+    const initialTab = resolveInitialTab();
+    if (initialTab) {
+        showTab(initialTab);
+    }
 });
