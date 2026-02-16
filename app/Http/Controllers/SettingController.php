@@ -138,6 +138,7 @@ class SettingController extends Controller
                 'daily_activity_client_schedules.*.enabled' => 'nullable|boolean',
                 'daily_activity_client_schedules.*.send_time' => ['nullable', 'string', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
                 'daily_activity_client_schedules.*.subject' => 'nullable|string|max:255',
+                'daily_activity_client_schedules.*.activity_columns' => 'nullable|string|max:255',
                 // SECURITY: Validate Stripe key formats
                 'stripe_publishable_key'  => ['nullable', 'string', 'max:255', 'regex:/^(pk_(test|live)_[a-zA-Z0-9]+)?$/'],
                 'stripe_secret_key'       => ['nullable', 'string', 'max:255', 'regex:/^(sk_(test|live)_[a-zA-Z0-9]+)?$/'],
@@ -389,7 +390,7 @@ class SettingController extends Controller
     /**
      * Return distinct clients from projects merged with configured schedules.
      *
-     * @return array<int, array{client_email: string, client_name: string|null, enabled: bool, send_time: string, subject: string|null, last_sent_date: string|null}>
+     * @return array<int, array{client_email: string, client_name: string|null, enabled: bool, send_time: string, subject: string|null, activity_columns: string, last_sent_date: string|null}>
      */
     protected function getClientSchedulesForAutomation(): array
     {
@@ -397,6 +398,7 @@ class SettingController extends Controller
             return [];
         }
         $hasSubjectColumn = Schema::hasColumn('daily_activity_schedules', 'subject');
+        $hasActivityColumnsColumn = Schema::hasColumn('daily_activity_schedules', 'activity_columns');
 
         $profiles = $this->knownClientProfiles();
         $schedules = DailyActivitySchedule::query()
@@ -426,6 +428,7 @@ class SettingController extends Controller
                 'enabled' => (bool) ($schedule?->enabled ?? false),
                 'send_time' => $schedule?->send_time ?: '18:00',
                 'subject' => $hasSubjectColumn ? ($schedule?->subject) : null,
+                'activity_columns' => $hasActivityColumnsColumn ? ((string) ($schedule?->activity_columns ?? '')) : 'date,project,clock_in,clock_out,duration,description',
                 'last_sent_date' => $schedule?->last_sent_date?->toDateString(),
             ];
 
@@ -446,6 +449,7 @@ class SettingController extends Controller
                 'enabled' => (bool) $schedule->enabled,
                 'send_time' => $schedule->send_time ?: '18:00',
                 'subject' => $hasSubjectColumn ? $schedule->subject : null,
+                'activity_columns' => $hasActivityColumnsColumn ? ((string) ($schedule->activity_columns ?? '')) : 'date,project,clock_in,clock_out,duration,description',
                 'last_sent_date' => $schedule->last_sent_date?->toDateString(),
             ];
         }
@@ -466,6 +470,7 @@ class SettingController extends Controller
             return;
         }
         $hasSubjectColumn = Schema::hasColumn('daily_activity_schedules', 'subject');
+        $hasActivityColumnsColumn = Schema::hasColumn('daily_activity_schedules', 'activity_columns');
 
         foreach ($rows as $row) {
             $email = strtolower(trim((string) ($row['client_email'] ?? '')));
@@ -480,6 +485,7 @@ class SettingController extends Controller
 
             $name = trim((string) ($row['client_name'] ?? ''));
             $subject = trim((string) ($row['subject'] ?? ''));
+            $activityColumns = $this->sanitizeActivityColumns((string) ($row['activity_columns'] ?? ''));
             $payload = [
                 'client_name' => $name !== '' ? $name : null,
                 'enabled' => !empty($row['enabled']),
@@ -487,6 +493,9 @@ class SettingController extends Controller
             ];
             if ($hasSubjectColumn) {
                 $payload['subject'] = $subject !== '' ? $subject : null;
+            }
+            if ($hasActivityColumnsColumn) {
+                $payload['activity_columns'] = $activityColumns;
             }
 
             DailyActivitySchedule::query()->updateOrCreate(
@@ -563,6 +572,27 @@ class SettingController extends Controller
         }
 
         return $profiles;
+    }
+
+    protected function sanitizeActivityColumns(string $raw): string
+    {
+        $allowed = ['date', 'project', 'clock_in', 'clock_out', 'duration', 'description'];
+        $items = preg_split('/[,\s;]+/', strtolower($raw)) ?: [];
+        $clean = [];
+
+        foreach ($items as $item) {
+            $key = trim($item);
+            if ($key !== '' && in_array($key, $allowed, true)) {
+                $clean[] = $key;
+            }
+        }
+
+        $clean = array_values(array_unique($clean));
+        if (empty($clean)) {
+            $clean = $allowed;
+        }
+
+        return implode(',', $clean);
     }
 
     /**

@@ -369,7 +369,7 @@ function renderDailyActivityScheduleTable() {
     if (!Array.isArray(dailyActivityClientSchedules) || dailyActivityClientSchedules.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" style="padding:14px;color:#64748b;">No client emails found in projects yet.</td>
+                <td colspan="7" style="padding:14px;color:#64748b;">No client emails found in projects yet.</td>
             </tr>
         `;
         return;
@@ -383,6 +383,7 @@ function renderDailyActivityScheduleTable() {
         const enabledChecked = row.enabled ? 'checked' : '';
         const sendTime = escapeHtml(row.send_time || '18:00');
         const subject = escapeHtml(row.subject || '');
+        const activityColumns = escapeHtml(row.activity_columns || 'date,project,clock_in,clock_out,duration,description');
         const lastSent = escapeHtml(row.last_sent_date || '-');
 
         return `
@@ -407,6 +408,16 @@ function renderDailyActivityScheduleTable() {
                         style="width:100%;min-width:280px;"
                     >
                 </td>
+                <td style="padding:10px 12px;border-top:1px solid #f1f5f9;">
+                    <input
+                        type="text"
+                        data-schedule-columns
+                        data-index="${index}"
+                        value="${activityColumns}"
+                        placeholder="date,project,clock_in,clock_out,duration,description"
+                        style="width:100%;min-width:320px;"
+                    >
+                </td>
                 <td style="padding:10px 12px;border-top:1px solid #f1f5f9;text-align:center;color:#64748b;">
                     ${lastSent}
                 </td>
@@ -429,6 +440,7 @@ function collectDailyActivityClientSchedules() {
         const enabledEl = tr.querySelector('[data-schedule-enabled]');
         const sendTimeEl = tr.querySelector('[data-schedule-send-time]');
         const subjectEl = tr.querySelector('[data-schedule-subject]');
+        const columnsEl = tr.querySelector('[data-schedule-columns]');
 
         if (!baseRow || !enabledEl || !sendTimeEl) {
             return;
@@ -445,6 +457,7 @@ function collectDailyActivityClientSchedules() {
             enabled: Boolean(enabledEl.checked),
             send_time: (sendTimeEl.value || '18:00').trim() || '18:00',
             subject: (subjectEl?.value || '').trim() || null,
+            activity_columns: (columnsEl?.value || '').trim() || 'date,project,clock_in,clock_out,duration,description',
         });
     });
 

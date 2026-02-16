@@ -15,6 +15,7 @@ class DailyActivitySchedule extends Model
         'enabled',
         'send_time',
         'subject',
+        'activity_columns',
         'last_sent_date',
     ];
 

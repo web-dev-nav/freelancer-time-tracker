@@ -70,25 +70,54 @@
                             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
                                 <thead>
                                     <tr>
-                                        <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Project</th>
-                                        <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">In</th>
-                                        <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Out</th>
-                                        <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Duration</th>
-                                        <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Description</th>
+                                        @php
+                                            $activityColumns = $activityColumns ?? ['project', 'clock_in', 'clock_out', 'duration', 'description'];
+                                        @endphp
+                                        @if(in_array('date', $activityColumns, true))
+                                            <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Date</th>
+                                        @endif
+                                        @if(in_array('project', $activityColumns, true))
+                                            <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Project</th>
+                                        @endif
+                                        @if(in_array('clock_in', $activityColumns, true))
+                                            <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">In</th>
+                                        @endif
+                                        @if(in_array('clock_out', $activityColumns, true))
+                                            <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Out</th>
+                                        @endif
+                                        @if(in_array('duration', $activityColumns, true))
+                                            <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Duration</th>
+                                        @endif
+                                        @if(in_array('description', $activityColumns, true))
+                                            <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Description</th>
+                                        @endif
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @forelse($logs as $log)
                                         <tr>
-                                            <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $log['project'] }}</td>
-                                            <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $log['clock_in'] }}</td>
-                                            <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $log['clock_out'] }}</td>
-                                            <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $log['duration'] }}</td>
-                                            <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $log['description'] }}</td>
+                                            @if(in_array('date', $activityColumns, true))
+                                                <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $log['date'] }}</td>
+                                            @endif
+                                            @if(in_array('project', $activityColumns, true))
+                                                <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $log['project'] }}</td>
+                                            @endif
+                                            @if(in_array('clock_in', $activityColumns, true))
+                                                <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $log['clock_in'] }}</td>
+                                            @endif
+                                            @if(in_array('clock_out', $activityColumns, true))
+                                                <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $log['clock_out'] }}</td>
+                                            @endif
+                                            @if(in_array('duration', $activityColumns, true))
+                                                <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $log['duration'] }}</td>
+                                            @endif
+                                            @if(in_array('description', $activityColumns, true))
+                                                <td style="padding:10px;border-bottom:1px solid #f3f4f6;">{{ $log['description'] }}</td>
+                                            @endif
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="5" style="padding:12px;color:#6b7280;">No detailed activity entries for today.</td>
+                                            <td colspan="{{ count($activityColumns) }}" style="padding:12px;color:#6b7280;">No detailed activity entries for today.</td>
                                         </tr>
                                     @endforelse
                                 </tbody>

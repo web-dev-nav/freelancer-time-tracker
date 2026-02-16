@@ -15,12 +15,13 @@
                     <th style="text-align:center;padding:10px 12px;font-size:12px;color:#475569;text-transform:uppercase;">Enabled</th>
                     <th style="text-align:center;padding:10px 12px;font-size:12px;color:#475569;text-transform:uppercase;">Send Time</th>
                     <th style="text-align:left;padding:10px 12px;font-size:12px;color:#475569;text-transform:uppercase;">Subject</th>
+                    <th style="text-align:left;padding:10px 12px;font-size:12px;color:#475569;text-transform:uppercase;">Activity Columns</th>
                     <th style="text-align:center;padding:10px 12px;font-size:12px;color:#475569;text-transform:uppercase;">Last Sent</th>
                 </tr>
             </thead>
             <tbody id="daily-activity-schedules-body">
                 <tr>
-                    <td colspan="6" style="padding:14px;color:#64748b;">Loading client schedules...</td>
+                    <td colspan="7" style="padding:14px;color:#64748b;">Loading client schedules...</td>
                 </tr>
             </tbody>
         </table>

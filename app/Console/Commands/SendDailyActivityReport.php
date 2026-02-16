@@ -87,6 +87,7 @@ class SendDailyActivityReport extends Command
                 $clientName,
                 $clientEmail
             );
+            $activityColumns = $this->parseActivityColumns((string) ($schedule->activity_columns ?? ''));
 
             try {
                 Mail::mailer($mailerConfig['mailer'])->send('emails.daily-activity-report', [
@@ -94,6 +95,7 @@ class SendDailyActivityReport extends Command
                     'timezone' => $timezone,
                     'summary' => $summary,
                     'logs' => $this->formatLogsForEmail($logs, $timezone),
+                    'activityColumns' => $activityColumns,
                     'clientName' => $clientName !== '' ? $clientName : null,
                     'clientEmail' => $clientEmail,
                 ], function ($message) use ($clientEmail, $subject, $mailerConfig): void {
@@ -192,6 +194,7 @@ class SendDailyActivityReport extends Command
                 'timezone' => $timezone,
                 'summary' => $summary,
                 'logs' => $this->formatLogsForEmail($logs, $timezone),
+                'activityColumns' => ['project', 'clock_in', 'clock_out', 'duration', 'description'],
             ], function ($message) use ($recipients, $subject, $mailerConfig): void {
                 $message->to($recipients)
                     ->subject($subject);
@@ -287,10 +290,18 @@ class SendDailyActivityReport extends Command
     private function formatLogsForEmail(Collection $logs, string $timezone): array
     {
         return $logs->map(function ($log) use ($timezone) {
-            $clockInLocal = $log->clock_in?->copy()->setTimezone($timezone);
-            $clockOutLocal = $log->clock_out?->copy()->setTimezone($timezone);
+            $clockInRaw = $log->getRawOriginal('clock_in');
+            $clockOutRaw = $log->getRawOriginal('clock_out');
+
+            $clockInLocal = $clockInRaw
+                ? Carbon::parse($clockInRaw, 'UTC')->setTimezone($timezone)
+                : null;
+            $clockOutLocal = $clockOutRaw
+                ? Carbon::parse($clockOutRaw, 'UTC')->setTimezone($timezone)
+                : null;
 
             return [
+                'date' => $clockInLocal?->format('D, M j, Y') ?? '-',
                 'project' => $log->project?->name ?? 'No Project',
                 'clock_in' => $clockInLocal?->format('h:i A') ?? '-',
                 'clock_out' => $clockOutLocal?->format('h:i A') ?? '-',
@@ -377,5 +388,23 @@ class SendDailyActivityReport extends Command
             '{client_name}' => $clientName !== '' ? $clientName : 'Client',
             '{client_email}' => $clientEmail,
         ]);
+    }
+
+    private function parseActivityColumns(string $raw): array
+    {
+        $allowed = ['date', 'project', 'clock_in', 'clock_out', 'duration', 'description'];
+        $items = preg_split('/[,\s;]+/', strtolower($raw)) ?: [];
+        $result = [];
+
+        foreach ($items as $item) {
+            $key = trim($item);
+            if ($key !== '' && in_array($key, $allowed, true)) {
+                $result[] = $key;
+            }
+        }
+
+        $result = array_values(array_unique($result));
+
+        return !empty($result) ? $result : $allowed;
     }
 }
