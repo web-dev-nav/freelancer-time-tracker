@@ -721,16 +721,8 @@ function normalizeActivityColumns(raw) {
         .map((item) => item.trim().toLowerCase())
         .filter((item) => item !== '' && allowed.includes(item));
 
-    let unique = Array.from(new Set(values));
-    unique = unique.length > 0 ? unique : allowed;
-
-    const hasSummarySessions = unique.includes('summary_sessions');
-    const hasSummaryHours = unique.includes('summary_hours');
-    if (!hasSummarySessions && !hasSummaryHours) {
-        unique = ['summary_sessions', 'summary_hours', ...unique];
-    }
-
-    return unique;
+    const unique = Array.from(new Set(values));
+    return unique.length > 0 ? unique : allowed;
 }
 
 function normalizeWorkingDays(raw) {

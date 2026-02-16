@@ -616,13 +616,6 @@ class SettingController extends Controller
             $clean = $allowed;
         }
 
-        $hasSummarySessions = in_array('summary_sessions', $clean, true);
-        $hasSummaryHours = in_array('summary_hours', $clean, true);
-        if (!$hasSummarySessions && !$hasSummaryHours) {
-            array_unshift($clean, 'summary_hours');
-            array_unshift($clean, 'summary_sessions');
-        }
-
         return implode(',', $clean);
     }
 

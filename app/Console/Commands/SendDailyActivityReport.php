@@ -454,10 +454,6 @@ class SendDailyActivityReport extends Command
         }
 
         $result = array_values(array_unique($result));
-        if (!in_array('summary_sessions', $result, true) && !in_array('summary_hours', $result, true)) {
-            array_unshift($result, 'summary_hours');
-            array_unshift($result, 'summary_sessions');
-        }
 
         return !empty($result) ? $result : $allowed;
     }
