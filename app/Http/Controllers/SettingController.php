@@ -476,6 +476,20 @@ class SettingController extends Controller
                 $payload['activity_columns'] = $activityColumns;
             }
 
+            $existing = DailyActivitySchedule::query()
+                ->where('client_email', $email)
+                ->first();
+
+            if ($existing) {
+                $sendTimeChanged = (string) $existing->send_time !== $sendTime;
+                $enabledBecameTrue = !$existing->enabled && !empty($row['enabled']);
+
+                if ($sendTimeChanged || $enabledBecameTrue) {
+                    // Allow scheduler to send again today using the updated schedule.
+                    $payload['last_sent_date'] = null;
+                }
+            }
+
             DailyActivitySchedule::query()->updateOrCreate(
                 ['client_email' => $email],
                 $payload
