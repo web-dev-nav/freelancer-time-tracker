@@ -5,6 +5,7 @@
 let isLoading = false;
 let dailyActivityClientSchedules = [];
 let hasLoadedLogsTab = false;
+let latestLogPlainText = '';
 const SETTINGS_ACTIVE_TAB_KEY = 'settings.active_tab';
 const ACTIVITY_COLUMN_OPTIONS = [
     { key: 'date', label: 'Date' },
@@ -581,11 +582,13 @@ window.loadAppLogs = async function() {
         }).join('');
 
         fileSelect.innerHTML = options || '<option value="">No log files</option>';
-        logsOutput.textContent = data.content || 'No log lines found for the selected filters.';
+        latestLogPlainText = String(data.content || '');
+        logsOutput.innerHTML = renderLogsHtml(latestLogPlainText);
         logsMeta.textContent = `File: ${currentFile || '-'} | Level: ${data.level || level} | Lines: ${data.line_count ?? 0}`;
         setLogsStatus('Logs loaded successfully.', 'success');
     } catch (error) {
         console.error('Failed to load logs:', error);
+        latestLogPlainText = '';
         logsOutput.textContent = 'Unable to load logs.';
         logsMeta.textContent = '';
         setLogsStatus('Failed to load logs: ' + (error.message || 'Unknown error'), 'error');
@@ -593,6 +596,32 @@ window.loadAppLogs = async function() {
         if (refreshBtn) {
             refreshBtn.disabled = false;
             refreshBtn.innerHTML = '<i class="fas fa-rotate"></i> Refresh';
+        }
+    }
+};
+
+window.copyLogsToClipboard = async function() {
+    if (!latestLogPlainText || latestLogPlainText.trim() === '') {
+        setLogsStatus('No logs to copy.', 'error');
+        return;
+    }
+
+    const copyBtn = document.getElementById('copy-logs-btn');
+    if (copyBtn) {
+        copyBtn.disabled = true;
+        copyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Copying...';
+    }
+
+    try {
+        await navigator.clipboard.writeText(latestLogPlainText);
+        setLogsStatus('Logs copied to clipboard.', 'success');
+    } catch (error) {
+        console.error('Failed to copy logs:', error);
+        setLogsStatus('Failed to copy logs to clipboard.', 'error');
+    } finally {
+        if (copyBtn) {
+            copyBtn.disabled = false;
+            copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Logs';
         }
     }
 };
@@ -650,6 +679,48 @@ function normalizeActivityColumns(raw) {
 
     const unique = Array.from(new Set(values));
     return unique.length > 0 ? unique : allowed;
+}
+
+function renderLogsHtml(rawContent) {
+    const text = String(rawContent || '');
+    if (text.trim() === '') {
+        return 'No log lines found for the selected filters.';
+    }
+
+    const lines = text.split('\n');
+    const html = lines.map((rawLine) => {
+        const line = String(rawLine || '');
+        const parsed = parseLogLine(line);
+        if (parsed) {
+            return `<div class="log-line level-${parsed.level}">
+                <span class="log-ts">[${escapeHtml(parsed.timestamp)}]</span>
+                <span class="log-level">${escapeHtml(parsed.level)}</span>
+                <span>${escapeHtml(parsed.message)}</span>
+            </div>`;
+        }
+
+        const isStack = /^\s*#\d+/.test(line) || /^\s*at\s+/.test(line) || /^\s*\{main\}/.test(line);
+        if (isStack) {
+            return `<div class="log-line stack-line">${escapeHtml(line)}</div>`;
+        }
+
+        return `<div class="log-line">${escapeHtml(line)}</div>`;
+    });
+
+    return html.join('');
+}
+
+function parseLogLine(line) {
+    const match = line.match(/^\[([^\]]+)\]\s+[a-zA-Z0-9_-]+\.([a-zA-Z]+):\s?(.*)$/);
+    if (!match) {
+        return null;
+    }
+
+    return {
+        timestamp: match[1],
+        level: String(match[2] || '').toLowerCase(),
+        message: match[3] || '',
+    };
 }
 
 /**
@@ -835,6 +906,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     const refreshLogsBtn = document.getElementById('refresh-logs-btn');
+    const copyLogsBtn = document.getElementById('copy-logs-btn');
     const deleteLogFileBtn = document.getElementById('delete-log-file-btn');
     const logsFileSelect = document.getElementById('logs-file-select');
     const logsLinesSelect = document.getElementById('logs-lines-select');
@@ -843,6 +915,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (refreshLogsBtn) {
         refreshLogsBtn.addEventListener('click', () => {
             window.loadAppLogs();
+        });
+    }
+    if (copyLogsBtn) {
+        copyLogsBtn.addEventListener('click', () => {
+            window.copyLogsToClipboard();
         });
     }
     if (deleteLogFileBtn) {

@@ -1,4 +1,92 @@
 {{-- Logs Tab --}}
+<style>
+    .logs-toolbar-btn-sm {
+        padding: 7px 10px;
+        font-size: 12px;
+        line-height: 1;
+    }
+
+    .logs-output {
+        margin: 0;
+        background: #0b1220;
+        color: #e2e8f0;
+        border: 1px solid #1e293b;
+        border-radius: 10px;
+        max-height: 58vh;
+        overflow: auto;
+        padding: 12px;
+        font-size: 12px;
+        line-height: 1.55;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        white-space: pre-wrap;
+        word-break: break-word;
+        tab-size: 4;
+    }
+
+    .log-line {
+        padding: 4px 6px;
+        border-radius: 6px;
+        margin-bottom: 2px;
+    }
+
+    .log-line .log-ts {
+        color: #93c5fd;
+        margin-right: 8px;
+    }
+
+    .log-line .log-level {
+        font-weight: 700;
+        margin-right: 8px;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+    }
+
+    .log-line.level-error,
+    .log-line.level-critical,
+    .log-line.level-alert,
+    .log-line.level-emergency {
+        background: rgba(239, 68, 68, 0.12);
+    }
+
+    .log-line.level-error .log-level,
+    .log-line.level-critical .log-level,
+    .log-line.level-alert .log-level,
+    .log-line.level-emergency .log-level {
+        color: #fca5a5;
+    }
+
+    .log-line.level-warning,
+    .log-line.level-notice {
+        background: rgba(245, 158, 11, 0.12);
+    }
+
+    .log-line.level-warning .log-level,
+    .log-line.level-notice .log-level {
+        color: #fcd34d;
+    }
+
+    .log-line.level-info {
+        background: rgba(56, 189, 248, 0.10);
+    }
+
+    .log-line.level-info .log-level {
+        color: #7dd3fc;
+    }
+
+    .log-line.level-debug {
+        background: rgba(148, 163, 184, 0.10);
+    }
+
+    .log-line.level-debug .log-level {
+        color: #cbd5e1;
+    }
+
+    .log-line.stack-line {
+        color: #94a3b8;
+        padding-left: 18px;
+        background: rgba(15, 23, 42, 0.35);
+    }
+</style>
 
 <div class="settings-section">
     <div class="section-header">
@@ -41,7 +129,11 @@
                 <i class="fas fa-rotate"></i>
                 Refresh
             </button>
-            <button type="button" id="delete-log-file-btn" class="btn btn-danger">
+            <button type="button" id="copy-logs-btn" class="btn btn-secondary logs-toolbar-btn-sm">
+                <i class="fas fa-copy"></i>
+                Copy Logs
+            </button>
+            <button type="button" id="delete-log-file-btn" class="btn btn-danger logs-toolbar-btn-sm">
                 <i class="fas fa-trash"></i>
                 Delete File
             </button>
@@ -51,5 +143,5 @@
     <div id="logs-status" style="display:none;margin-bottom:10px;padding:8px 10px;border-radius:8px;font-size:12px;"></div>
     <div id="logs-meta" style="margin-bottom:8px;color:var(--text-secondary);font-size:12px;"></div>
 
-    <pre id="logs-output" style="margin:0;background:#0f172a;color:#e2e8f0;border:1px solid #1e293b;border-radius:10px;max-height:58vh;overflow:auto;padding:12px;font-size:12px;line-height:1.45;white-space:pre-wrap;word-break:break-word;">Open this tab and click Refresh to load logs.</pre>
+    <div id="logs-output" class="logs-output">Open this tab and click Refresh to load logs.</div>
 </div>
