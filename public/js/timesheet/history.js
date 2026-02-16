@@ -566,6 +566,12 @@ export function applyRichTextCommand(command, value = null) {
         return;
     }
 
+    if (command === 'formatBlock' && value === 'blockquote') {
+        toggleBlockquote(editor);
+        getRichDescriptionHtml();
+        return;
+    }
+
     const commandValue = command === 'formatBlock' && value ? `<${value.replace(/[<>]/g, '')}>` : value;
     document.execCommand(command, false, commandValue);
     getRichDescriptionHtml();
@@ -584,30 +590,130 @@ function clearSelectedFormatting(editor) {
         return;
     }
 
+    const structuralTarget = getStructuralTarget(anchorNode, editor);
+    if (structuralTarget) {
+        replaceElementWithPlainText(structuralTarget);
+        return;
+    }
+
     if (range.collapsed) {
         document.execCommand('removeFormat', false);
         return;
     }
 
     const selectedText = selection.toString();
-    const textLines = selectedText.split(/\r?\n/);
-    const fragment = document.createDocumentFragment();
-
-    textLines.forEach((line, index) => {
-        fragment.appendChild(document.createTextNode(line));
-        if (index < textLines.length - 1) {
-            fragment.appendChild(document.createElement('br'));
-        }
-    });
+    const fragment = textToFragment(selectedText);
 
     range.deleteContents();
     range.insertNode(fragment);
+    editor.normalize();
 
     selection.removeAllRanges();
     const newRange = document.createRange();
     newRange.selectNodeContents(editor);
     newRange.collapse(false);
     selection.addRange(newRange);
+}
+
+function toggleBlockquote(editor) {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const anchorNode = range.commonAncestorContainer;
+    if (!editor.contains(anchorNode)) {
+        return;
+    }
+
+    const existingQuote = findClosestElement(anchorNode, ['BLOCKQUOTE'], editor);
+    if (existingQuote) {
+        unwrapElement(existingQuote);
+        editor.normalize();
+        return;
+    }
+
+    if (range.collapsed) {
+        const quote = document.createElement('blockquote');
+        quote.appendChild(document.createElement('br'));
+        range.insertNode(quote);
+
+        selection.removeAllRanges();
+        const cursorRange = document.createRange();
+        cursorRange.setStart(quote, 0);
+        cursorRange.collapse(true);
+        selection.addRange(cursorRange);
+        return;
+    }
+
+    const extracted = range.extractContents();
+    const quote = document.createElement('blockquote');
+    quote.appendChild(extracted);
+    range.insertNode(quote);
+
+    selection.removeAllRanges();
+    const cursorRange = document.createRange();
+    cursorRange.selectNodeContents(quote);
+    cursorRange.collapse(false);
+    selection.addRange(cursorRange);
+}
+
+function getStructuralTarget(node, root) {
+    const found = findClosestElement(node, ['LI', 'UL', 'OL', 'BLOCKQUOTE'], root);
+    if (!found) return null;
+
+    if (found.tagName === 'LI') {
+        const parent = found.parentElement;
+        if (parent && (parent.tagName === 'UL' || parent.tagName === 'OL')) {
+            return parent;
+        }
+    }
+
+    return found;
+}
+
+function findClosestElement(node, tags, root) {
+    let current = node?.nodeType === Node.ELEMENT_NODE ? node : node?.parentElement;
+    while (current && current !== root) {
+        if (tags.includes(current.tagName)) {
+            return current;
+        }
+        current = current.parentElement;
+    }
+    return null;
+}
+
+function replaceElementWithPlainText(element) {
+    const text = (element.innerText || element.textContent || '').trim();
+    const fragment = textToFragment(text);
+    const parent = element.parentNode;
+    if (!parent) return;
+
+    parent.insertBefore(fragment, element);
+    parent.removeChild(element);
+}
+
+function unwrapElement(element) {
+    const parent = element.parentNode;
+    if (!parent) return;
+
+    while (element.firstChild) {
+        parent.insertBefore(element.firstChild, element);
+    }
+    parent.removeChild(element);
+}
+
+function textToFragment(text) {
+    const fragment = document.createDocumentFragment();
+    const lines = String(text || '').split(/\r?\n/);
+
+    lines.forEach((line, index) => {
+        fragment.appendChild(document.createTextNode(line));
+        if (index < lines.length - 1) {
+            fragment.appendChild(document.createElement('br'));
+        }
+    });
+
+    return fragment;
 }
 
 /**
