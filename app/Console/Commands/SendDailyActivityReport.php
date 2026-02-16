@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Schema;
 
 class SendDailyActivityReport extends Command
 {
-    protected $signature = 'activity:send-daily-summary';
+    protected $signature = 'activity:send-daily-summary {--force : Ignore time and last-sent checks}';
 
     protected $description = 'Send daily activity summary email for today\'s completed work logs';
 
@@ -33,6 +33,7 @@ class SendDailyActivityReport extends Command
         $timezone = config('app.timezone', 'UTC');
         $nowLocal = Carbon::now($timezone);
         $today = $nowLocal->toDateString();
+        $forceSend = (bool) $this->option('force');
 
         [$startUtc, $endUtc] = $this->resolveDayUtcRange($today, $timezone);
         $mailerConfig = $this->prepareMailerConfiguration($this->getEmailSettings());
@@ -51,20 +52,27 @@ class SendDailyActivityReport extends Command
         foreach ($schedules as $schedule) {
             $sendTime = (string) $schedule->send_time;
             if (!preg_match('/^([01]\\d|2[0-3]):[0-5]\\d$/', $sendTime)) {
+                Log::warning('Daily activity schedule skipped: invalid send time', [
+                    'client_email' => $schedule->client_email,
+                    'send_time' => $sendTime,
+                ]);
                 continue;
             }
 
             $scheduledLocal = Carbon::createFromFormat('Y-m-d H:i', "{$today} {$sendTime}", $timezone);
-            if ($nowLocal->lt($scheduledLocal)) {
+            if (!$forceSend && $nowLocal->lt($scheduledLocal)) {
                 continue;
             }
 
-            if ($schedule->last_sent_date?->toDateString() === $today) {
+            if (!$forceSend && $schedule->last_sent_date?->toDateString() === $today) {
                 continue;
             }
 
             $clientEmail = strtolower(trim((string) $schedule->client_email));
             if ($clientEmail === '' || !filter_var($clientEmail, FILTER_VALIDATE_EMAIL)) {
+                Log::warning('Daily activity schedule skipped: invalid client email', [
+                    'client_email' => $schedule->client_email,
+                ]);
                 continue;
             }
 
@@ -120,6 +128,7 @@ class SendDailyActivityReport extends Command
                     'client_email' => $clientEmail,
                     'total_sessions' => $summary['total_sessions'],
                     'total_minutes' => $summary['total_minutes'],
+                    'forced' => $forceSend,
                 ]);
             } catch (\Throwable $e) {
                 Log::error('Failed to send daily activity report (per-client)', [
@@ -127,6 +136,7 @@ class SendDailyActivityReport extends Command
                     'timezone' => $timezone,
                     'client_email' => $clientEmail,
                     'error' => $e->getMessage(),
+                    'forced' => $forceSend,
                 ]);
             }
         }
@@ -141,6 +151,7 @@ class SendDailyActivityReport extends Command
         $timezone = config('app.timezone', 'UTC');
         $nowLocal = Carbon::now($timezone);
         $today = $nowLocal->toDateString();
+        $forceSend = (bool) $this->option('force');
 
         if (!$this->isReportEnabled()) {
             $this->line('Daily activity report is disabled.');
@@ -160,13 +171,13 @@ class SendDailyActivityReport extends Command
         }
 
         $scheduledLocal = Carbon::createFromFormat('Y-m-d H:i', "{$today} {$sendTime}", $timezone);
-        if ($nowLocal->lt($scheduledLocal)) {
+        if (!$forceSend && $nowLocal->lt($scheduledLocal)) {
             $this->line('Scheduled send time has not been reached yet.');
             return self::SUCCESS;
         }
 
         $lastSentDate = (string) Setting::getValue('daily_activity_email_last_sent_date', '');
-        if ($lastSentDate === $today) {
+        if (!$forceSend && $lastSentDate === $today) {
             $this->line('Daily activity report already sent for today.');
             return self::SUCCESS;
         }
@@ -215,6 +226,7 @@ class SendDailyActivityReport extends Command
                 'recipients' => $recipients,
                 'total_sessions' => $summary['total_sessions'],
                 'total_minutes' => $summary['total_minutes'],
+                'forced' => $forceSend,
             ]);
 
             $this->info('Daily activity report sent successfully.');
