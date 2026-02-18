@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\DailyActivitySchedule;
 use App\Models\Project;
 use App\Models\Setting;
+use App\Models\TimeLog;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
@@ -315,6 +318,94 @@ class SettingController extends Controller
     }
 
     /**
+     * Send a test daily activity report for today's work logs.
+     */
+    public function testDailyActivityReport(Request $request)
+    {
+        $validated = $request->validate([
+            'test_email' => 'required|email',
+            'email_mailer' => 'nullable|in:default,mail,smtp',
+            'email_smtp_host' => 'nullable|string|max:255',
+            'email_smtp_port' => 'nullable|integer|min:1|max:65535',
+            'email_smtp_username' => 'nullable|string|max:255',
+            'email_smtp_password' => 'nullable|string|max:255',
+            'email_smtp_encryption' => 'nullable|in:tls,ssl,starttls',
+            'email_from_address' => 'nullable|email|max:255',
+            'email_from_name' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            $emailSettings = [
+                'email_mailer' => $validated['email_mailer'] ?? 'default',
+                'email_smtp_host' => $validated['email_smtp_host'] ?? null,
+                'email_smtp_port' => $validated['email_smtp_port'] ?? null,
+                'email_smtp_username' => $validated['email_smtp_username'] ?? null,
+                'email_smtp_password' => $validated['email_smtp_password'] ?? null,
+                'email_smtp_encryption' => $validated['email_smtp_encryption'] ?? null,
+                'email_from_address' => $validated['email_from_address'] ?? config('mail.from.address'),
+                'email_from_name' => $validated['email_from_name'] ?? config('mail.from.name'),
+            ];
+
+            $mailerConfig = $this->prepareMailerConfiguration($emailSettings);
+            $timezone = config('app.timezone', 'UTC');
+            $today = Carbon::now($timezone)->toDateString();
+            [$startUtc, $endUtc] = $this->resolveDayUtcRange($today, $timezone);
+
+            $logs = TimeLog::with('project')
+                ->completed()
+                ->whereBetween('clock_in', [$startUtc, $endUtc])
+                ->orderBy('clock_in', 'asc')
+                ->get();
+
+            $summary = $this->buildDailyActivitySummary($logs);
+            $reportDate = Carbon::parse($today, $timezone)->format('M d, Y');
+            $activityColumns = ['summary_sessions', 'summary_hours', 'date', 'project', 'clock_in', 'clock_out', 'duration', 'description'];
+            $subject = sprintf('Daily Activity Report (Test) - %s', $reportDate);
+
+            Mail::mailer($mailerConfig['mailer'])->send('emails.daily-activity-report', [
+                'reportDate' => $reportDate,
+                'timezone' => $timezone,
+                'summary' => $summary,
+                'logs' => $this->formatLogsForDailyActivityEmail($logs, $timezone),
+                'activityColumns' => $activityColumns,
+            ], function ($message) use ($validated, $subject, $mailerConfig): void {
+                $message->to($validated['test_email'])
+                    ->subject($subject);
+
+                if ($mailerConfig['from_address']) {
+                    $message->from(
+                        $mailerConfig['from_address'],
+                        $mailerConfig['from_name'] ?: $mailerConfig['from_address']
+                    );
+                }
+            });
+
+            Log::info('Daily activity test email sent', [
+                'to' => $validated['test_email'],
+                'date' => $today,
+                'timezone' => $timezone,
+                'total_sessions' => $summary['total_sessions'],
+                'total_minutes' => $summary['total_minutes'],
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Daily activity test email sent successfully! Check your inbox (and spam folder).',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Daily activity test email failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send daily activity test email: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Prepare mailer configuration.
      */
     protected function prepareMailerConfiguration(array $emailSettings): array
@@ -345,6 +436,82 @@ class SettingController extends Controller
             'from_address' => $emailSettings['email_from_address'] ?? config('mail.from.address'),
             'from_name' => $emailSettings['email_from_name'] ?? config('mail.from.name'),
         ];
+    }
+
+    protected function resolveDayUtcRange(string $day, string $timezone): array
+    {
+        $startUtc = Carbon::parse($day, $timezone)->startOfDay()->setTimezone('UTC');
+        $endUtc = Carbon::parse($day, $timezone)->endOfDay()->setTimezone('UTC');
+
+        return [$startUtc, $endUtc];
+    }
+
+    protected function buildDailyActivitySummary(Collection $logs): array
+    {
+        $totalMinutes = (int) $logs->sum('total_minutes');
+        $projects = $logs->groupBy(function ($log) {
+            return $log->project?->name ?? 'No Project';
+        })->map(function ($projectLogs, $projectName) {
+            return [
+                'project_name' => $projectName,
+                'sessions' => $projectLogs->count(),
+                'minutes' => (int) $projectLogs->sum('total_minutes'),
+            ];
+        })->values()->all();
+
+        return [
+            'total_sessions' => $logs->count(),
+            'total_minutes' => $totalMinutes,
+            'total_hours_decimal' => round($totalMinutes / 60, 2),
+            'projects' => $projects,
+        ];
+    }
+
+    protected function formatLogsForDailyActivityEmail(Collection $logs, string $timezone): array
+    {
+        return $logs->map(function ($log) use ($timezone) {
+            $clockInRaw = $log->getRawOriginal('clock_in');
+            $clockOutRaw = $log->getRawOriginal('clock_out');
+
+            $clockInLocal = $clockInRaw
+                ? Carbon::parse($clockInRaw, 'UTC')->setTimezone($timezone)
+                : null;
+            $clockOutLocal = $clockOutRaw
+                ? Carbon::parse($clockOutRaw, 'UTC')->setTimezone($timezone)
+                : null;
+
+            return [
+                'date' => $clockInLocal?->format('D, M j, Y') ?? '-',
+                'project' => $log->project?->name ?? 'No Project',
+                'clock_in' => $clockInLocal?->format('h:i A') ?? '-',
+                'clock_out' => $clockOutLocal?->format('h:i A') ?? '-',
+                'duration' => $this->formatMinutesForDailyActivity((int) ($log->total_minutes ?? 0)),
+                'description_text' => $this->normalizeDescriptionForDailyActivity((string) ($log->work_description ?: '')),
+            ];
+        })->all();
+    }
+
+    protected function normalizeDescriptionForDailyActivity(string $value): string
+    {
+        $raw = trim($value);
+        if ($raw === '') {
+            return '-';
+        }
+
+        $withLineBreaks = preg_replace('/<br\s*\/?>/i', "\n", $raw) ?? $raw;
+        $plain = strip_tags($withLineBreaks);
+        $decoded = html_entity_decode($plain, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $normalized = preg_replace("/\r\n|\r/", "\n", $decoded) ?? $decoded;
+
+        return trim($normalized) !== '' ? trim($normalized) : '-';
+    }
+
+    protected function formatMinutesForDailyActivity(int $minutes): string
+    {
+        $hours = intdiv(max($minutes, 0), 60);
+        $mins = max($minutes, 0) % 60;
+
+        return sprintf('%d:%02d', $hours, $mins);
     }
 
     /**

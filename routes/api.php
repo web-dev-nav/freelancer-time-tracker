@@ -98,6 +98,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [SettingController::class, 'index'])->name('index');
         Route::post('/', [SettingController::class, 'update'])->middleware('throttle:10,1')->name('update');
         Route::post('/test-email', [SettingController::class, 'testEmail'])->middleware('throttle:3,1')->name('test-email');
+        Route::post('/test-daily-activity', [SettingController::class, 'testDailyActivityReport'])->middleware('throttle:3,1')->name('test-daily-activity');
         Route::post('/flush-cache', [SettingController::class, 'flushCache'])->middleware('throttle:3,1')->name('flush-cache');
         Route::get('/debug-email', [SettingController::class, 'debugEmail'])->name('debug-email');
         Route::get('/logs', [SettingController::class, 'logs'])->name('logs');

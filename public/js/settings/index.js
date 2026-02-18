@@ -903,10 +903,90 @@ window.sendTestEmail = async function() {
 };
 
 /**
+ * Send test daily activity email
+ */
+window.sendDailyActivityTestEmail = async function() {
+    if (isLoading) return;
+
+    const testEmailAddress = document.getElementById('daily-activity-test-email')?.value?.trim();
+
+    if (!testEmailAddress) {
+        showDailyActivityTestMessage('error', 'Please enter an email address to send the test report to.');
+        return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(testEmailAddress)) {
+        showDailyActivityTestMessage('error', 'Please enter a valid email address.');
+        return;
+    }
+
+    const payload = {
+        test_email: testEmailAddress,
+        email_mailer: getValue('email-mailer') || 'default',
+        email_smtp_host: getValue('email-smtp-host'),
+        email_smtp_port: getValue('email-smtp-port'),
+        email_smtp_username: getValue('email-smtp-username'),
+        email_smtp_password: getValue('email-smtp-password'),
+        email_smtp_encryption: getValue('email-smtp-encryption'),
+        email_from_address: getValue('email-from-address'),
+        email_from_name: getValue('email-from-name'),
+    };
+
+    try {
+        isLoading = true;
+        showDailyActivityTestMessage('info', 'Sending daily activity test email...');
+
+        const response = await window.api.request('/api/settings/test-daily-activity', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+
+        if (response && response.success) {
+            showDailyActivityTestMessage('success', response.message || 'Daily activity test email sent! Check your inbox and spam folder.');
+        } else {
+            showDailyActivityTestMessage('error', response.message || 'Failed to send daily activity test email.');
+        }
+    } catch (error) {
+        console.error('Daily activity test email failed:', error);
+        showDailyActivityTestMessage('error', 'Failed to send daily activity test email: ' + (error.message || 'Unknown error'));
+    } finally {
+        isLoading = false;
+    }
+};
+
+/**
  * Show test email message
  */
 function showTestEmailMessage(type, message) {
     const messageEl = document.getElementById('test-email-message');
+    if (!messageEl) return;
+
+    messageEl.style.display = 'flex';
+    messageEl.style.alignItems = 'center';
+    messageEl.style.gap = '8px';
+    messageEl.textContent = message;
+
+    if (type === 'success') {
+        messageEl.style.background = '#d1fae5';
+        messageEl.style.color = '#065f46';
+        messageEl.style.border = '1px solid #10b981';
+        messageEl.innerHTML = '<i class="fas fa-check-circle"></i> ' + message;
+    } else if (type === 'error') {
+        messageEl.style.background = '#fee2e2';
+        messageEl.style.color = '#991b1b';
+        messageEl.style.border = '1px solid #ef4444';
+        messageEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + message;
+    } else if (type === 'info') {
+        messageEl.style.background = '#e0f2fe';
+        messageEl.style.color = '#0c4a6e';
+        messageEl.style.border = '1px solid #0284c7';
+        messageEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + message;
+    }
+}
+
+function showDailyActivityTestMessage(type, message) {
+    const messageEl = document.getElementById('daily-activity-test-message');
     if (!messageEl) return;
 
     messageEl.style.display = 'flex';

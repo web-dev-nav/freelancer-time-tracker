@@ -220,6 +220,23 @@
         line-height: 1.5;
     }
 
+    .automation-test-card {
+        margin-top: 14px;
+        border: 1px solid #c7d2fe;
+        border-radius: 12px;
+        padding: 14px;
+        background: #ffffff;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    }
+
+    .automation-test-message {
+        display: none;
+        margin-top: 10px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+    }
+
     .automation-card-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
@@ -360,6 +377,25 @@
 
         <div class="automation-note">
             Daily mode ignores Date and uses only selected Working Days + Time. Date mode sends only on that specific date and time.
+        </div>
+
+        <div class="automation-test-card">
+            <h3 style="margin:0 0 6px;font-size:15px;color:#0f172a;">
+                <i class="fas fa-vial" style="color:#4338ca;"></i>
+                Test Daily Activity Email
+            </h3>
+            <p style="margin:0 0 10px;color:#64748b;font-size:13px;">
+                Send today’s activity report to a specific email to verify delivery. Uses the email settings from the Email tab.
+            </p>
+            <div class="form-group" style="margin-bottom:10px;">
+                <label class="form-label" for="daily-activity-test-email">Send Test Report To</label>
+                <input type="email" id="daily-activity-test-email" class="form-control" placeholder="you@example.com">
+            </div>
+            <button type="button" class="btn btn-secondary" id="daily-activity-test-btn" onclick="sendDailyActivityTestEmail()">
+                <i class="fas fa-paper-plane"></i>
+                Send Test Daily Report
+            </button>
+            <div id="daily-activity-test-message" class="automation-test-message"></div>
         </div>
     </div>
 
