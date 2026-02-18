@@ -129,7 +129,7 @@
                                             @endif
                                             @if(in_array('description', $activityColumns, true))
                                                 <td style="{{ $descriptionCellStyle }}">
-                                                    {{ $log['description_text'] ?? '-' }}
+                                                    {!! nl2br(e($log['description_text'] ?? '-')) !!}
                                                 </td>
                                             @endif
                                         </tr>
