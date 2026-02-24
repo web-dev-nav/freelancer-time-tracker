@@ -56,3 +56,14 @@ Schedule::command('activity:send-daily-summary')
     ->onFailure(function () {
         error_log('Daily activity report scheduler check failed');
     });
+
+// Schedule custom email automation checks every 5 minutes.
+Schedule::command('emails:send-custom-scheduled')
+    ->everyFiveMinutes()
+    ->name('custom-email-scheduler')
+    ->onSuccess(function () {
+        info('Custom email scheduler check executed');
+    })
+    ->onFailure(function () {
+        error_log('Custom email scheduler check failed');
+    });

@@ -5,6 +5,7 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\DatabaseBackupController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\CustomEmailScheduleController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -103,5 +104,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/debug-email', [SettingController::class, 'debugEmail'])->name('debug-email');
         Route::get('/logs', [SettingController::class, 'logs'])->name('logs');
         Route::post('/logs/delete', [SettingController::class, 'deleteLogFile'])->middleware('throttle:10,1')->name('logs.delete');
+        Route::get('/custom-email-schedules', [CustomEmailScheduleController::class, 'index'])->name('custom-email-schedules.index');
+        Route::post('/custom-email-schedules', [CustomEmailScheduleController::class, 'store'])->middleware('throttle:10,1')->name('custom-email-schedules.store');
+        Route::patch('/custom-email-schedules/{schedule}', [CustomEmailScheduleController::class, 'update'])->middleware('throttle:10,1')->name('custom-email-schedules.update');
+        Route::post('/custom-email-schedules/{schedule}/cancel', [CustomEmailScheduleController::class, 'cancel'])->middleware('throttle:10,1')->name('custom-email-schedules.cancel');
     });
 });

@@ -4,6 +4,8 @@
 
 let isLoading = false;
 let dailyActivityClientSchedules = [];
+let customEmailSchedules = [];
+let customEmailRecipientSuggestions = [];
 let hasLoadedLogsTab = false;
 let latestLogPlainText = '';
 const SETTINGS_ACTIVE_TAB_KEY = 'settings.active_tab';
@@ -751,6 +753,312 @@ function normalizeWorkingDays(raw) {
     return unique.length > 0 ? unique : ['mon', 'tue', 'wed', 'thu', 'fri'];
 }
 
+function formatWorkingDaysLabel(raw) {
+    const keys = normalizeWorkingDays(raw);
+    const labelMap = new Map(WORKING_DAY_OPTIONS.map((option) => [option.key, option.label]));
+    return keys.map((key) => labelMap.get(key) || key).join(', ');
+}
+
+function renderCustomEmailRecipientSuggestions() {
+    const list = document.getElementById('custom-email-recipient-list');
+    if (!list) {
+        return;
+    }
+
+    list.innerHTML = (customEmailRecipientSuggestions || [])
+        .map((email) => `<option value="${escapeHtml(email)}"></option>`)
+        .join('');
+}
+
+function setCustomEmailMessage(type, message) {
+    const messageEl = document.getElementById('custom-email-message');
+    if (!messageEl) {
+        return;
+    }
+
+    if (!message) {
+        messageEl.style.display = 'none';
+        return;
+    }
+
+    messageEl.style.display = 'block';
+    messageEl.style.marginTop = '10px';
+
+    if (type === 'success') {
+        messageEl.style.background = '#dcfce7';
+        messageEl.style.color = '#166534';
+        messageEl.style.border = '1px solid #10b981';
+        messageEl.innerHTML = '<i class="fas fa-check-circle"></i> ' + message;
+    } else if (type === 'error') {
+        messageEl.style.background = '#fee2e2';
+        messageEl.style.color = '#991b1b';
+        messageEl.style.border = '1px solid #ef4444';
+        messageEl.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + message;
+    } else {
+        messageEl.style.background = '#e0f2fe';
+        messageEl.style.color = '#0c4a6e';
+        messageEl.style.border = '1px solid #0284c7';
+        messageEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + message;
+    }
+}
+
+function getCustomEmailWorkingDays() {
+    const container = document.getElementById('custom-email-working-days');
+    if (!container) {
+        return 'mon,tue,wed,thu,fri';
+    }
+
+    const active = Array.from(container.querySelectorAll('[data-working-day].active'))
+        .map((tag) => String(tag.getAttribute('data-working-day') || '').trim())
+        .filter((value) => value !== '');
+
+    return normalizeWorkingDays(active.join(',')).join(',');
+}
+
+function setCustomEmailWorkingDays(raw) {
+    const container = document.getElementById('custom-email-working-days');
+    if (!container) {
+        return;
+    }
+
+    const activeKeys = new Set(normalizeWorkingDays(raw));
+    container.querySelectorAll('[data-working-day]').forEach((tag) => {
+        const key = String(tag.getAttribute('data-working-day') || '').trim();
+        const isActive = activeKeys.has(key);
+        tag.classList.toggle('active', isActive);
+        tag.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
+}
+
+function setCustomEmailMode(mode) {
+    const typeSelect = document.getElementById('custom-email-type');
+    const dateInput = document.getElementById('custom-email-date');
+    const workingDays = document.getElementById('custom-email-working-days');
+    const modeValue = mode === 'daily' ? 'daily' : 'date';
+
+    if (typeSelect) {
+        typeSelect.value = modeValue;
+    }
+
+    if (dateInput) {
+        dateInput.disabled = modeValue !== 'date';
+        if (modeValue !== 'date') {
+            dateInput.value = '';
+        }
+    }
+
+    if (workingDays) {
+        workingDays.style.opacity = modeValue === 'date' ? '.55' : '1';
+        workingDays.style.pointerEvents = modeValue === 'date' ? 'none' : 'auto';
+    }
+}
+
+function resetCustomEmailForm() {
+    setValue('custom-email-schedule-id', '');
+    setValue('custom-email-name', '');
+    setValue('custom-email-recipients', '');
+    setValue('custom-email-subject', '');
+    setValue('custom-email-body', '');
+    setValue('custom-email-time', '09:00');
+    setValue('custom-email-date', '');
+    setCustomEmailWorkingDays('mon,tue,wed,thu,fri');
+    const enabled = document.getElementById('custom-email-enabled');
+    if (enabled) {
+        enabled.checked = true;
+    }
+    setCustomEmailMode('date');
+
+    const submitBtn = document.getElementById('custom-email-submit');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-calendar-check"></i> Schedule Email';
+    }
+}
+
+function collectCustomEmailForm() {
+    return {
+        id: getValue('custom-email-schedule-id'),
+        name: getValue('custom-email-name'),
+        recipients: getValue('custom-email-recipients'),
+        subject: getValue('custom-email-subject'),
+        body: getValue('custom-email-body'),
+        schedule_type: getValue('custom-email-type') || 'date',
+        send_time: getValue('custom-email-time') || '09:00',
+        send_date: getValue('custom-email-date'),
+        working_days: getCustomEmailWorkingDays(),
+        enabled: Boolean(document.getElementById('custom-email-enabled')?.checked),
+    };
+}
+
+function renderCustomEmailSchedules() {
+    const container = document.getElementById('custom-email-schedule-list');
+    if (!container) {
+        return;
+    }
+
+    if (!Array.isArray(customEmailSchedules) || customEmailSchedules.length === 0) {
+        container.innerHTML = '<div class="automation-empty-row">No scheduled emails yet.</div>';
+        return;
+    }
+
+    const dayLabelMap = new Map(WORKING_DAY_OPTIONS.map((option) => [option.key, option.label]));
+
+    container.innerHTML = customEmailSchedules.map((schedule) => {
+        const name = escapeHtml(schedule.name || 'Untitled Schedule');
+        const subject = escapeHtml(schedule.subject || '');
+        const recipients = Array.isArray(schedule.recipients) ? schedule.recipients : [];
+        const recipientsPreview = recipients.length > 2
+            ? `${escapeHtml(recipients.slice(0, 2).join(', '))} +${recipients.length - 2} more`
+            : escapeHtml(recipients.join(', '));
+        const status = String(schedule.status || 'scheduled').toLowerCase();
+        const scheduleType = String(schedule.schedule_type || 'date').toLowerCase();
+        const sendTime = escapeHtml(schedule.send_time || '09:00');
+        let scheduleSummary = '';
+
+        if (scheduleType === 'daily') {
+            const dayKeys = normalizeWorkingDays(schedule.working_days || '');
+            const dayLabels = dayKeys.map((key) => dayLabelMap.get(key) || key).join(', ');
+            scheduleSummary = `Daily • ${sendTime} • ${dayLabels}`;
+        } else {
+            scheduleSummary = `Date • ${(schedule.send_date || 'TBD')} ${sendTime}`;
+        }
+
+        const lastSent = schedule.last_sent_date ? `Last sent: ${schedule.last_sent_date}` : '';
+        const sentAt = schedule.sent_at ? `Sent: ${schedule.sent_at}` : '';
+
+        return `
+            <div class="automation-schedule-row" data-custom-email-id="${schedule.id}">
+                <div class="automation-schedule-title">${name}</div>
+                <div class="automation-schedule-meta">
+                    <span>${subject}</span>
+                    <span>${scheduleSummary}</span>
+                    <span>${recipientsPreview || 'No recipients'}</span>
+                </div>
+                <div class="automation-schedule-meta">
+                    <span class="automation-pill status-${status}">${escapeHtml(status)}</span>
+                    ${lastSent ? `<span>${escapeHtml(lastSent)}</span>` : ''}
+                    ${sentAt ? `<span>${escapeHtml(sentAt)}</span>` : ''}
+                </div>
+                <div class="automation-schedule-actions">
+                    ${status === 'scheduled' ? `<button type="button" class="btn btn-secondary" data-custom-email-action="edit">Edit</button>` : ''}
+                    ${status === 'scheduled' ? `<button type="button" class="btn btn-secondary" data-custom-email-action="cancel">Cancel</button>` : ''}
+                    <button type="button" class="btn btn-secondary" data-custom-email-action="duplicate">Duplicate</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function loadCustomEmailSchedules() {
+    try {
+        const response = await window.api.request('/api/settings/custom-email-schedules');
+        if (response && response.success) {
+            const data = response.data || {};
+            customEmailSchedules = Array.isArray(data.schedules) ? data.schedules : [];
+            customEmailRecipientSuggestions = Array.isArray(data.suggested_recipients)
+                ? data.suggested_recipients
+                : [];
+            renderCustomEmailRecipientSuggestions();
+            renderCustomEmailSchedules();
+            return;
+        }
+        throw new Error(response?.message || 'Failed to load custom email schedules.');
+    } catch (error) {
+        console.error('Failed to load custom email schedules:', error);
+        setCustomEmailMessage('error', error.message || 'Failed to load custom email schedules.');
+    }
+}
+
+async function submitCustomEmailSchedule(event) {
+    event.preventDefault();
+
+    const payload = collectCustomEmailForm();
+    if (!payload.subject || !payload.body || !payload.recipients) {
+        setCustomEmailMessage('error', 'Subject, message, and at least one recipient are required.');
+        return;
+    }
+
+    const isEdit = payload.id && String(payload.id).trim() !== '';
+    const endpoint = isEdit
+        ? `/api/settings/custom-email-schedules/${payload.id}`
+        : '/api/settings/custom-email-schedules';
+
+    setCustomEmailMessage('info', isEdit ? 'Saving changes...' : 'Scheduling email...');
+
+    try {
+        const response = await window.api.request(endpoint, {
+            method: isEdit ? 'PATCH' : 'POST',
+            body: JSON.stringify(payload),
+        });
+
+        if (!response?.success) {
+            throw new Error(response?.message || 'Unable to save schedule.');
+        }
+
+        setCustomEmailMessage('success', response.message || 'Schedule saved.');
+        await loadCustomEmailSchedules();
+        resetCustomEmailForm();
+    } catch (error) {
+        console.error('Failed to save custom email schedule:', error);
+        setCustomEmailMessage('error', error.message || 'Failed to save schedule.');
+    }
+}
+
+function populateCustomEmailForm(schedule, duplicate = false) {
+    if (!schedule) {
+        return;
+    }
+
+    setValue('custom-email-schedule-id', duplicate ? '' : schedule.id);
+    setValue('custom-email-name', schedule.name || '');
+    setValue('custom-email-recipients', Array.isArray(schedule.recipients) ? schedule.recipients.join(', ') : '');
+    setValue('custom-email-subject', schedule.subject || '');
+    setValue('custom-email-body', schedule.body || '');
+    setValue('custom-email-time', schedule.send_time || '09:00');
+    setValue('custom-email-date', schedule.send_date || '');
+    setCustomEmailWorkingDays(schedule.working_days || 'mon,tue,wed,thu,fri');
+    const enabled = document.getElementById('custom-email-enabled');
+    if (enabled) {
+        enabled.checked = Boolean(schedule.enabled !== false);
+    }
+    setCustomEmailMode(schedule.schedule_type || 'date');
+
+    const submitBtn = document.getElementById('custom-email-submit');
+    if (submitBtn) {
+        submitBtn.innerHTML = duplicate
+            ? '<i class="fas fa-clone"></i> Schedule Copy'
+            : '<i class="fas fa-save"></i> Save Changes';
+    }
+
+    const details = document.querySelector('.automation-details');
+    if (details) {
+        details.open = true;
+    }
+}
+
+async function cancelCustomEmailSchedule(scheduleId) {
+    if (!scheduleId) {
+        return;
+    }
+
+    setCustomEmailMessage('info', 'Cancelling schedule...');
+
+    try {
+        const response = await window.api.request(`/api/settings/custom-email-schedules/${scheduleId}/cancel`, {
+            method: 'POST',
+        });
+
+        if (!response?.success) {
+            throw new Error(response?.message || 'Failed to cancel schedule.');
+        }
+
+        setCustomEmailMessage('success', response.message || 'Schedule cancelled.');
+        await loadCustomEmailSchedules();
+    } catch (error) {
+        console.error('Failed to cancel custom email schedule:', error);
+        setCustomEmailMessage('error', error.message || 'Failed to cancel schedule.');
+    }
+}
+
 function renderLogsHtml(rawContent) {
     const text = String(rawContent || '');
     if (text.trim() === '') {
@@ -1018,6 +1326,7 @@ function showDailyActivityTestMessage(type, message) {
 document.addEventListener('DOMContentLoaded', function() {
     // Load settings
     loadSettings();
+    loadCustomEmailSchedules();
 
     // Attach form submit handler
     const form = document.getElementById('settings-form');
@@ -1086,6 +1395,73 @@ document.addEventListener('DOMContentLoaded', function() {
                 workingDaysBox.style.pointerEvents = isDateMode ? 'none' : 'auto';
             }
         });
+    }
+
+    const customEmailForm = document.getElementById('custom-email-schedule-form');
+    if (customEmailForm) {
+        customEmailForm.addEventListener('submit', submitCustomEmailSchedule);
+    }
+
+    const customEmailReset = document.getElementById('custom-email-reset');
+    if (customEmailReset) {
+        customEmailReset.addEventListener('click', () => {
+            resetCustomEmailForm();
+            setCustomEmailMessage('', '');
+        });
+    }
+
+    const customEmailType = document.getElementById('custom-email-type');
+    if (customEmailType) {
+        customEmailType.addEventListener('change', () => {
+            setCustomEmailMode(customEmailType.value);
+        });
+        setCustomEmailMode(customEmailType.value);
+    }
+
+    const customEmailDays = document.getElementById('custom-email-working-days');
+    if (customEmailDays) {
+        customEmailDays.addEventListener('click', (event) => {
+            const tag = event.target.closest('[data-working-day]');
+            if (!tag) {
+                return;
+            }
+            tag.classList.toggle('active');
+            tag.setAttribute('aria-pressed', tag.classList.contains('active') ? 'true' : 'false');
+        });
+    }
+
+    const customEmailList = document.getElementById('custom-email-schedule-list');
+    if (customEmailList) {
+        customEmailList.addEventListener('click', (event) => {
+            const actionBtn = event.target.closest('[data-custom-email-action]');
+            if (!actionBtn) {
+                return;
+            }
+
+            const row = actionBtn.closest('[data-custom-email-id]');
+            const scheduleId = row ? row.getAttribute('data-custom-email-id') : null;
+            const action = actionBtn.getAttribute('data-custom-email-action');
+            const schedule = customEmailSchedules.find((item) => String(item.id) === String(scheduleId));
+
+            if (action === 'edit') {
+                populateCustomEmailForm(schedule, false);
+                return;
+            }
+
+            if (action === 'duplicate') {
+                populateCustomEmailForm(schedule, true);
+                return;
+            }
+
+            if (action === 'cancel') {
+                cancelCustomEmailSchedule(scheduleId);
+            }
+        });
+    }
+
+    const customEmailRefresh = document.getElementById('custom-email-refresh');
+    if (customEmailRefresh) {
+        customEmailRefresh.addEventListener('click', () => loadCustomEmailSchedules());
     }
 
     const refreshLogsBtn = document.getElementById('refresh-logs-btn');
