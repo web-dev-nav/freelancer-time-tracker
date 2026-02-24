@@ -942,6 +942,7 @@ function renderCustomEmailSchedules() {
                     ${status === 'scheduled' ? `<button type="button" class="btn btn-secondary" data-custom-email-action="edit">Edit</button>` : ''}
                     ${status === 'scheduled' ? `<button type="button" class="btn btn-secondary" data-custom-email-action="cancel">Cancel</button>` : ''}
                     <button type="button" class="btn btn-secondary" data-custom-email-action="duplicate">Duplicate</button>
+                    <button type="button" class="btn btn-secondary" data-custom-email-action="delete">Delete</button>
                 </div>
             </div>
         `;
@@ -1057,6 +1058,30 @@ async function cancelCustomEmailSchedule(scheduleId) {
     } catch (error) {
         console.error('Failed to cancel custom email schedule:', error);
         setCustomEmailMessage('error', error.message || 'Failed to cancel schedule.');
+    }
+}
+
+async function deleteCustomEmailSchedule(scheduleId) {
+    if (!scheduleId) {
+        return;
+    }
+
+    setCustomEmailMessage('info', 'Deleting schedule...');
+
+    try {
+        const response = await window.api.request(`/api/settings/custom-email-schedules/${scheduleId}`, {
+            method: 'DELETE',
+        });
+
+        if (!response?.success) {
+            throw new Error(response?.message || 'Failed to delete schedule.');
+        }
+
+        setCustomEmailMessage('success', response.message || 'Schedule deleted.');
+        await loadCustomEmailSchedules();
+    } catch (error) {
+        console.error('Failed to delete custom email schedule:', error);
+        setCustomEmailMessage('error', error.message || 'Failed to delete schedule.');
     }
 }
 
@@ -1456,6 +1481,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (action === 'cancel') {
                 cancelCustomEmailSchedule(scheduleId);
+                return;
+            }
+
+            if (action === 'delete') {
+                deleteCustomEmailSchedule(scheduleId);
+                return;
             }
         });
     }

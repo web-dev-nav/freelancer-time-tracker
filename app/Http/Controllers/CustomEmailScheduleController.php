@@ -165,6 +165,16 @@ class CustomEmailScheduleController extends Controller
         ]);
     }
 
+    public function destroy(CustomEmailSchedule $schedule)
+    {
+        $schedule->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Email schedule deleted.',
+        ]);
+    }
+
     private function validateSchedulePayload(Request $request, bool $partial = false): array
     {
         $rules = [

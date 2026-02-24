@@ -108,5 +108,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/custom-email-schedules', [CustomEmailScheduleController::class, 'store'])->middleware('throttle:10,1')->name('custom-email-schedules.store');
         Route::patch('/custom-email-schedules/{schedule}', [CustomEmailScheduleController::class, 'update'])->middleware('throttle:10,1')->name('custom-email-schedules.update');
         Route::post('/custom-email-schedules/{schedule}/cancel', [CustomEmailScheduleController::class, 'cancel'])->middleware('throttle:10,1')->name('custom-email-schedules.cancel');
+        Route::delete('/custom-email-schedules/{schedule}', [CustomEmailScheduleController::class, 'destroy'])->middleware('throttle:10,1')->name('custom-email-schedules.destroy');
     });
 });
