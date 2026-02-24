@@ -859,6 +859,9 @@ function resetCustomEmailForm() {
     setValue('custom-email-recipients', '');
     setValue('custom-email-subject', '');
     setValue('custom-email-body', '');
+    setValue('custom-email-range-display', '');
+    setValue('custom-email-range-start', '');
+    setValue('custom-email-range-end', '');
     setValue('custom-email-time', '09:00');
     setValue('custom-email-date', '');
     setCustomEmailWorkingDays('mon,tue,wed,thu,fri');
@@ -1041,6 +1044,9 @@ function populateCustomEmailForm(schedule, duplicate = false) {
     setValue('custom-email-recipients', Array.isArray(schedule.recipients) ? schedule.recipients.join(', ') : '');
     setValue('custom-email-subject', schedule.subject || '');
     setValue('custom-email-body', schedule.body || '');
+    setValue('custom-email-range-display', '');
+    setValue('custom-email-range-start', '');
+    setValue('custom-email-range-end', '');
     setValue('custom-email-time', schedule.send_time || '09:00');
     setValue('custom-email-date', schedule.send_date || '');
     setCustomEmailWorkingDays(schedule.working_days || 'mon,tue,wed,thu,fri');
@@ -1061,6 +1067,73 @@ function populateCustomEmailForm(schedule, duplicate = false) {
     if (details) {
         details.open = true;
     }
+}
+
+function formatRangeDate(raw) {
+    if (!raw) {
+        return '';
+    }
+    const date = new Date(`${raw}T00:00:00`);
+    if (Number.isNaN(date.getTime())) {
+        return raw;
+    }
+    try {
+        return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
+    } catch (_) {
+        return raw;
+    }
+}
+
+function applyCustomEmailDateRange() {
+    const start = getValue('custom-email-range-start');
+    const end = getValue('custom-email-range-end');
+    const display = document.getElementById('custom-email-range-display');
+    if (!display) {
+        return;
+    }
+
+    if (!start || !end) {
+        display.value = '';
+        display.dataset.start = '';
+        display.dataset.end = '';
+        return;
+    }
+
+    display.value = `${start} – ${end}`;
+    display.dataset.start = start;
+    display.dataset.end = end;
+}
+
+function insertCustomEmailDateRange() {
+    const display = document.getElementById('custom-email-range-display');
+    const body = document.getElementById('custom-email-body');
+    const templateSelect = document.getElementById('custom-email-range-template');
+
+    if (!display || !body) {
+        return;
+    }
+
+    const startRaw = display.dataset.start || '';
+    const endRaw = display.dataset.end || '';
+    if (!startRaw || !endRaw) {
+        setCustomEmailMessage('error', 'Pick a start and end date first.');
+        return;
+    }
+
+    const start = formatRangeDate(startRaw);
+    const end = formatRangeDate(endRaw);
+    const template = templateSelect?.value || 'reporting';
+
+    let text = '';
+    if (template === 'window') {
+        text = `Report window (${start} to ${end})`;
+    } else if (template === 'plain') {
+        text = `${start} - ${end}`;
+    } else {
+        text = `Reporting period: ${start} – ${end}`;
+    }
+
+    body.value = body.value ? `${body.value}\n\n${text}` : text;
 }
 
 async function cancelCustomEmailSchedule(scheduleId) {
@@ -1469,6 +1542,56 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         setCustomEmailMode(customEmailType.value);
     }
+
+    const rangeToggle = document.getElementById('custom-email-range-toggle');
+    const rangePanel = document.getElementById('custom-email-range-panel');
+    const rangeDisplay = document.getElementById('custom-email-range-display');
+    const rangeApply = document.getElementById('custom-email-range-apply');
+    const rangeClear = document.getElementById('custom-email-range-clear');
+    const rangeInsert = document.getElementById('custom-email-range-insert');
+
+    if (rangeToggle && rangePanel) {
+        rangeToggle.addEventListener('click', () => {
+            rangePanel.classList.toggle('active');
+        });
+    }
+
+    if (rangeDisplay && rangePanel) {
+        rangeDisplay.addEventListener('click', () => {
+            rangePanel.classList.toggle('active');
+        });
+    }
+
+    if (rangeApply && rangePanel) {
+        rangeApply.addEventListener('click', () => {
+            applyCustomEmailDateRange();
+            rangePanel.classList.remove('active');
+        });
+    }
+
+    if (rangeClear) {
+        rangeClear.addEventListener('click', () => {
+            setValue('custom-email-range-start', '');
+            setValue('custom-email-range-end', '');
+            applyCustomEmailDateRange();
+        });
+    }
+
+    if (rangeInsert) {
+        rangeInsert.addEventListener('click', () => {
+            insertCustomEmailDateRange();
+        });
+    }
+
+    document.addEventListener('click', (event) => {
+        if (!rangePanel || !rangePanel.classList.contains('active')) {
+            return;
+        }
+        if (rangePanel.contains(event.target) || rangeToggle?.contains(event.target) || rangeDisplay?.contains(event.target)) {
+            return;
+        }
+        rangePanel.classList.remove('active');
+    });
 
     const customEmailDays = document.getElementById('custom-email-working-days');
     if (customEmailDays) {

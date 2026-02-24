@@ -161,6 +161,52 @@
         color: #166534;
     }
 
+    .scheduler-range {
+        position: relative;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .scheduler-range-input {
+        flex: 1;
+        cursor: pointer;
+        background: #f8fafc;
+    }
+
+    .scheduler-range-panel {
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        z-index: 5;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        padding: 12px;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+        width: min(360px, 90vw);
+        display: none;
+    }
+
+    .scheduler-range-panel.active {
+        display: block;
+    }
+
+    .scheduler-range-actions {
+        display: flex;
+        gap: 6px;
+        justify-content: flex-end;
+        margin-top: 8px;
+    }
+
+    .scheduler-template-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 8px;
+        flex-wrap: wrap;
+    }
+
     .scheduler-form-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -347,6 +393,49 @@
                         <option value="date">Date</option>
                         <option value="daily">Daily</option>
                     </select>
+                </div>
+                <div class="automation-field full">
+                    <label class="automation-label" for="custom-email-range-display">Reporting Period</label>
+                    <div class="scheduler-range">
+                        <input
+                            class="automation-input scheduler-range-input"
+                            id="custom-email-range-display"
+                            type="text"
+                            placeholder="Select start and end date"
+                            readonly
+                        >
+                        <button type="button" class="btn btn-secondary btn-sm" id="custom-email-range-toggle">
+                            <i class="fas fa-calendar-alt"></i>
+                            Pick
+                        </button>
+                        <div class="scheduler-range-panel" id="custom-email-range-panel">
+                            <div class="automation-row">
+                                <div class="automation-field">
+                                    <label class="automation-label" for="custom-email-range-start">Start Date</label>
+                                    <input class="automation-input" id="custom-email-range-start" type="date">
+                                </div>
+                                <div class="automation-field">
+                                    <label class="automation-label" for="custom-email-range-end">End Date</label>
+                                    <input class="automation-input" id="custom-email-range-end" type="date">
+                                </div>
+                            </div>
+                            <div class="scheduler-range-actions">
+                                <button type="button" class="btn btn-secondary btn-sm" id="custom-email-range-clear">Clear</button>
+                                <button type="button" class="btn btn-primary btn-sm" id="custom-email-range-apply">Apply</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="scheduler-template-row">
+                        <select class="automation-select automation-input" id="custom-email-range-template" style="max-width:280px;">
+                            <option value="reporting">Reporting period: {start} – {end}</option>
+                            <option value="window">Report window ({start} to {end})</option>
+                            <option value="plain">{start} - {end}</option>
+                        </select>
+                        <button type="button" class="btn btn-secondary btn-sm" id="custom-email-range-insert">
+                            <i class="fas fa-plus"></i>
+                            Insert Into Message
+                        </button>
+                    </div>
                 </div>
                 <div class="automation-field full">
                     <label class="automation-label" for="custom-email-body">Message</label>
