@@ -311,8 +311,34 @@
     }
 
     .automation-schedule-actions .btn {
-        padding: 5px 10px;
+        padding: 5px 8px;
         font-size: 12px;
+    }
+
+    .scheduler-icon-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        padding: 0;
+    }
+
+    .scheduler-preview {
+        margin-top: 8px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px dashed #cbd5e1;
+        background: #f8fafc;
+        color: #0f172a;
+        font-size: 13px;
+        line-height: 1.5;
+        display: none;
+        white-space: pre-wrap;
+    }
+
+    .scheduler-preview.active {
+        display: block;
     }
 
     .scheduler-actions {

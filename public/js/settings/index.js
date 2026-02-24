@@ -928,6 +928,8 @@ function renderCustomEmailSchedules() {
         const lastSent = schedule.last_sent_date ? schedule.last_sent_date : '-';
         const sentAt = schedule.sent_at ? schedule.sent_at : '-';
 
+        const bodyPreview = escapeHtml(schedule.body || '');
+
         return `
             <tr data-custom-email-id="${schedule.id}">
                 <td>
@@ -949,11 +951,23 @@ function renderCustomEmailSchedules() {
                 </td>
                 <td>
                     <div class="automation-schedule-actions">
-                        ${status === 'scheduled' ? `<button type="button" class="btn btn-secondary" data-custom-email-action="edit">Edit</button>` : ''}
-                        ${status === 'scheduled' ? `<button type="button" class="btn btn-secondary" data-custom-email-action="cancel">Cancel</button>` : ''}
-                        <button type="button" class="btn btn-secondary" data-custom-email-action="duplicate">Duplicate</button>
-                        <button type="button" class="btn btn-secondary" data-custom-email-action="delete">Delete</button>
+                        <button type="button" class="btn btn-secondary scheduler-icon-btn" title="Preview" data-custom-email-action="preview">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        ${status === 'scheduled' ? `<button type="button" class="btn btn-secondary scheduler-icon-btn" title="Edit" data-custom-email-action="edit"><i class="fas fa-pen"></i></button>` : ''}
+                        ${status === 'scheduled' ? `<button type="button" class="btn btn-secondary scheduler-icon-btn" title="Cancel" data-custom-email-action="cancel"><i class="fas fa-ban"></i></button>` : ''}
+                        <button type="button" class="btn btn-secondary scheduler-icon-btn" title="Duplicate" data-custom-email-action="duplicate">
+                            <i class="fas fa-clone"></i>
+                        </button>
+                        <button type="button" class="btn btn-secondary scheduler-icon-btn" title="Delete" data-custom-email-action="delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
+                </td>
+            </tr>
+            <tr data-custom-email-preview="${schedule.id}">
+                <td colspan="6">
+                    <div class="scheduler-preview">${bodyPreview || 'No message body provided.'}</div>
                 </td>
             </tr>
         `;
@@ -1625,6 +1639,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (action === 'duplicate') {
                 populateCustomEmailForm(schedule, true);
+                return;
+            }
+
+            if (action === 'preview') {
+                const previewRow = document.querySelector(`[data-custom-email-preview="${scheduleId}"] .scheduler-preview`);
+                if (previewRow) {
+                    previewRow.classList.toggle('active');
+                }
                 return;
             }
 
