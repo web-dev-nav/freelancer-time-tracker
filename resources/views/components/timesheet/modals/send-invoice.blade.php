@@ -46,24 +46,82 @@
             </div>
 
             <div class="form-group">
-                <label class="checkbox-label">
-                    <input type="checkbox" id="schedule-send-checkbox" onchange="toggleScheduleSend()">
-                    <span><i class="fas fa-clock"></i> Schedule Send Later</span>
+                <label class="form-label">
+                    <i class="fas fa-clock"></i>
+                    Delivery Options
                 </label>
+                <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                    <label class="checkbox-label" style="margin:0;">
+                        <input type="radio" name="invoice-schedule-mode" value="now" checked>
+                        <span>Send Now</span>
+                    </label>
+                    <label class="checkbox-label" style="margin:0;">
+                        <input type="radio" name="invoice-schedule-mode" value="specific">
+                        <span>Schedule Specific Date</span>
+                    </label>
+                    <label class="checkbox-label" style="margin:0;">
+                        <input type="radio" name="invoice-schedule-mode" value="due">
+                        <span>Due Date Reminder</span>
+                    </label>
+                </div>
+                <small style="color: var(--text-secondary); display: block; margin-top: 6px;">
+                    <i class="fas fa-info-circle"></i> Cron runs every 5 minutes. Emails send on the next interval.
+                </small>
             </div>
 
-            <div id="schedule-send-group" class="form-group" style="display: none;">
-                <label class="form-label" for="scheduled-send-at">
+            <div id="invoice-schedule-specific" class="form-group" style="display: none;">
+                <label class="form-label">
                     <i class="fas fa-calendar-alt"></i>
                     Schedule Date & Time
                 </label>
-                <input type="datetime-local" id="scheduled-send-at" class="form-control">
-                <small style="color: var(--text-secondary); display: block; margin-top: 4px;">
-                    <i class="fas fa-info-circle"></i> Cron runs every 5 minutes. Email will be sent at the next 5-minute interval.
-                </small>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div>
+                        <label class="form-label" for="invoice-schedule-date" style="font-size:12px;">
+                            Date
+                        </label>
+                        <input type="date" id="invoice-schedule-date" class="form-control">
+                    </div>
+                    <div>
+                        <label class="form-label" for="invoice-schedule-time" style="font-size:12px;">
+                            Time
+                        </label>
+                        <input type="time" id="invoice-schedule-time" class="form-control" value="09:00">
+                    </div>
+                </div>
+            </div>
 
-                <!-- Trigger Time Preview -->
-                <div id="trigger-time-preview" style="display: none; margin-top: 10px;"></div>
+            <div id="invoice-schedule-due" class="form-group" style="display: none;">
+                <label class="form-label">
+                    <i class="fas fa-bell"></i>
+                    Send Reminder Before Due Date
+                </label>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div>
+                        <label class="form-label" for="invoice-reminder-offset" style="font-size:12px;">
+                            Days Before Due
+                        </label>
+                        <select id="invoice-reminder-offset" class="form-control">
+                            <option value="1">1 day before</option>
+                            <option value="2" selected>2 days before</option>
+                            <option value="3">3 days before</option>
+                            <option value="5">5 days before</option>
+                            <option value="7">7 days before</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" for="invoice-reminder-time" style="font-size:12px;">
+                            Time
+                        </label>
+                        <input type="time" id="invoice-reminder-time" class="form-control" value="09:00">
+                    </div>
+                </div>
+            </div>
+
+            <input type="hidden" id="invoice-due-date">
+
+            <div id="invoice-schedule-preview" class="alert alert-info" style="display: none; margin: 10px 0 0 0; padding: 12px 14px; border-radius: 8px; font-size: 13px;">
+                <i class="fas fa-paper-plane"></i>
+                <span id="invoice-schedule-preview-text"></span>
             </div>
 
             <div class="alert alert-warning" style="margin: 0;">
