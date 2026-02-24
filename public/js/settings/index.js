@@ -1155,6 +1155,10 @@ async function cancelCustomEmailSchedule(scheduleId) {
         return;
     }
 
+    if (!window.confirm('Cancel this scheduled email?')) {
+        return;
+    }
+
     setCustomEmailMessage('info', 'Cancelling schedule...');
 
     try {
@@ -1176,6 +1180,10 @@ async function cancelCustomEmailSchedule(scheduleId) {
 
 async function deleteCustomEmailSchedule(scheduleId) {
     if (!scheduleId) {
+        return;
+    }
+
+    if (!window.confirm('Delete this scheduled email? This cannot be undone.')) {
         return;
     }
 
