@@ -228,6 +228,10 @@
             <i class="fas fa-clock"></i>
             Automation
         </button>
+        <button class="settings-tab" data-tab="scheduler" onclick="switchTab('scheduler')">
+            <i class="fas fa-calendar-alt"></i>
+            Scheduler
+        </button>
         <button class="settings-tab" data-tab="logs" onclick="switchTab('logs')">
             <i class="fas fa-file-lines"></i>
             Logs
@@ -253,6 +257,11 @@
         {{-- Automation Tab --}}
         <div class="tab-content" id="automation-tab">
             @include('settings.tabs.automation')
+        </div>
+
+        {{-- Scheduler Tab --}}
+        <div class="tab-content" id="scheduler-tab">
+            @include('settings.tabs.scheduler')
         </div>
 
         {{-- Logs Tab --}}
