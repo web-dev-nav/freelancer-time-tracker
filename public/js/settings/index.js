@@ -902,7 +902,7 @@ function renderCustomEmailSchedules() {
 
     const dayLabelMap = new Map(WORKING_DAY_OPTIONS.map((option) => [option.key, option.label]));
 
-    container.innerHTML = customEmailSchedules.map((schedule) => {
+    const rowsHtml = customEmailSchedules.map((schedule) => {
         const name = escapeHtml(schedule.name || 'Untitled Schedule');
         const subject = escapeHtml(schedule.subject || '');
         const recipients = Array.isArray(schedule.recipients) ? schedule.recipients : [];
@@ -922,31 +922,57 @@ function renderCustomEmailSchedules() {
             scheduleSummary = `Date • ${(schedule.send_date || 'TBD')} ${sendTime}`;
         }
 
-        const lastSent = schedule.last_sent_date ? `Last sent: ${schedule.last_sent_date}` : '';
-        const sentAt = schedule.sent_at ? `Sent: ${schedule.sent_at}` : '';
+        const lastSent = schedule.last_sent_date ? schedule.last_sent_date : '-';
+        const sentAt = schedule.sent_at ? schedule.sent_at : '-';
 
         return `
-            <div class="automation-schedule-row" data-custom-email-id="${schedule.id}">
-                <div class="automation-schedule-title">${name}</div>
-                <div class="automation-schedule-meta">
-                    <span>${subject}</span>
-                    <span>${scheduleSummary}</span>
-                    <span>${recipientsPreview || 'No recipients'}</span>
-                </div>
-                <div class="automation-schedule-meta">
+            <tr data-custom-email-id="${schedule.id}">
+                <td>
+                    <div><strong>${name}</strong></div>
+                    <div class="scheduler-muted">${subject}</div>
+                </td>
+                <td>
+                    <div>${recipientsPreview || 'No recipients'}</div>
+                </td>
+                <td>
+                    <div>${scheduleSummary}</div>
+                </td>
+                <td>
                     <span class="automation-pill status-${status}">${escapeHtml(status)}</span>
-                    ${lastSent ? `<span>${escapeHtml(lastSent)}</span>` : ''}
-                    ${sentAt ? `<span>${escapeHtml(sentAt)}</span>` : ''}
-                </div>
-                <div class="automation-schedule-actions">
-                    ${status === 'scheduled' ? `<button type="button" class="btn btn-secondary" data-custom-email-action="edit">Edit</button>` : ''}
-                    ${status === 'scheduled' ? `<button type="button" class="btn btn-secondary" data-custom-email-action="cancel">Cancel</button>` : ''}
-                    <button type="button" class="btn btn-secondary" data-custom-email-action="duplicate">Duplicate</button>
-                    <button type="button" class="btn btn-secondary" data-custom-email-action="delete">Delete</button>
-                </div>
-            </div>
+                </td>
+                <td>
+                    <div class="scheduler-muted">Last: ${escapeHtml(lastSent)}</div>
+                    <div class="scheduler-muted">Sent: ${escapeHtml(sentAt)}</div>
+                </td>
+                <td>
+                    <div class="automation-schedule-actions">
+                        ${status === 'scheduled' ? `<button type="button" class="btn btn-secondary" data-custom-email-action="edit">Edit</button>` : ''}
+                        ${status === 'scheduled' ? `<button type="button" class="btn btn-secondary" data-custom-email-action="cancel">Cancel</button>` : ''}
+                        <button type="button" class="btn btn-secondary" data-custom-email-action="duplicate">Duplicate</button>
+                        <button type="button" class="btn btn-secondary" data-custom-email-action="delete">Delete</button>
+                    </div>
+                </td>
+            </tr>
         `;
     }).join('');
+
+    container.innerHTML = `
+        <table class="scheduler-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Recipients</th>
+                    <th>Schedule</th>
+                    <th>Status</th>
+                    <th>Delivery</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rowsHtml}
+            </tbody>
+        </table>
+    `;
 }
 
 async function loadCustomEmailSchedules() {
