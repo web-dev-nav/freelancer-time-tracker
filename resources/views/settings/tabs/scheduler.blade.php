@@ -2,17 +2,17 @@
 
 <style>
     .scheduler-shell {
-        border: 1px solid #e2e8f0;
+        border: 1px solid #bfdbfe;
         border-radius: 16px;
-        background: linear-gradient(155deg, #ffffff 0%, #f8fafc 100%);
-        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+        background: linear-gradient(155deg, #f8fbff 0%, #f0f7ff 100%);
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
         overflow: hidden;
     }
 
     .scheduler-header {
-        padding: 20px 22px 16px;
-        border-bottom: 1px solid #e2e8f0;
-        background: linear-gradient(90deg, rgba(15, 118, 110, 0.08), rgba(59, 130, 246, 0.02));
+        padding: 20px 22px 18px;
+        border-bottom: 1px solid #dbeafe;
+        background: linear-gradient(90deg, rgba(2, 132, 199, 0.08), rgba(59, 130, 246, 0.03));
     }
 
     .scheduler-title {
@@ -50,7 +50,7 @@
         justify-content: space-between;
         align-items: flex-start;
         gap: 10px;
-        margin-bottom: 8px;
+        margin-bottom: 12px;
     }
 
     .automation-card-status {
@@ -163,7 +163,7 @@
 
     .automation-compact-form {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         gap: 10px;
         margin-top: 10px;
     }
@@ -269,8 +269,26 @@
 
     .automation-schedule-actions {
         display: flex;
-        gap: 8px;
+        gap: 6px;
         flex-wrap: wrap;
+    }
+
+    .automation-schedule-actions .btn {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+
+    .scheduler-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .btn-sm {
+        padding: 6px 10px;
+        font-size: 12px;
+        line-height: 1.2;
     }
 
     .automation-empty-row {
@@ -289,7 +307,7 @@
 <div class="settings-section scheduler-shell">
     <div class="scheduler-header">
         <h2 class="scheduler-title">
-            <i class="fas fa-calendar-check" style="color:#0f766e;"></i>
+            <i class="fas fa-calendar-check" style="color:#0369a1;"></i>
             Custom Email Scheduler
         </h2>
         <p class="scheduler-subtitle">
@@ -331,45 +349,51 @@
                         <textarea class="automation-input automation-textarea" id="custom-email-body" placeholder="Add the email body here..."></textarea>
                     </div>
 
-                    <div class="automation-field">
-                        <label class="automation-label" for="custom-email-type">Mode</label>
-                        <select class="automation-select automation-input" id="custom-email-type">
-                            <option value="date">Date</option>
-                            <option value="daily">Daily</option>
-                        </select>
-                    </div>
-                    <div class="automation-field">
-                        <label class="automation-label" for="custom-email-time">Send Time</label>
-                        <input class="automation-input automation-time-input" id="custom-email-time" type="time" value="09:00">
-                    </div>
-                    <div class="automation-field">
-                        <label class="automation-label" for="custom-email-date">Date</label>
-                        <input class="automation-input" id="custom-email-date" type="date">
-                    </div>
-                    <div class="automation-field">
-                        <label class="automation-label">Working Days</label>
-                        <div class="automation-day-tags" id="custom-email-working-days">
-                            <button type="button" class="automation-day-tag active" data-working-day="mon">Mon</button>
-                            <button type="button" class="automation-day-tag active" data-working-day="tue">Tue</button>
-                            <button type="button" class="automation-day-tag active" data-working-day="wed">Wed</button>
-                            <button type="button" class="automation-day-tag active" data-working-day="thu">Thu</button>
-                            <button type="button" class="automation-day-tag active" data-working-day="fri">Fri</button>
-                            <button type="button" class="automation-day-tag" data-working-day="sat">Sat</button>
-                            <button type="button" class="automation-day-tag" data-working-day="sun">Sun</button>
+                    <div class="automation-field full">
+                        <div class="automation-row">
+                            <div class="automation-field">
+                                <label class="automation-label" for="custom-email-type">Mode</label>
+                                <select class="automation-select automation-input" id="custom-email-type">
+                                    <option value="date">Date</option>
+                                    <option value="daily">Daily</option>
+                                </select>
+                            </div>
+                            <div class="automation-field">
+                                <label class="automation-label" for="custom-email-time">Send Time</label>
+                                <input class="automation-input automation-time-input" id="custom-email-time" type="time" value="09:00">
+                            </div>
                         </div>
                     </div>
-                    <div class="automation-field">
+                    <div class="automation-field full">
+                        <div class="automation-row">
+                            <div class="automation-field">
+                                <label class="automation-label" for="custom-email-date">Date</label>
+                                <input class="automation-input" id="custom-email-date" type="date">
+                            </div>
+                            <div class="automation-field">
+                                <label class="automation-label">Working Days</label>
+                                <div class="automation-day-tags" id="custom-email-working-days">
+                                    <button type="button" class="automation-day-tag active" data-working-day="mon">Mon</button>
+                                    <button type="button" class="automation-day-tag active" data-working-day="tue">Tue</button>
+                                    <button type="button" class="automation-day-tag active" data-working-day="wed">Wed</button>
+                                    <button type="button" class="automation-day-tag active" data-working-day="thu">Thu</button>
+                                    <button type="button" class="automation-day-tag active" data-working-day="fri">Fri</button>
+                                    <button type="button" class="automation-day-tag" data-working-day="sat">Sat</button>
+                                    <button type="button" class="automation-day-tag" data-working-day="sun">Sun</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="automation-field full scheduler-actions">
                         <label class="automation-enabled-wrap">
                             <input type="checkbox" id="custom-email-enabled" checked>
                             Enabled
                         </label>
-                    </div>
-                    <div class="automation-field" style="display:flex;gap:8px;align-items:center;">
-                        <button type="button" class="btn btn-primary" id="custom-email-submit">
+                        <button type="button" class="btn btn-primary btn-sm" id="custom-email-submit">
                             <i class="fas fa-calendar-check"></i>
-                            Schedule Email
+                            Schedule
                         </button>
-                        <button type="button" class="btn btn-secondary" id="custom-email-reset">
+                        <button type="button" class="btn btn-secondary btn-sm" id="custom-email-reset">
                             <i class="fas fa-undo"></i>
                             Clear
                         </button>
@@ -386,7 +410,7 @@
                     <div class="automation-client-name">Scheduled Emails</div>
                     <div class="automation-client-email">Cancel or reschedule anytime.</div>
                 </div>
-                <button type="button" class="btn btn-secondary" id="custom-email-refresh">
+                <button type="button" class="btn btn-secondary btn-sm" id="custom-email-refresh">
                     <i class="fas fa-rotate"></i>
                     Refresh
                 </button>
