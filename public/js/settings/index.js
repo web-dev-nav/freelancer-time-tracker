@@ -969,8 +969,9 @@ async function loadCustomEmailSchedules() {
 }
 
 async function submitCustomEmailSchedule(event) {
-    event.preventDefault();
-
+    if (event && typeof event.preventDefault === 'function') {
+        event.preventDefault();
+    }
     const payload = collectCustomEmailForm();
     if (!payload.subject || !payload.body || !payload.recipients) {
         setCustomEmailMessage('error', 'Subject, message, and at least one recipient are required.');
@@ -1397,9 +1398,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    const customEmailForm = document.getElementById('custom-email-schedule-form');
-    if (customEmailForm) {
-        customEmailForm.addEventListener('submit', submitCustomEmailSchedule);
+    const customEmailSubmit = document.getElementById('custom-email-submit');
+    if (customEmailSubmit) {
+        customEmailSubmit.addEventListener('click', submitCustomEmailSchedule);
     }
 
     const customEmailReset = document.getElementById('custom-email-reset');

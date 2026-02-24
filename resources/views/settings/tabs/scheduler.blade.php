@@ -309,7 +309,7 @@
 
             <details class="automation-details" open>
                 <summary>Compose</summary>
-                <form id="custom-email-schedule-form" class="automation-compact-form">
+                <div id="custom-email-schedule-form" class="automation-compact-form">
                     <input type="hidden" id="custom-email-schedule-id">
 
                     <div class="automation-field">
@@ -365,7 +365,7 @@
                         </label>
                     </div>
                     <div class="automation-field" style="display:flex;gap:8px;align-items:center;">
-                        <button type="submit" class="btn btn-primary" id="custom-email-submit">
+                        <button type="button" class="btn btn-primary" id="custom-email-submit">
                             <i class="fas fa-calendar-check"></i>
                             Schedule Email
                         </button>
@@ -374,7 +374,7 @@
                             Clear
                         </button>
                     </div>
-                </form>
+                </div>
             </details>
 
             <div id="custom-email-message" class="automation-test-message"></div>
