@@ -298,6 +298,11 @@
         font-weight: 600;
     }
 
+    .automation-textarea {
+        min-height: 110px;
+        resize: vertical;
+    }
+
     .cron-shell {
         border: 1px solid #bbf7d0;
         border-radius: 16px;
@@ -377,6 +382,87 @@
 
         <div class="automation-note">
             Daily mode ignores Date and uses only selected Working Days + Time. Date mode sends only on that specific date and time.
+        </div>
+
+        <div class="automation-card-grid" style="margin-top:12px;">
+            <div class="automation-card">
+                <div class="automation-card-head">
+                    <div>
+                        <div class="automation-client-name">Custom Email Automation</div>
+                        <div class="automation-client-email">Compose, schedule, and deliver a one-off or recurring email</div>
+                    </div>
+                    <div class="automation-card-status">Status: Draft</div>
+                </div>
+
+                <div class="automation-row">
+                    <div class="automation-field">
+                        <label class="automation-label" for="custom-automation-name">Automation Name</label>
+                        <input class="automation-input" id="custom-automation-name" type="text" placeholder="Invoice Reminder - Acme">
+                    </div>
+                    <div class="automation-field">
+                        <label class="automation-label" for="custom-automation-recipient">Send To</label>
+                        <input class="automation-input" id="custom-automation-recipient" type="email" placeholder="client@example.com">
+                    </div>
+                </div>
+
+                <div class="automation-field">
+                    <label class="automation-label" for="custom-automation-subject">Subject</label>
+                    <input class="automation-input" id="custom-automation-subject" type="text" placeholder="Quick check-in before Friday">
+                </div>
+
+                <div class="automation-field">
+                    <label class="automation-label" for="custom-automation-message">Message</label>
+                    <textarea class="automation-input automation-textarea" id="custom-automation-message" placeholder="Add the email body here..."></textarea>
+                </div>
+
+                <div class="automation-row">
+                    <div class="automation-field">
+                        <label class="automation-label" for="custom-automation-mode">Mode</label>
+                        <select class="automation-select automation-input" id="custom-automation-mode">
+                            <option value="daily">Daily</option>
+                            <option value="date">Date</option>
+                        </select>
+                    </div>
+                    <div class="automation-field">
+                        <label class="automation-label" for="custom-automation-time">Send Time</label>
+                        <input class="automation-input automation-time-input" id="custom-automation-time" type="time" value="09:00">
+                    </div>
+                </div>
+
+                <div class="automation-row">
+                    <div class="automation-field">
+                        <label class="automation-label" for="custom-automation-date">Date</label>
+                        <input class="automation-input" id="custom-automation-date" type="date">
+                    </div>
+                    <div class="automation-field">
+                        <label class="automation-label">Working Days</label>
+                        <div class="automation-day-tags">
+                            <button type="button" class="automation-day-tag active">Mon</button>
+                            <button type="button" class="automation-day-tag active">Tue</button>
+                            <button type="button" class="automation-day-tag active">Wed</button>
+                            <button type="button" class="automation-day-tag active">Thu</button>
+                            <button type="button" class="automation-day-tag active">Fri</button>
+                            <button type="button" class="automation-day-tag">Sat</button>
+                            <button type="button" class="automation-day-tag">Sun</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="automation-row">
+                    <div class="automation-field">
+                        <label class="automation-enabled-wrap">
+                            <input type="checkbox" checked>
+                            Enabled
+                        </label>
+                    </div>
+                    <div class="automation-field" style="text-align:right;">
+                        <button type="button" class="btn btn-primary">
+                            <i class="fas fa-calendar-check"></i>
+                            Schedule Email
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="automation-test-card">
