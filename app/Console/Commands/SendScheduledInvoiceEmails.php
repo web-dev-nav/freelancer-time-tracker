@@ -88,10 +88,12 @@ class SendScheduledInvoiceEmails extends Command
 
                 // Email subject and body
                 $defaultCompanyName = $companySettings['invoice_company_name'] ?? config('app.name');
-                $subject = "Invoice {$invoice->invoice_number} from " . $defaultCompanyName;
+                $subject = $invoice->scheduled_email_subject
+                    ?: "Invoice {$invoice->invoice_number} from " . $defaultCompanyName;
 
                 // Generate detailed message with payment instructions (same as regular send)
-                $message = $this->generateInvoiceEmailMessage($invoice, $companySettings);
+                $message = $invoice->scheduled_email_message
+                    ?: $this->generateInvoiceEmailMessage($invoice, $companySettings);
                 $htmlMessage = $this->convertToHtmlEmail($message);
                 $htmlMessage = $this->injectTrackingPixel($htmlMessage, $invoice);
 
@@ -115,6 +117,8 @@ class SendScheduledInvoiceEmails extends Command
 
                 // Clear scheduled send time
                 $invoice->scheduled_send_at = null;
+                $invoice->scheduled_email_subject = null;
+                $invoice->scheduled_email_message = null;
                 $invoice->save();
 
                 // Log history

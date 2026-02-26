@@ -37,6 +37,8 @@ class Invoice extends Model
         'description',
         'sent_at',
         'scheduled_send_at',
+        'scheduled_email_subject',
+        'scheduled_email_message',
         'reminder_send_at',
         'paid_at',
         'cancelled_at',

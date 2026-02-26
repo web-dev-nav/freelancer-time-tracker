@@ -1006,8 +1006,6 @@ export async function showSendInvoiceModal(invoiceId) {
 
             document.getElementById('send-invoice-id').value = invoiceId;
             document.getElementById('send-invoice-email').value = response.client_email || '';
-            document.getElementById('send-invoice-subject').value =
-                `Invoice ${response.invoice_number} from ${companyName}`;
             const dueDateInput = document.getElementById('invoice-due-date');
             if (dueDateInput) {
                 dueDateInput.value = response.due_date || '';
@@ -1042,7 +1040,10 @@ export async function showSendInvoiceModal(invoiceId) {
 
             // Generate and pre-fill the email message
             const emailBody = await generateInvoiceEmailBody(response);
-            document.getElementById('send-invoice-message').value = emailBody;
+            document.getElementById('send-invoice-message').value = response.scheduled_email_message || emailBody;
+            document.getElementById('send-invoice-subject').value =
+                response.scheduled_email_subject ||
+                `Invoice ${response.invoice_number} from ${companyName}`;
 
             document.getElementById('send-invoice-modal').classList.add('show');
             document.getElementById('modal-overlay').classList.add('show');

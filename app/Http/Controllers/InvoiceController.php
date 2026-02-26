@@ -605,6 +605,8 @@ class InvoiceController extends Controller
         if ($scheduledTime) {
             $invoice->scheduled_send_at = $scheduledTime;
             $invoice->client_email = $recipientEmail; // Save email for later sending
+            $invoice->scheduled_email_subject = $request->subject ?? null;
+            $invoice->scheduled_email_message = $request->message ?? null;
             if ($reminderTime) {
                 $invoice->reminder_send_at = $reminderTime;
             }
@@ -749,10 +751,14 @@ class InvoiceController extends Controller
             if ($invoice->scheduled_send_at) {
                 $invoice->scheduled_send_at = null;
             }
+            if ($invoice->scheduled_email_subject || $invoice->scheduled_email_message) {
+                $invoice->scheduled_email_subject = null;
+                $invoice->scheduled_email_message = null;
+            }
             if ($invoice->reminder_send_at) {
                 $invoice->reminder_send_at = null;
             }
-            if ($invoice->isDirty(['scheduled_send_at', 'reminder_send_at'])) {
+            if ($invoice->isDirty(['scheduled_send_at', 'scheduled_email_subject', 'scheduled_email_message', 'reminder_send_at'])) {
                 $invoice->save();
             }
 
@@ -802,10 +808,14 @@ class InvoiceController extends Controller
             if ($invoice->scheduled_send_at) {
                 $invoice->scheduled_send_at = null;
             }
+            if ($invoice->scheduled_email_subject || $invoice->scheduled_email_message) {
+                $invoice->scheduled_email_subject = null;
+                $invoice->scheduled_email_message = null;
+            }
             if ($invoice->reminder_send_at) {
                 $invoice->reminder_send_at = null;
             }
-            if ($invoice->isDirty(['scheduled_send_at', 'reminder_send_at'])) {
+            if ($invoice->isDirty(['scheduled_send_at', 'scheduled_email_subject', 'scheduled_email_message', 'reminder_send_at'])) {
                 $invoice->save();
             }
 
@@ -847,6 +857,8 @@ class InvoiceController extends Controller
         if ($kind === 'send' || $kind === 'all') {
             if ($invoice->scheduled_send_at) {
                 $invoice->scheduled_send_at = null;
+                $invoice->scheduled_email_subject = null;
+                $invoice->scheduled_email_message = null;
                 $changed = true;
                 $invoice->logHistory('schedule_cancelled', 'Invoice scheduled send cancelled');
             }
