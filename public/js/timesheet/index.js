@@ -308,8 +308,16 @@ function setupHistoryButtonListeners() {
             e.preventDefault();
             e.stopPropagation();
 
-            // Find which modal is currently open and close it
             const openEditModal = document.querySelector('#edit-log-modal.show');
+            const editLogId = document.getElementById('edit-log-id');
+            const isCreateMode = !!(openEditModal && editLogId && !editLogId.value);
+
+            if (isCreateMode) {
+                return;
+            }
+
+            // Find which modal is currently open and close it
+            const openEditModalForClose = document.querySelector('#edit-log-modal.show');
             const openViewModal = document.querySelector('#view-details-modal.show');
             const openClockOutModal = document.querySelector('#clock-out-modal.show');
             const openProjectModal = document.querySelector('#project-modal.show');
@@ -320,7 +328,7 @@ function setupHistoryButtonListeners() {
             const openInvoiceHistoryModal = document.querySelector('#invoice-history-modal.show');
             const openSettingsModal = document.querySelector('#settings-modal.show');
 
-            if (openEditModal && typeof window.hideEditLogModal === 'function') {
+            if (openEditModalForClose && typeof window.hideEditLogModal === 'function') {
                 window.hideEditLogModal();
             } else if (openViewModal && typeof window.hideViewDetailsModal === 'function') {
                 window.hideViewDetailsModal();

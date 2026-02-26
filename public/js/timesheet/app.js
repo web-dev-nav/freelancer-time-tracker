@@ -115,6 +115,14 @@ export function setupEventListeners() {
     const modalOverlay = document.getElementById('modal-overlay');
     if (modalOverlay) {
         modalOverlay.addEventListener('click', function() {
+            const editModalOpen = document.querySelector('#edit-log-modal.show');
+            const editLogId = document.getElementById('edit-log-id');
+            const isCreateMode = !!(editModalOpen && editLogId && !editLogId.value);
+
+            if (isCreateMode) {
+                return;
+            }
+
             hideClockOutModal();
             hideEditLogModal();
             if (typeof window.hideSettingsModal === 'function') {
