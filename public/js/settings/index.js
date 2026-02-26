@@ -438,6 +438,7 @@ function renderDailyActivityScheduleTable() {
             return `<button type="button" class="automation-tag ${activeClass}" data-column-tag="${option.key}" aria-pressed="${selectedColumns.has(option.key) ? 'true' : 'false'}">${escapeHtml(option.label)}</button>`;
         }).join('');
         const lastSent = escapeHtml(row.last_sent_date || '-');
+        const ccEmails = escapeHtml(row.cc_emails || '');
 
         return `
             <div class="automation-card" data-schedule-index="${index}">
@@ -495,6 +496,18 @@ function renderDailyActivityScheduleTable() {
                 </div>
 
                 <div class="automation-field">
+                    <label class="automation-label">CC (optional)</label>
+                    <input
+                        class="automation-input"
+                        type="text"
+                        data-schedule-cc
+                        data-index="${index}"
+                        value="${ccEmails}"
+                        placeholder="cc@client.com, teammate@company.com"
+                    >
+                </div>
+
+                <div class="automation-field">
                     <label class="automation-label">Activity Columns</label>
                     <div class="automation-tags" data-schedule-columns data-index="${index}">
                         ${activityTags}
@@ -522,6 +535,7 @@ function collectDailyActivityClientSchedules() {
         const sendDateEl = card.querySelector('[data-schedule-date]');
         const workingDaysEl = card.querySelector('[data-schedule-working-days]');
         const subjectEl = card.querySelector('[data-schedule-subject]');
+        const ccEl = card.querySelector('[data-schedule-cc]');
         const columnsEl = card.querySelector('[data-schedule-columns]');
 
         if (!baseRow || !enabledEl || !sendTimeEl) {
@@ -548,6 +562,7 @@ function collectDailyActivityClientSchedules() {
                 ).join(',')
                 : 'mon,tue,wed,thu,fri',
             subject: (subjectEl?.value || '').trim() || null,
+            cc_emails: (ccEl?.value || '').trim() || null,
             activity_columns: columnsEl
                 ? normalizeActivityColumns(
                     Array.from(columnsEl.querySelectorAll('[data-column-tag].active'))

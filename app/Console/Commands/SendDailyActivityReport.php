@@ -118,6 +118,8 @@ class SendDailyActivityReport extends Command
             $activityColumns = $this->parseActivityColumns((string) ($schedule->activity_columns ?? ''));
 
             try {
+                $ccRecipients = $this->parseRecipients((string) ($schedule->cc_emails ?? ''));
+
                 Mail::mailer($mailerConfig['mailer'])->send('emails.daily-activity-report', [
                     'reportDate' => $reportDate,
                     'timezone' => $timezone,
@@ -126,9 +128,13 @@ class SendDailyActivityReport extends Command
                     'activityColumns' => $activityColumns,
                     'clientName' => $clientName !== '' ? $clientName : null,
                     'clientEmail' => $clientEmail,
-                ], function ($message) use ($clientEmail, $subject, $mailerConfig): void {
+                ], function ($message) use ($clientEmail, $subject, $mailerConfig, $ccRecipients): void {
                     $message->to([$clientEmail])
                         ->subject($subject);
+
+                    if (!empty($ccRecipients)) {
+                        $message->cc($ccRecipients);
+                    }
 
                     if ($mailerConfig['from_address']) {
                         $message->from(

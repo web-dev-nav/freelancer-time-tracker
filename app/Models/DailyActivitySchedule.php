@@ -19,6 +19,7 @@ class DailyActivitySchedule extends Model
         'working_days',
         'subject',
         'activity_columns',
+        'cc_emails',
         'last_sent_date',
     ];
 

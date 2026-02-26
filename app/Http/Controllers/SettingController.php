@@ -146,6 +146,7 @@ class SettingController extends Controller
                 'daily_activity_client_schedules.*.working_days' => 'nullable|string|max:255',
                 'daily_activity_client_schedules.*.subject' => 'nullable|string|max:255',
                 'daily_activity_client_schedules.*.activity_columns' => 'nullable|string|max:255',
+                'daily_activity_client_schedules.*.cc_emails' => 'nullable|string|max:2000',
                 // SECURITY: Validate Stripe key formats
                 'stripe_publishable_key'  => ['nullable', 'string', 'max:255', 'regex:/^(pk_(test|live)_[a-zA-Z0-9]+)?$/'],
                 'stripe_secret_key'       => ['nullable', 'string', 'max:255', 'regex:/^(sk_(test|live)_[a-zA-Z0-9]+)?$/'],
@@ -561,7 +562,7 @@ class SettingController extends Controller
     /**
      * Return distinct clients from projects merged with configured schedules.
      *
-     * @return array<int, array{client_email: string, client_name: string|null, enabled: bool, schedule_type: string, send_time: string, send_date: string|null, working_days: string, subject: string|null, activity_columns: string, last_sent_date: string|null}>
+     * @return array<int, array{client_email: string, client_name: string|null, enabled: bool, schedule_type: string, send_time: string, send_date: string|null, working_days: string, subject: string|null, activity_columns: string, cc_emails: string|null, last_sent_date: string|null}>
      */
     protected function getClientSchedulesForAutomation(): array
     {
@@ -573,6 +574,7 @@ class SettingController extends Controller
         $hasWorkingDaysColumn = Schema::hasColumn('daily_activity_schedules', 'working_days');
         $hasSubjectColumn = Schema::hasColumn('daily_activity_schedules', 'subject');
         $hasActivityColumnsColumn = Schema::hasColumn('daily_activity_schedules', 'activity_columns');
+        $hasCcEmailsColumn = Schema::hasColumn('daily_activity_schedules', 'cc_emails');
 
         $profiles = $this->knownClientProfiles();
         $schedules = DailyActivitySchedule::query()
@@ -605,6 +607,7 @@ class SettingController extends Controller
                 'working_days' => $hasWorkingDaysColumn ? ((string) ($schedule?->working_days ?? 'mon,tue,wed,thu,fri')) : 'mon,tue,wed,thu,fri',
                 'subject' => $hasSubjectColumn ? ($schedule?->subject) : null,
                 'activity_columns' => $hasActivityColumnsColumn ? ((string) ($schedule?->activity_columns ?? '')) : 'summary_sessions,summary_hours,date,project,clock_in,clock_out,duration,description',
+                'cc_emails' => $hasCcEmailsColumn ? ($schedule?->cc_emails) : null,
                 'last_sent_date' => $schedule?->last_sent_date?->toDateString(),
             ];
         }
@@ -629,6 +632,7 @@ class SettingController extends Controller
         $hasWorkingDaysColumn = Schema::hasColumn('daily_activity_schedules', 'working_days');
         $hasSubjectColumn = Schema::hasColumn('daily_activity_schedules', 'subject');
         $hasActivityColumnsColumn = Schema::hasColumn('daily_activity_schedules', 'activity_columns');
+        $hasCcEmailsColumn = Schema::hasColumn('daily_activity_schedules', 'cc_emails');
 
         foreach ($rows as $row) {
             $email = strtolower(trim((string) ($row['client_email'] ?? '')));
@@ -647,6 +651,7 @@ class SettingController extends Controller
             $name = trim((string) ($row['client_name'] ?? ''));
             $subject = trim((string) ($row['subject'] ?? ''));
             $activityColumns = $this->sanitizeActivityColumns((string) ($row['activity_columns'] ?? ''));
+            $ccEmails = trim((string) ($row['cc_emails'] ?? ''));
             $payload = [
                 'client_name' => $name !== '' ? $name : null,
                 'enabled' => !empty($row['enabled']),
@@ -666,6 +671,9 @@ class SettingController extends Controller
             }
             if ($hasActivityColumnsColumn) {
                 $payload['activity_columns'] = $activityColumns;
+            }
+            if ($hasCcEmailsColumn) {
+                $payload['cc_emails'] = $ccEmails !== '' ? $ccEmails : null;
             }
 
             $existing = DailyActivitySchedule::query()
