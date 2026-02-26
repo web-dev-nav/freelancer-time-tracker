@@ -44,7 +44,7 @@
                         <i class="fas fa-edit"></i>
                         Work Description
                     </label>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="improve-work-description-btn" onclick="improveWorkDescription()">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="improve-work-description-btn" onclick="window.improveWorkDescription && window.improveWorkDescription()">
                         <i class="fas fa-magic"></i>
                         Improve
                     </button>

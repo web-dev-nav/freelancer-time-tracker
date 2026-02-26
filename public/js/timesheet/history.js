@@ -405,6 +405,8 @@ export async function improveWorkDescription() {
     }
 }
 
+window.improveWorkDescription = improveWorkDescription;
+
 /**
  * Hide the edit log modal
  */

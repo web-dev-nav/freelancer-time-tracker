@@ -36,10 +36,13 @@
 
 .form-label-row .form-label {
     margin-bottom: 0;
+    flex: 1;
 }
 
 .form-label-row .btn {
     white-space: nowrap;
+    padding: 4px 10px;
+    font-size: 0.72rem;
 }
 
 
