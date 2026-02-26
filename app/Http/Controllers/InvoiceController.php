@@ -872,6 +872,81 @@ class InvoiceController extends Controller
     }
 
     /**
+     * Duplicate an invoice with the same content.
+     */
+    public function duplicate($id)
+    {
+        $original = Invoice::with(['items', 'project'])->findOrFail($id);
+
+        try {
+            DB::beginTransaction();
+
+            $duplicate = $original->replicate([
+                'invoice_number',
+                'status',
+                'sent_at',
+                'scheduled_send_at',
+                'reminder_send_at',
+                'paid_at',
+                'cancelled_at',
+                'view_token',
+                'opened_at',
+                'opened_count',
+                'opened_ip',
+                'opened_user_agent',
+            ]);
+
+            $duplicate->invoice_number = $duplicate->generateInvoiceNumber();
+            $duplicate->status = 'draft';
+            $duplicate->sent_at = null;
+            $duplicate->scheduled_send_at = null;
+            $duplicate->reminder_send_at = null;
+            $duplicate->paid_at = null;
+            $duplicate->cancelled_at = null;
+            $duplicate->opened_at = null;
+            $duplicate->opened_count = 0;
+            $duplicate->opened_ip = null;
+            $duplicate->opened_user_agent = null;
+            $duplicate->ensureViewToken();
+            $duplicate->save();
+
+            foreach ($original->items as $item) {
+                InvoiceItem::create([
+                    'invoice_id' => $duplicate->id,
+                    'time_log_id' => $item->time_log_id,
+                    'description' => $item->description,
+                    'work_date' => $item->work_date,
+                    'hours' => $item->hours,
+                    'rate' => $item->rate,
+                    'amount' => $item->amount,
+                ]);
+            }
+
+            $duplicate->calculateTotals();
+            $duplicate->logHistory('created', 'Invoice duplicated from ' . $original->invoice_number, [
+                'invoice_number' => $duplicate->invoice_number,
+                'source_invoice_id' => $original->id,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Invoice duplicated successfully.',
+                'invoice' => $duplicate->load(['project', 'items']),
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            report($e);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to duplicate invoice.',
+            ], 500);
+        }
+    }
+
+    /**
      * Get invoice statistics
      */
     public function stats(Request $request)

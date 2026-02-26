@@ -242,7 +242,7 @@ export function displayInvoices(invoices) {
         }
 
         return `
-            <div class="invoice-card" style="background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); border-left: 4px solid ${
+            <div class="invoice-card invoice-card-compact" style="background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); border-left: 4px solid ${
                 isScheduled ? '#8b5cf6' :
                 invoice.status === 'paid' ? '#10b981' :
                 invoice.status === 'sent' ? '#f59e0b' :
@@ -250,10 +250,10 @@ export function displayInvoices(invoices) {
                 isOverdue ? '#dc2626' : '#6b7280'
             }; margin-bottom: 16px; transition: box-shadow 0.2s;">
 
-                <div class="invoice-card-header" style="padding: 16px; border-bottom: 1px solid #f3f4f6;">
-                    <div style="display: flex; justify-content: space-between; align-items: start; gap: 16px; margin-bottom: 12px;">
+                <div class="invoice-card-header" style="padding: 12px; border-bottom: 1px solid #f3f4f6;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; gap: 12px; margin-bottom: 8px;">
                         <div style="flex: 1;">
-                            <h3 style="font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 4px 0;">${invoice.invoice_number}</h3>
+                            <h3 style="font-size: 16px; font-weight: 700; color: #111827; margin: 0 0 4px 0;">${invoice.invoice_number}</h3>
                             <div class="invoice-status-meta">
                                 ${isScheduled ? `
                                     <span class="badge" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; font-size: 11px; padding: 4px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
@@ -267,9 +267,9 @@ export function displayInvoices(invoices) {
                                 ${viewedIndicator}
                             </div>
                         </div>
-                        <div style="text-align: right; min-width: 120px;">
+                        <div style="text-align: right; min-width: 100px;">
                             <div style="font-size: 11px; color: #6b7280; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Total</div>
-                            <div style="font-size: 24px; font-weight: 800; color: #111827; line-height: 1;">$${parseFloat(invoice.total).toFixed(2)}</div>
+                            <div style="font-size: 20px; font-weight: 800; color: #111827; line-height: 1;">$${parseFloat(invoice.total).toFixed(2)}</div>
                         </div>
                     </div>
 
@@ -282,15 +282,15 @@ export function displayInvoices(invoices) {
                     </div>
                 </div>
 
-                <div class="invoice-card-body" style="padding: 16px;">
+                <div class="invoice-card-body" style="padding: 12px;">
                     ${invoice.description ? `
-                        <div style="padding: 10px 12px; background: #f9fafb; border-radius: 6px; margin-bottom: 12px;">
+                        <div style="padding: 8px 10px; background: #f9fafb; border-radius: 6px; margin-bottom: 10px;">
                             <p style="margin: 0; color: #4b5563; font-size: 13px; font-style: italic;">${invoice.description}</p>
                         </div>
                     ` : ''}
 
                     ${isScheduled ? `
-                        <div style="padding: 10px 12px; background: linear-gradient(135deg, #f3e8ff, #e9d5ff); border-radius: 6px; margin-bottom: 12px; border-left: 3px solid #8b5cf6;">
+                        <div style="padding: 8px 10px; background: linear-gradient(135deg, #f3e8ff, #e9d5ff); border-radius: 6px; margin-bottom: 10px; border-left: 3px solid #8b5cf6;">
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                                 <i class="fas fa-clock" style="color: #7c3aed; font-size: 16px;"></i>
                                 <div>
@@ -328,7 +328,7 @@ export function displayInvoices(invoices) {
                         </div>
                     ` : ''}
 
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 12px;">
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px;">
                         <div class="invoice-detail">
                             <i class="fas fa-calendar" style="color: #3b82f6;"></i>
                             <span style="font-size: 13px; color: #6b7280;">Invoice: <strong style="color: #111827;">${invoice.formatted_invoice_date || invoice.invoice_date}</strong></span>
@@ -361,7 +361,7 @@ export function displayInvoices(invoices) {
                         ` : ''}
                     </div>
 
-                    <div style="background: #f9fafb; border-radius: 6px; padding: 12px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                    <div style="background: #f9fafb; border-radius: 6px; padding: 10px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
                         <div>
                             <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Subtotal</div>
                             <div style="font-size: 16px; font-weight: 700; color: #374151;">$${parseFloat(invoice.subtotal || 0).toFixed(2)}</div>
@@ -372,19 +372,19 @@ export function displayInvoices(invoices) {
                         </div>
                         <div>
                             <div style="font-size: 11px; color: #111827; text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">Total</div>
-                            <div style="font-size: 18px; font-weight: 800; color: #111827;">$${parseFloat(invoice.total).toFixed(2)}</div>
+                            <div style="font-size: 16px; font-weight: 800; color: #111827;">$${parseFloat(invoice.total).toFixed(2)}</div>
                         </div>
                     </div>
 
                     ${invoice.notes ? `
-                        <div style="margin-top: 12px; padding: 10px 12px; background: #fffbeb; border-radius: 6px; border-left: 3px solid #f59e0b;">
+                        <div style="margin-top: 10px; padding: 8px 10px; background: #fffbeb; border-radius: 6px; border-left: 3px solid #f59e0b;">
                             <div style="font-size: 10px; color: #92400e; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.5px;">Note</div>
                             <p style="margin: 0; color: #78350f; font-size: 13px; line-height: 1.5;">${invoice.notes}</p>
                         </div>
                     ` : ''}
 
                     ${invoice.stripe_payment_link && invoice.status !== 'paid' && invoice.status !== 'cancelled' ? `
-                        <div style="margin-top: 12px; padding: 14px; background: linear-gradient(135deg, #635BFF 0%, #5046E5 100%); border-radius: 8px; box-shadow: 0 4px 12px rgba(99, 91, 255, 0.2);">
+                        <div style="margin-top: 10px; padding: 10px; background: linear-gradient(135deg, #635BFF 0%, #5046E5 100%); border-radius: 8px; box-shadow: 0 4px 12px rgba(99, 91, 255, 0.2);">
                             <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
                                 <div style="flex: 1;">
                                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
@@ -415,10 +415,15 @@ export function displayInvoices(invoices) {
                     ` : ''}
                 </div>
 
-                <div class="invoice-card-actions" style="padding: 12px 16px; background: #f9fafb; border-top: 1px solid #e5e7eb; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end;">
+                <div class="invoice-card-actions" style="padding: 10px 12px; background: #f9fafb; border-top: 1px solid #e5e7eb; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end;">
                     ${isAuthor && invoice.status === 'draft' ? `
                         <button class="btn btn-sm btn-primary" onclick="showEditInvoiceModal(${invoice.id})" title="Edit Invoice">
                             <i class="fas fa-edit"></i>
+                        </button>
+                    ` : ''}
+                    ${isAuthor ? `
+                        <button class="btn btn-sm btn-secondary" onclick="duplicateInvoice(${invoice.id})" title="Duplicate Invoice">
+                            <i class="fas fa-clone"></i>
                         </button>
                     ` : ''}
                     <button class="btn btn-sm btn-secondary" onclick="downloadInvoicePDF(${invoice.id})" title="Download PDF">
@@ -1336,6 +1341,33 @@ export function downloadInvoicePDF(invoiceId) {
  */
 export function previewInvoicePDF(invoiceId) {
     window.open(`/api/invoices/${invoiceId}/pdf/preview`, '_blank');
+}
+
+/**
+ * Duplicate invoice
+ */
+export async function duplicateInvoice(invoiceId) {
+    if (!invoiceId) return;
+
+    if (!confirm('Duplicate this invoice? A new draft will be created.')) {
+        return;
+    }
+
+    try {
+        const response = await window.api.request(`/api/invoices/${invoiceId}/duplicate`, {
+            method: 'POST'
+        });
+
+        if (response?.success) {
+            window.notify.success('Invoice duplicated successfully.');
+            loadInvoices();
+            loadInvoiceStats();
+        } else {
+            window.notify.error(response?.message || 'Failed to duplicate invoice.');
+        }
+    } catch (error) {
+        window.notify.error('Failed to duplicate invoice: ' + error.message);
+    }
 }
 
 /**
