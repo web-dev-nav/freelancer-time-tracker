@@ -366,6 +366,46 @@ export function showEditLogModal() {
 }
 
 /**
+ * Improve work description using OpenAI
+ */
+export async function improveWorkDescription() {
+    const textarea = document.getElementById('edit-work-description');
+    const button = document.getElementById('improve-work-description-btn');
+
+    if (!textarea || !button) return;
+
+    const originalText = textarea.value.trim();
+
+    if (!originalText) {
+        window.notify.error('Please enter a work description first.');
+        return;
+    }
+
+    const originalButtonHtml = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Improving...';
+
+    try {
+        const response = await window.api.request('/api/timesheet/improve-description', {
+            method: 'POST',
+            body: JSON.stringify({ description: originalText })
+        });
+
+        if (response.success && response.improved_text) {
+            textarea.value = response.improved_text;
+            window.notify.success('Description improved.');
+        } else {
+            window.notify.error(response.message || 'Failed to improve description.');
+        }
+    } catch (error) {
+        window.notify.error('Failed to improve description: ' + error.message);
+    } finally {
+        button.disabled = false;
+        button.innerHTML = originalButtonHtml;
+    }
+}
+
+/**
  * Hide the edit log modal
  */
 export function hideEditLogModal() {

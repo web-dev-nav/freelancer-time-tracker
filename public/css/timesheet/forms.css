@@ -26,6 +26,22 @@
     color: var(--primary-color);
 }
 
+.form-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.form-label-row .form-label {
+    margin-bottom: 0;
+}
+
+.form-label-row .btn {
+    white-space: nowrap;
+}
+
 
 /* ============================================
    Form Controls (Inputs, Textareas, Selects)

@@ -60,6 +60,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/logs/{id}', [TimeLogController::class, 'getLog'])->name('get-log');
         Route::put('/logs/{id}', [TimeLogController::class, 'updateLog'])->middleware('author')->name('update-log');
         Route::delete('/logs/{id}', [TimeLogController::class, 'deleteLog'])->middleware('author')->name('delete-log');
+        Route::post('/improve-description', [TimeLogController::class, 'improveDescription'])
+            ->middleware(['author', 'throttle:10,1'])
+            ->name('improve-description');
 
         // Reports and analytics
         Route::get('/report', [TimeLogController::class, 'generateReport'])->name('report');

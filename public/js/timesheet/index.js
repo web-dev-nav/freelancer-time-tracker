@@ -45,6 +45,7 @@ window.hideViewDetailsModal = History.hideViewDetailsModal;
 window.hideEditLogModal = History.hideEditLogModal;
 window.showEditLogModal = History.showEditLogModal;
 window.updateLog = History.updateLog;
+window.improveWorkDescription = History.improveWorkDescription;
 
 
 // Reports functions (called from HTML)
@@ -311,8 +312,9 @@ function setupHistoryButtonListeners() {
             const openEditModal = document.querySelector('#edit-log-modal.show');
             const editLogId = document.getElementById('edit-log-id');
             const isCreateMode = !!(openEditModal && editLogId && !editLogId.value);
+            const sendInvoiceModalOpen = document.querySelector('#send-invoice-modal.show');
 
-            if (isCreateMode) {
+            if (isCreateMode || sendInvoiceModalOpen) {
                 return;
             }
 

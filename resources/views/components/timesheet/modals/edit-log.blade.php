@@ -39,10 +39,16 @@
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="edit-work-description">
-                    <i class="fas fa-edit"></i>
-                    Work Description
-                </label>
+                <div class="form-label-row">
+                    <label class="form-label" for="edit-work-description">
+                        <i class="fas fa-edit"></i>
+                        Work Description
+                    </label>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="improve-work-description-btn" onclick="improveWorkDescription()">
+                        <i class="fas fa-magic"></i>
+                        Improve
+                    </button>
+                </div>
                 <textarea id="edit-work-description" class="form-control" rows="6"
                          placeholder="Describe what you accomplished during this work session..." required></textarea>
             </div>

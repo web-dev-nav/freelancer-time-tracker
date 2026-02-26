@@ -12,6 +12,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\TimeLogExport;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 
 class TimeLogController extends Controller
 {
@@ -218,6 +219,67 @@ class TimeLogController extends Controller
                 ]
             ]
         ]);
+    }
+
+    /**
+     * Improve a work description using OpenAI.
+     */
+    public function improveDescription(Request $request)
+    {
+        $request->validate([
+            'description' => 'required|string|min:3|max:2000',
+        ]);
+
+        $apiKey = config('services.openai.key');
+        $model = config('services.openai.model', 'gpt-4o-mini');
+
+        if (!$apiKey) {
+            return response()->json([
+                'success' => false,
+                'message' => 'OpenAI API key is not configured.',
+            ], 400);
+        }
+
+        $systemPrompt = 'You improve work log descriptions. Rewrite the text in clear, professional, and concise language. Preserve all facts, avoid adding new information, keep the original tense, and output only the improved description.';
+
+        try {
+            $response = Http::withToken($apiKey)
+                ->post('https://api.openai.com/v1/chat/completions', [
+                    'model' => $model,
+                    'messages' => [
+                        ['role' => 'developer', 'content' => $systemPrompt],
+                        ['role' => 'user', 'content' => $request->input('description')],
+                    ],
+                    'temperature' => 0.4,
+                    'max_tokens' => 200,
+                ]);
+
+            if (!$response->successful()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'OpenAI request failed.',
+                ], 502);
+            }
+
+            $improved = data_get($response->json(), 'choices.0.message.content');
+
+            if (!$improved) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'OpenAI did not return an improved description.',
+                ], 502);
+            }
+
+            return response()->json([
+                'success' => true,
+                'improved_text' => trim($improved),
+            ]);
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => 'OpenAI request failed: ' . $exception->getMessage(),
+            ], 502);
+        }
     }
 
     /**
