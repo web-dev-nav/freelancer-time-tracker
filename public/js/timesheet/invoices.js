@@ -1007,6 +1007,33 @@ export async function showSendInvoiceModal(invoiceId) {
             if (dueDateInput) {
                 dueDateInput.value = response.due_date || '';
             }
+            const scheduleDateInput = document.getElementById('invoice-schedule-date');
+            const scheduleTimeInput = document.getElementById('invoice-schedule-time');
+            if (response.scheduled_send_at && scheduleDateInput && scheduleTimeInput) {
+                const scheduledDate = new Date(response.scheduled_send_at);
+                if (!Number.isNaN(scheduledDate.getTime())) {
+                    scheduleDateInput.value = scheduledDate.toISOString().slice(0, 10);
+                    scheduleTimeInput.value = scheduledDate.toISOString().slice(11, 16);
+                    const specificInput = document.querySelector('input[name="invoice-schedule-mode"][value="specific"]');
+                    if (specificInput) {
+                        specificInput.checked = true;
+                    }
+                }
+            } else {
+                if (scheduleDateInput) scheduleDateInput.value = '';
+            }
+            const reminderDateInput = document.getElementById('invoice-reminder-date');
+            const reminderTimeInput = document.getElementById('invoice-reminder-time');
+            if (response.reminder_send_at && reminderDateInput && reminderTimeInput) {
+                const reminderDate = new Date(response.reminder_send_at);
+                if (!Number.isNaN(reminderDate.getTime())) {
+                    reminderDateInput.value = reminderDate.toISOString().slice(0, 10);
+                    reminderTimeInput.value = reminderDate.toISOString().slice(11, 16);
+                }
+            } else {
+                if (reminderDateInput) reminderDateInput.value = '';
+                if (reminderTimeInput) reminderTimeInput.value = '09:00';
+            }
 
             // Generate and pre-fill the email message
             const emailBody = await generateInvoiceEmailBody(response);
@@ -1017,10 +1044,38 @@ export async function showSendInvoiceModal(invoiceId) {
             document.body.style.overflow = 'hidden';
 
             setupInvoiceScheduleControls();
+            setInvoiceScheduleState(response);
         }
     } catch (error) {
         window.notify.error('Failed to load invoice: ' + error.message);
     }
+}
+
+function setInvoiceScheduleState(invoice) {
+    const scheduleModeInputs = document.querySelectorAll('input[name="invoice-schedule-mode"]');
+    const scheduleDate = document.getElementById('invoice-schedule-date');
+    const scheduleTime = document.getElementById('invoice-schedule-time');
+    const reminderDate = document.getElementById('invoice-reminder-date');
+    const reminderTime = document.getElementById('invoice-reminder-time');
+    const isLocked = ['paid', 'cancelled'].includes(String(invoice?.status || '').toLowerCase());
+
+    if (isLocked) {
+        const nowInput = document.querySelector('input[name="invoice-schedule-mode"][value="now"]');
+        if (nowInput) {
+            nowInput.checked = true;
+        }
+    }
+
+    scheduleModeInputs.forEach((input) => {
+        if (input.value !== 'now') {
+            input.disabled = isLocked;
+        }
+    });
+    if (scheduleDate) scheduleDate.disabled = isLocked;
+    if (scheduleTime) scheduleTime.disabled = isLocked;
+    if (reminderDate) reminderDate.disabled = isLocked;
+    if (reminderTime) reminderTime.disabled = isLocked;
+    updateInvoiceSchedulePreview();
 }
 
 /**
@@ -1041,7 +1096,7 @@ function setupInvoiceScheduleControls() {
     const dueWrap = document.getElementById('invoice-schedule-due');
     const dateInput = document.getElementById('invoice-schedule-date');
     const timeInput = document.getElementById('invoice-schedule-time');
-    const offsetSelect = document.getElementById('invoice-reminder-offset');
+    const reminderDate = document.getElementById('invoice-reminder-date');
     const reminderTime = document.getElementById('invoice-reminder-time');
     const preview = document.getElementById('invoice-schedule-preview');
     const previewText = document.getElementById('invoice-schedule-preview-text');
@@ -1056,7 +1111,7 @@ function setupInvoiceScheduleControls() {
             specificWrap.style.display = selected === 'specific' ? 'block' : 'none';
         }
         if (dueWrap) {
-            dueWrap.style.display = selected === 'due' ? 'block' : 'none';
+            dueWrap.style.display = 'block';
         }
         updateInvoiceSchedulePreview();
     };
@@ -1065,7 +1120,7 @@ function setupInvoiceScheduleControls() {
         input.addEventListener('change', updateVisibility);
     });
 
-    [dateInput, timeInput, offsetSelect, reminderTime].forEach((input) => {
+    [dateInput, timeInput, reminderDate, reminderTime].forEach((input) => {
         if (input) {
             input.addEventListener('change', updateInvoiceSchedulePreview);
         }
@@ -1103,26 +1158,6 @@ function formatLocalDateTime(dateStr, timeStr) {
     });
 }
 
-function computeReminderDateTime(dueDate, offsetDays, timeStr) {
-    if (!dueDate || !timeStr) {
-        return null;
-    }
-    const base = new Date(`${dueDate}T00:00:00`);
-    if (Number.isNaN(base.getTime())) {
-        return null;
-    }
-    base.setDate(base.getDate() - Number(offsetDays || 0));
-    const [hours, minutes] = timeStr.split(':').map((value) => Number(value || 0));
-    base.setHours(hours || 0, minutes || 0, 0, 0);
-
-    const yyyy = base.getFullYear();
-    const mm = String(base.getMonth() + 1).padStart(2, '0');
-    const dd = String(base.getDate()).padStart(2, '0');
-    const hh = String(base.getHours()).padStart(2, '0');
-    const min = String(base.getMinutes()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
-}
-
 function updateInvoiceSchedulePreview() {
     const selected = document.querySelector('input[name="invoice-schedule-mode"]:checked')?.value || 'now';
     const preview = document.getElementById('invoice-schedule-preview');
@@ -1131,39 +1166,35 @@ function updateInvoiceSchedulePreview() {
         return;
     }
 
-    if (selected === 'now') {
-        preview.style.display = 'none';
-        previewText.textContent = '';
-        return;
-    }
-
-    let scheduled = null;
-    let display = '';
+    const messages = [];
 
     if (selected === 'specific') {
         const dateStr = document.getElementById('invoice-schedule-date')?.value || '';
         const timeStr = document.getElementById('invoice-schedule-time')?.value || '';
-        scheduled = buildLocalDateTime(dateStr, timeStr);
-        display = scheduled ? formatLocalDateTime(dateStr, timeStr) : null;
-    } else if (selected === 'due') {
-        const dueDate = document.getElementById('invoice-due-date')?.value || '';
-        const offset = document.getElementById('invoice-reminder-offset')?.value || '2';
-        const timeStr = document.getElementById('invoice-reminder-time')?.value || '';
-        scheduled = computeReminderDateTime(dueDate, offset, timeStr);
-        if (scheduled) {
-            const [dateStr, timePart] = scheduled.split('T');
-            display = formatLocalDateTime(dateStr, timePart);
+        const scheduled = buildLocalDateTime(dateStr, timeStr);
+        const display = scheduled ? formatLocalDateTime(dateStr, timeStr) : null;
+        if (display) {
+            messages.push(`Invoice will send on ${display}.`);
         }
     }
 
-    if (!scheduled || !display) {
+    const reminderDateStr = document.getElementById('invoice-reminder-date')?.value || '';
+    const reminderTimeStr = document.getElementById('invoice-reminder-time')?.value || '';
+    if (reminderDateStr && reminderTimeStr) {
+        const reminderDisplay = formatLocalDateTime(reminderDateStr, reminderTimeStr);
+        if (reminderDisplay) {
+            messages.push(`Reminder will send on ${reminderDisplay}.`);
+        }
+    }
+
+    if (messages.length === 0) {
         preview.style.display = 'none';
         previewText.textContent = '';
         return;
     }
 
     preview.style.display = 'block';
-    previewText.textContent = `Will send on ${display}.`;
+    previewText.textContent = messages.join(' ');
 }
 
 /**
@@ -1177,6 +1208,7 @@ export async function sendInvoice(e) {
     const subject = document.getElementById('send-invoice-subject').value;
     const message = document.getElementById('send-invoice-message').value;
     const scheduleMode = document.querySelector('input[name="invoice-schedule-mode"]:checked')?.value || 'now';
+    const isLocked = ['paid', 'cancelled'].includes(String(currentInvoice?.status || '').toLowerCase());
 
     const data = {
         email: email,
@@ -1185,6 +1217,10 @@ export async function sendInvoice(e) {
     };
 
     if (scheduleMode === 'specific') {
+        if (isLocked) {
+            showInvoiceMessage('error', 'Scheduling is disabled for paid or cancelled invoices.');
+            return;
+        }
         const dateStr = document.getElementById('invoice-schedule-date')?.value || '';
         const timeStr = document.getElementById('invoice-schedule-time')?.value || '';
         const scheduledSendAt = buildLocalDateTime(dateStr, timeStr);
@@ -1193,16 +1229,20 @@ export async function sendInvoice(e) {
             return;
         }
         data.scheduled_send_at = scheduledSendAt;
-    } else if (scheduleMode === 'due') {
-        const dueDate = document.getElementById('invoice-due-date')?.value || '';
-        const offset = document.getElementById('invoice-reminder-offset')?.value || '2';
-        const timeStr = document.getElementById('invoice-reminder-time')?.value || '';
-        const scheduledSendAt = computeReminderDateTime(dueDate, offset, timeStr);
-        if (!scheduledSendAt) {
-            showInvoiceMessage('error', 'Unable to compute reminder time. Check due date and time.');
+    }
+
+    const reminderDate = document.getElementById('invoice-reminder-date')?.value || '';
+    const reminderTime = document.getElementById('invoice-reminder-time')?.value || '';
+    if ((reminderDate && !reminderTime) || (!reminderDate && reminderTime)) {
+        showInvoiceMessage('error', 'Please select both reminder date and time, or leave both blank.');
+        return;
+    }
+    if (reminderDate && reminderTime) {
+        if (isLocked) {
+            showInvoiceMessage('error', 'Reminders are disabled for paid or cancelled invoices.');
             return;
         }
-        data.scheduled_send_at = scheduledSendAt;
+        data.reminder_send_at = buildLocalDateTime(reminderDate, reminderTime);
     }
 
     try {

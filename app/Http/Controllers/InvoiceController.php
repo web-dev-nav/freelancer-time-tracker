@@ -547,6 +547,7 @@ class InvoiceController extends Controller
             'subject' => 'nullable|string',
             'message' => 'nullable|string',
             'scheduled_send_at' => 'nullable|date',
+            'reminder_send_at' => 'nullable|date',
         ]);
 
         if ($validator->fails()) {
@@ -562,8 +563,17 @@ class InvoiceController extends Controller
             ], 422);
         }
 
-        // Handle scheduled send
+        $scheduleLocked = in_array($invoice->status, ['paid', 'cancelled'], true);
+        $scheduledTime = null;
+        $reminderTime = null;
+
         if ($request->has('scheduled_send_at') && $request->scheduled_send_at) {
+            if ($scheduleLocked) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Scheduling is disabled for paid or cancelled invoices.',
+                ], 422);
+            }
             $scheduledTime = Carbon::parse($request->scheduled_send_at);
 
             // Check if scheduled time is in the past (with 1 minute buffer for processing time)
@@ -573,9 +583,31 @@ class InvoiceController extends Controller
                     'message' => 'Scheduled time cannot be in the past. Please select a future date/time.'
                 ], 422);
             }
+        }
 
+        if ($request->has('reminder_send_at') && $request->reminder_send_at) {
+            if ($scheduleLocked) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Reminders are disabled for paid or cancelled invoices.',
+                ], 422);
+            }
+            $reminderTime = Carbon::parse($request->reminder_send_at);
+            if ($reminderTime->lt(Carbon::now()->subMinute())) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Reminder time cannot be in the past. Please select a future date/time.'
+                ], 422);
+            }
+        }
+
+        // Handle scheduled send
+        if ($scheduledTime) {
             $invoice->scheduled_send_at = $scheduledTime;
             $invoice->client_email = $recipientEmail; // Save email for later sending
+            if ($reminderTime) {
+                $invoice->reminder_send_at = $reminderTime;
+            }
             $invoice->save();
 
             // Log history
@@ -583,6 +615,13 @@ class InvoiceController extends Controller
                 'email' => $recipientEmail,
                 'scheduled_time' => $scheduledTime->format('Y-m-d H:i:s'),
             ]);
+
+            if ($reminderTime) {
+                $invoice->logHistory('reminder_scheduled', 'Invoice reminder scheduled', [
+                    'email' => $recipientEmail,
+                    'reminder_time' => $reminderTime->format('Y-m-d H:i:s'),
+                ]);
+            }
 
             return response()->json([
                 'message' => 'Invoice scheduled to send on ' . $scheduledTime->format('M d, Y h:i A'),
@@ -662,6 +701,15 @@ class InvoiceController extends Controller
                 'subject' => $subject,
             ]);
 
+            if ($reminderTime) {
+                $invoice->reminder_send_at = $reminderTime;
+                $invoice->save();
+                $invoice->logHistory('reminder_scheduled', 'Invoice reminder scheduled', [
+                    'email' => $recipientEmail,
+                    'reminder_time' => $reminderTime->format('Y-m-d H:i:s'),
+                ]);
+            }
+
             return response()->json([
                 'message' => 'Invoice sent successfully',
                 'invoice' => $invoice->fresh(),
@@ -700,6 +748,11 @@ class InvoiceController extends Controller
             // Clear scheduled send if it was scheduled
             if ($invoice->scheduled_send_at) {
                 $invoice->scheduled_send_at = null;
+            }
+            if ($invoice->reminder_send_at) {
+                $invoice->reminder_send_at = null;
+            }
+            if ($invoice->isDirty(['scheduled_send_at', 'reminder_send_at'])) {
                 $invoice->save();
             }
 
@@ -748,6 +801,11 @@ class InvoiceController extends Controller
             // Clear scheduled send if it was scheduled
             if ($invoice->scheduled_send_at) {
                 $invoice->scheduled_send_at = null;
+            }
+            if ($invoice->reminder_send_at) {
+                $invoice->reminder_send_at = null;
+            }
+            if ($invoice->isDirty(['scheduled_send_at', 'reminder_send_at'])) {
                 $invoice->save();
             }
 
@@ -767,6 +825,50 @@ class InvoiceController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Cancel scheduled invoice send or reminder.
+     */
+    public function cancelSchedule(Request $request, $id)
+    {
+        $invoice = Invoice::findOrFail($id);
+        $kind = strtolower(trim((string) $request->get('kind', 'send')));
+
+        if (!in_array($kind, ['send', 'reminder', 'all'], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid schedule type.',
+            ], 422);
+        }
+
+        $changed = false;
+
+        if ($kind === 'send' || $kind === 'all') {
+            if ($invoice->scheduled_send_at) {
+                $invoice->scheduled_send_at = null;
+                $changed = true;
+                $invoice->logHistory('schedule_cancelled', 'Invoice scheduled send cancelled');
+            }
+        }
+
+        if ($kind === 'reminder' || $kind === 'all') {
+            if ($invoice->reminder_send_at) {
+                $invoice->reminder_send_at = null;
+                $changed = true;
+                $invoice->logHistory('reminder_cancelled', 'Invoice reminder cancelled');
+            }
+        }
+
+        if ($changed) {
+            $invoice->save();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $changed ? 'Schedule cancelled.' : 'No schedule to cancel.',
+            'invoice' => $invoice->fresh(),
+        ]);
     }
 
     /**

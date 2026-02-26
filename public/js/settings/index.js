@@ -931,6 +931,7 @@ function renderCustomEmailSchedules() {
         const scheduleType = String(schedule.schedule_type || 'date').toLowerCase();
         const sendTime = escapeHtml(schedule.send_time || '09:00');
         let scheduleSummary = '';
+        const isInvoiceSchedule = schedule.source === 'invoice';
 
         if (scheduleType === 'daily') {
             const dayKeys = normalizeWorkingDays(schedule.working_days || '');
@@ -944,11 +945,12 @@ function renderCustomEmailSchedules() {
         const sentAt = schedule.sent_at ? schedule.sent_at : '-';
 
         const bodyPreview = escapeHtml(schedule.body || '');
+        const typeBadge = isInvoiceSchedule ? '<span class="automation-pill status-scheduled" style="margin-left:6px;">invoice</span>' : '';
 
         return `
             <tr data-custom-email-id="${schedule.id}">
                 <td>
-                    <div><strong>${name}</strong></div>
+                    <div><strong>${name}</strong>${typeBadge}</div>
                     <div class="scheduler-muted">${subject}</div>
                 </td>
                 <td>
@@ -969,14 +971,10 @@ function renderCustomEmailSchedules() {
                         <button type="button" class="btn btn-secondary scheduler-icon-btn" title="Preview" data-custom-email-action="preview">
                             <i class="fas fa-eye"></i>
                         </button>
-                        ${status === 'scheduled' ? `<button type="button" class="btn btn-secondary scheduler-icon-btn" title="Edit" data-custom-email-action="edit"><i class="fas fa-pen"></i></button>` : ''}
-                        ${status === 'scheduled' ? `<button type="button" class="btn btn-secondary scheduler-icon-btn" title="Cancel" data-custom-email-action="cancel"><i class="fas fa-ban"></i></button>` : ''}
-                        <button type="button" class="btn btn-secondary scheduler-icon-btn" title="Duplicate" data-custom-email-action="duplicate">
-                            <i class="fas fa-clone"></i>
-                        </button>
-                        <button type="button" class="btn btn-secondary scheduler-icon-btn" title="Delete" data-custom-email-action="delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        ${!isInvoiceSchedule && status === 'scheduled' ? `<button type="button" class="btn btn-secondary scheduler-icon-btn" title="Edit" data-custom-email-action="edit"><i class="fas fa-pen"></i></button>` : ''}
+                        ${status === 'scheduled' ? `<button type="button" class="btn btn-secondary scheduler-icon-btn" title="Cancel" data-custom-email-action="${isInvoiceSchedule ? 'cancel-invoice' : 'cancel'}"><i class="fas fa-ban"></i></button>` : ''}
+                        ${!isInvoiceSchedule ? `<button type="button" class="btn btn-secondary scheduler-icon-btn" title="Duplicate" data-custom-email-action="duplicate"><i class="fas fa-clone"></i></button>` : ''}
+                        ${!isInvoiceSchedule ? `<button type="button" class="btn btn-secondary scheduler-icon-btn" title="Delete" data-custom-email-action="delete"><i class="fas fa-trash"></i></button>` : ''}
                     </div>
                 </td>
             </tr>
@@ -1012,7 +1010,9 @@ async function loadCustomEmailSchedules() {
         const response = await window.api.request('/api/settings/custom-email-schedules');
         if (response && response.success) {
             const data = response.data || {};
-            customEmailSchedules = Array.isArray(data.schedules) ? data.schedules : [];
+            const baseSchedules = Array.isArray(data.schedules) ? data.schedules : [];
+            const invoiceSchedules = Array.isArray(data.invoice_schedules) ? data.invoice_schedules : [];
+            customEmailSchedules = [...invoiceSchedules, ...baseSchedules];
             customEmailRecipientSuggestions = Array.isArray(data.suggested_recipients)
                 ? data.suggested_recipients
                 : [];
@@ -1189,6 +1189,35 @@ async function cancelCustomEmailSchedule(scheduleId) {
         await loadCustomEmailSchedules();
     } catch (error) {
         console.error('Failed to cancel custom email schedule:', error);
+        setCustomEmailMessage('error', error.message || 'Failed to cancel schedule.');
+    }
+}
+
+async function cancelInvoiceSchedule(schedule) {
+    if (!schedule || schedule.source !== 'invoice') {
+        return;
+    }
+
+    if (!window.confirm('Cancel this scheduled invoice email?')) {
+        return;
+    }
+
+    setCustomEmailMessage('info', 'Cancelling schedule...');
+
+    try {
+        const response = await window.api.request(`/api/invoices/${schedule.invoice_id}/cancel-schedule`, {
+            method: 'POST',
+            body: JSON.stringify({ kind: schedule.schedule_kind || 'send' }),
+        });
+
+        if (!response?.success) {
+            throw new Error(response?.message || 'Failed to cancel schedule.');
+        }
+
+        setCustomEmailMessage('success', response.message || 'Schedule cancelled.');
+        await loadCustomEmailSchedules();
+    } catch (error) {
+        console.error('Failed to cancel invoice schedule:', error);
         setCustomEmailMessage('error', error.message || 'Failed to cancel schedule.');
     }
 }
@@ -1655,6 +1684,10 @@ document.addEventListener('DOMContentLoaded', function() {
             const action = actionBtn.getAttribute('data-custom-email-action');
             const schedule = customEmailSchedules.find((item) => String(item.id) === String(scheduleId));
 
+            if (!schedule) {
+                return;
+            }
+
             if (action === 'edit') {
                 populateCustomEmailForm(schedule, false);
                 return;
@@ -1675,6 +1708,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (action === 'cancel') {
                 cancelCustomEmailSchedule(scheduleId);
+                return;
+            }
+
+            if (action === 'cancel-invoice') {
+                cancelInvoiceSchedule(schedule);
                 return;
             }
 

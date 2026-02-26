@@ -93,6 +93,7 @@ Route::middleware('auth')->group(function () {
 
         // Actions (author only)
         Route::post('/{id}/send-email', [InvoiceController::class, 'sendEmail'])->middleware(['author', 'throttle:5,1'])->name('send-email');
+        Route::post('/{id}/cancel-schedule', [InvoiceController::class, 'cancelSchedule'])->middleware(['author', 'throttle:10,1'])->name('cancel-schedule');
         Route::post('/{id}/mark-as-paid', [InvoiceController::class, 'markAsPaid'])->middleware('author')->name('mark-as-paid');
         Route::post('/{id}/cancel', [InvoiceController::class, 'cancel'])->middleware('author')->name('cancel');
     });

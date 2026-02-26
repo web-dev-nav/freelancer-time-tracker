@@ -59,10 +59,6 @@
                         <input type="radio" name="invoice-schedule-mode" value="specific">
                         <span>Schedule Specific Date</span>
                     </label>
-                    <label class="checkbox-label" style="margin:0;">
-                        <input type="radio" name="invoice-schedule-mode" value="due">
-                        <span>Due Date Reminder</span>
-                    </label>
                 </div>
                 <small style="color: var(--text-secondary); display: block; margin-top: 6px;">
                     <i class="fas fa-info-circle"></i> Cron runs every 5 minutes. Emails send on the next interval.
@@ -90,23 +86,17 @@
                 </div>
             </div>
 
-            <div id="invoice-schedule-due" class="form-group" style="display: none;">
+            <div id="invoice-schedule-due" class="form-group">
                 <label class="form-label">
                     <i class="fas fa-bell"></i>
-                    Send Reminder Before Due Date
+                    Due Date Reminder (Optional)
                 </label>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                     <div>
-                        <label class="form-label" for="invoice-reminder-offset" style="font-size:12px;">
-                            Days Before Due
+                        <label class="form-label" for="invoice-reminder-date" style="font-size:12px;">
+                            Date
                         </label>
-                        <select id="invoice-reminder-offset" class="form-control">
-                            <option value="1">1 day before</option>
-                            <option value="2" selected>2 days before</option>
-                            <option value="3">3 days before</option>
-                            <option value="5">5 days before</option>
-                            <option value="7">7 days before</option>
-                        </select>
+                        <input type="date" id="invoice-reminder-date" class="form-control">
                     </div>
                     <div>
                         <label class="form-label" for="invoice-reminder-time" style="font-size:12px;">
@@ -115,6 +105,9 @@
                         <input type="time" id="invoice-reminder-time" class="form-control" value="09:00">
                     </div>
                 </div>
+                <small style="color: var(--text-secondary); display: block; margin-top: 6px;">
+                    Leave blank to skip the reminder.
+                </small>
             </div>
 
             <input type="hidden" id="invoice-due-date">

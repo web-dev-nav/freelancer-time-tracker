@@ -142,7 +142,94 @@ class SendScheduledInvoiceEmails extends Command
             $this->warn("✗ Failed to send {$failed} invoice(s)");
         }
 
+        $this->processScheduledReminders();
+
         return 0;
+    }
+
+    private function processScheduledReminders(): void
+    {
+        $this->info('Checking for scheduled invoice reminders...');
+
+        $reminders = Invoice::with(['project', 'items'])
+            ->whereNotNull('reminder_send_at')
+            ->where('reminder_send_at', '<=', Carbon::now())
+            ->whereNotIn('status', ['paid', 'cancelled'])
+            ->get();
+
+        if ($reminders->isEmpty()) {
+            $this->info('No scheduled reminders to send at this time.');
+            return;
+        }
+
+        $companySettings = $this->getInvoiceSettings();
+        $emailSettings = $this->getEmailSettings();
+        $mailerConfig = $this->prepareMailerConfiguration($emailSettings);
+
+        foreach ($reminders as $invoice) {
+            try {
+                if (!$invoice->client_email) {
+                    $this->warn("Skipping reminder {$invoice->invoice_number}: No client email");
+                    $invoice->reminder_send_at = null;
+                    $invoice->save();
+                    continue;
+                }
+
+                $invoice->ensureViewToken();
+                if ($invoice->isDirty('view_token')) {
+                    $invoice->save();
+                    $invoice->refresh();
+                }
+
+                $pdf = PDF::loadView('invoices.pdf', [
+                    'invoice' => $invoice,
+                    'companySettings' => $companySettings,
+                ]);
+                $pdfContent = $pdf->output();
+
+                $defaultCompanyName = $companySettings['invoice_company_name'] ?? config('app.name');
+                $subject = "Payment Reminder: Invoice {$invoice->invoice_number} from " . $defaultCompanyName;
+
+                $message = "Friendly reminder regarding your invoice.\n\n";
+                $message .= $this->generateInvoiceEmailMessage($invoice, $companySettings);
+                $htmlMessage = $this->convertToHtmlEmail($message);
+                $htmlMessage = $this->injectTrackingPixel($htmlMessage, $invoice);
+
+                Mail::mailer($mailerConfig['mailer'])
+                    ->send([], [], function ($mail) use ($invoice, $subject, $htmlMessage, $pdfContent, $mailerConfig) {
+                        $mail->to($invoice->client_email)
+                            ->subject($subject)
+                            ->html($htmlMessage)
+                            ->attachData($pdfContent, "invoice-{$invoice->invoice_number}.pdf", [
+                                'mime' => 'application/pdf',
+                            ]);
+
+                        if ($mailerConfig['from_address']) {
+                            $mail->from(
+                                $mailerConfig['from_address'],
+                                $mailerConfig['from_name'] ?: $mailerConfig['from_address']
+                            );
+                        }
+                    });
+
+                $invoice->reminder_send_at = null;
+                $invoice->save();
+
+                $invoice->logHistory('reminder_sent', 'Invoice reminder sent to ' . $invoice->client_email, [
+                    'email' => $invoice->client_email,
+                    'subject' => $subject,
+                    'sent_via' => 'scheduled_reminder',
+                ]);
+
+                $this->info("✓ Sent reminder for invoice {$invoice->invoice_number} to {$invoice->client_email}");
+            } catch (\Exception $e) {
+                $this->error("Failed to send reminder for invoice {$invoice->invoice_number}: {$e->getMessage()}");
+                Log::error("Failed to send invoice reminder {$invoice->invoice_number}", [
+                    'error' => $e->getMessage(),
+                    'invoice_id' => $invoice->id,
+                ]);
+            }
+        }
     }
 
     /**

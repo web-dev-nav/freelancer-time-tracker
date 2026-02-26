@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\CustomEmailSchedule;
 use App\Models\Project;
+use App\Models\Invoice;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
@@ -28,10 +30,13 @@ class CustomEmailScheduleController extends Controller
             ->map(fn (CustomEmailSchedule $schedule) => $this->formatSchedule($schedule))
             ->values();
 
+        $invoiceSchedules = $this->getInvoiceSchedules();
+
         return response()->json([
             'success' => true,
             'data' => [
                 'schedules' => $schedules,
+                'invoice_schedules' => $invoiceSchedules,
                 'suggested_recipients' => $this->getSuggestedRecipients(),
             ],
         ]);
@@ -239,6 +244,69 @@ class CustomEmailScheduleController extends Controller
             'sent_at' => $schedule->sent_at?->toDateTimeString(),
             'created_at' => $schedule->created_at?->toDateTimeString(),
             'updated_at' => $schedule->updated_at?->toDateTimeString(),
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function getInvoiceSchedules(): array
+    {
+        if (!Schema::hasTable('invoices')) {
+            return [];
+        }
+
+        $invoices = Invoice::query()
+            ->where(function ($query) {
+                $query->whereNotNull('scheduled_send_at')
+                    ->orWhereNotNull('reminder_send_at');
+            })
+            ->whereNotIn('status', ['paid', 'cancelled'])
+            ->orderByDesc('updated_at')
+            ->get();
+
+        $schedules = [];
+
+        foreach ($invoices as $invoice) {
+            if ($invoice->scheduled_send_at) {
+                $schedules[] = $this->formatInvoiceSchedule($invoice, 'send', $invoice->scheduled_send_at);
+            }
+            if ($invoice->reminder_send_at) {
+                $schedules[] = $this->formatInvoiceSchedule($invoice, 'reminder', $invoice->reminder_send_at);
+            }
+        }
+
+        return $schedules;
+    }
+
+    private function formatInvoiceSchedule(Invoice $invoice, string $kind, Carbon $sendAt): array
+    {
+        $label = $kind === 'reminder' ? 'Reminder' : 'Send';
+        $subject = $kind === 'reminder'
+            ? "Payment Reminder: Invoice {$invoice->invoice_number}"
+            : "Invoice {$invoice->invoice_number}";
+
+        return [
+            'id' => "invoice-{$kind}-{$invoice->id}",
+            'source' => 'invoice',
+            'invoice_id' => $invoice->id,
+            'schedule_kind' => $kind,
+            'name' => "Invoice {$invoice->invoice_number} • {$label}",
+            'subject' => $subject,
+            'body' => $kind === 'reminder'
+                ? 'Scheduled payment reminder email with invoice PDF attached.'
+                : 'Scheduled invoice email with PDF attached.',
+            'recipients' => array_values(array_filter([$invoice->client_email])),
+            'schedule_type' => 'date',
+            'send_time' => $sendAt->format('H:i'),
+            'send_date' => $sendAt->toDateString(),
+            'working_days' => null,
+            'enabled' => true,
+            'status' => 'scheduled',
+            'last_sent_date' => null,
+            'sent_at' => null,
+            'created_at' => $invoice->updated_at?->toDateTimeString(),
+            'updated_at' => $invoice->updated_at?->toDateTimeString(),
         ];
     }
 
