@@ -391,7 +391,7 @@
             <div class="automation-card-head">
                 <div>
                     <div class="automation-client-name">New Scheduled Email</div>
-                    <div class="automation-client-email">Runs every 5 minutes via scheduler.</div>
+                    <div class="automation-client-email">Runs every minute via scheduler.</div>
                 </div>
                 <div class="automation-card-status">Status: Draft</div>
             </div>

@@ -41,103 +41,102 @@ class SendScheduledInvoiceEmails extends Command
             ->whereNull('sent_at')
             ->get();
 
-        if ($invoices->isEmpty()) {
-            $this->info('No scheduled invoices to send at this time.');
-            return 0;
-        }
-
-        $this->info("Found {$invoices->count()} scheduled invoice(s) to send.");
-
         $sent = 0;
         $failed = 0;
 
-        foreach ($invoices as $invoice) {
-            try {
-                $this->info("Processing invoice {$invoice->invoice_number}...");
+        if ($invoices->isEmpty()) {
+            $this->info('No scheduled invoices to send at this time.');
+        } else {
+            $this->info("Found {$invoices->count()} scheduled invoice(s) to send.");
 
-                if (!$invoice->client_email) {
-                    $this->warn("Skipping invoice {$invoice->invoice_number}: No client email");
+            foreach ($invoices as $invoice) {
+                try {
+                    $this->info("Processing invoice {$invoice->invoice_number}...");
+
+                    if (!$invoice->client_email) {
+                        $this->warn("Skipping invoice {$invoice->invoice_number}: No client email");
+                        $invoice->scheduled_send_at = null;
+                        $invoice->save();
+                        continue;
+                    }
+
+                    // Get settings
+                    $companySettings = $this->getInvoiceSettings();
+                    $emailSettings = $this->getEmailSettings();
+                    $mailerConfig = $this->prepareMailerConfiguration($emailSettings);
+
+                    // Mark invoice as sent BEFORE generating PDF
+                    if ($invoice->status === 'draft') {
+                        $invoice->markAsSent();
+                        $invoice->refresh();
+                    }
+
+                    $invoice->ensureViewToken();
+                    if ($invoice->isDirty('view_token')) {
+                        $invoice->save();
+                        $invoice->refresh();
+                    }
+
+                    // Generate PDF
+                    $pdf = PDF::loadView('invoices.pdf', [
+                        'invoice' => $invoice,
+                        'companySettings' => $companySettings,
+                    ]);
+                    $pdfContent = $pdf->output();
+
+                    // Email subject and body
+                    $defaultCompanyName = $companySettings['invoice_company_name'] ?? config('app.name');
+                    $subject = $invoice->scheduled_email_subject
+                        ?: "Invoice {$invoice->invoice_number} from " . $defaultCompanyName;
+
+                    // Generate detailed message with payment instructions (same as regular send)
+                    $message = $invoice->scheduled_email_message
+                        ?: $this->generateInvoiceEmailMessage($invoice, $companySettings);
+                    $htmlMessage = $this->convertToHtmlEmail($message);
+                    $htmlMessage = $this->injectTrackingPixel($htmlMessage, $invoice);
+
+                    // Send email
+                    Mail::mailer($mailerConfig['mailer'])
+                        ->send([], [], function ($mail) use ($invoice, $subject, $htmlMessage, $pdfContent, $mailerConfig) {
+                            $mail->to($invoice->client_email)
+                                ->subject($subject)
+                                ->html($htmlMessage)
+                                ->attachData($pdfContent, "invoice-{$invoice->invoice_number}.pdf", [
+                                    'mime' => 'application/pdf',
+                                ]);
+
+                            if ($mailerConfig['from_address']) {
+                                $mail->from(
+                                    $mailerConfig['from_address'],
+                                    $mailerConfig['from_name'] ?: $mailerConfig['from_address']
+                                );
+                            }
+                        });
+
+                    // Clear scheduled send time
                     $invoice->scheduled_send_at = null;
+                    $invoice->scheduled_email_subject = null;
+                    $invoice->scheduled_email_message = null;
                     $invoice->save();
-                    continue;
+
+                    // Log history
+                    $invoice->logHistory('sent', 'Invoice email sent to ' . $invoice->client_email . ' (scheduled)', [
+                        'email' => $invoice->client_email,
+                        'subject' => $subject,
+                        'sent_via' => 'scheduled_cron',
+                    ]);
+
+                    $this->info("✓ Sent invoice {$invoice->invoice_number} to {$invoice->client_email}");
+                    $sent++;
+
+                } catch (\Exception $e) {
+                    $this->error("Failed to send invoice {$invoice->invoice_number}: {$e->getMessage()}");
+                    Log::error("Failed to send scheduled invoice {$invoice->invoice_number}", [
+                        'error' => $e->getMessage(),
+                        'invoice_id' => $invoice->id,
+                    ]);
+                    $failed++;
                 }
-
-                // Get settings
-                $companySettings = $this->getInvoiceSettings();
-                $emailSettings = $this->getEmailSettings();
-                $mailerConfig = $this->prepareMailerConfiguration($emailSettings);
-
-                // Mark invoice as sent BEFORE generating PDF
-                if ($invoice->status === 'draft') {
-                    $invoice->markAsSent();
-                    $invoice->refresh();
-                }
-
-                $invoice->ensureViewToken();
-                if ($invoice->isDirty('view_token')) {
-                    $invoice->save();
-                    $invoice->refresh();
-                }
-
-                // Generate PDF
-                $pdf = PDF::loadView('invoices.pdf', [
-                    'invoice' => $invoice,
-                    'companySettings' => $companySettings,
-                ]);
-                $pdfContent = $pdf->output();
-
-                // Email subject and body
-                $defaultCompanyName = $companySettings['invoice_company_name'] ?? config('app.name');
-                $subject = $invoice->scheduled_email_subject
-                    ?: "Invoice {$invoice->invoice_number} from " . $defaultCompanyName;
-
-                // Generate detailed message with payment instructions (same as regular send)
-                $message = $invoice->scheduled_email_message
-                    ?: $this->generateInvoiceEmailMessage($invoice, $companySettings);
-                $htmlMessage = $this->convertToHtmlEmail($message);
-                $htmlMessage = $this->injectTrackingPixel($htmlMessage, $invoice);
-
-                // Send email
-                Mail::mailer($mailerConfig['mailer'])
-                    ->send([], [], function ($mail) use ($invoice, $subject, $htmlMessage, $pdfContent, $mailerConfig) {
-                        $mail->to($invoice->client_email)
-                            ->subject($subject)
-                            ->html($htmlMessage)
-                            ->attachData($pdfContent, "invoice-{$invoice->invoice_number}.pdf", [
-                                'mime' => 'application/pdf',
-                            ]);
-
-                        if ($mailerConfig['from_address']) {
-                            $mail->from(
-                                $mailerConfig['from_address'],
-                                $mailerConfig['from_name'] ?: $mailerConfig['from_address']
-                            );
-                        }
-                    });
-
-                // Clear scheduled send time
-                $invoice->scheduled_send_at = null;
-                $invoice->scheduled_email_subject = null;
-                $invoice->scheduled_email_message = null;
-                $invoice->save();
-
-                // Log history
-                $invoice->logHistory('sent', 'Invoice email sent to ' . $invoice->client_email . ' (scheduled)', [
-                    'email' => $invoice->client_email,
-                    'subject' => $subject,
-                    'sent_via' => 'scheduled_cron',
-                ]);
-
-                $this->info("✓ Sent invoice {$invoice->invoice_number} to {$invoice->client_email}");
-                $sent++;
-
-            } catch (\Exception $e) {
-                $this->error("Failed to send invoice {$invoice->invoice_number}: {$e->getMessage()}");
-                Log::error("Failed to send scheduled invoice {$invoice->invoice_number}", [
-                    'error' => $e->getMessage(),
-                    'invoice_id' => $invoice->id,
-                ]);
-                $failed++;
             }
         }
 

@@ -33,10 +33,10 @@ Schedule::command('invoices:send-reminders')
         error_log('Invoice payment reminders failed');
     });
 
-// Schedule sending of scheduled invoice emails every 5 minutes
-// Checks for invoices with scheduled_send_at <= now
+// Schedule sending of scheduled invoice emails every minute.
+// Running per-minute avoids missed runs on hosts with offset cron timing.
 Schedule::command('invoices:send-scheduled')
-    ->everyFiveMinutes()
+    ->everyMinute()
     ->name('send-scheduled-invoices')
     ->onSuccess(function () {
         info('Scheduled invoices processed successfully');
@@ -45,10 +45,10 @@ Schedule::command('invoices:send-scheduled')
         error_log('Scheduled invoices processing failed');
     });
 
-// Schedule daily activity report checks every 5 minutes.
+// Schedule daily activity report checks every minute.
 // Command sends once per day after configured send time.
 Schedule::command('activity:send-daily-summary')
-    ->everyFiveMinutes()
+    ->everyMinute()
     ->name('daily-activity-report')
     ->onSuccess(function () {
         info('Daily activity report scheduler check executed');
@@ -57,9 +57,9 @@ Schedule::command('activity:send-daily-summary')
         error_log('Daily activity report scheduler check failed');
     });
 
-// Schedule custom email automation checks every 5 minutes.
+// Schedule custom email automation checks every minute.
 Schedule::command('emails:send-custom-scheduled')
-    ->everyFiveMinutes()
+    ->everyMinute()
     ->name('custom-email-scheduler')
     ->onSuccess(function () {
         info('Custom email scheduler check executed');
