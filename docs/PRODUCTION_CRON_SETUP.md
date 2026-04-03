@@ -249,8 +249,8 @@ Once cron is set up, backups will run automatically:
 
 | Task | Schedule | Time | Days |
 |------|----------|------|------|
-| **Project Backups** | Every 2 days | 2:00 AM | Sun, Tue, Thu, Sat |
-| **Database Backup** | Every 2 days | 2:30 AM | Sun, Tue, Thu, Sat |
+| **Project Backups** | Daily | 12:05 AM | Every day |
+| **Database Backup** | Daily | 12:00 AM | Every day |
 | **Cleanup Old Backups** | Automatic | After each backup | 30-day retention |
 
 ## Monitoring & Maintenance
@@ -272,13 +272,11 @@ Edit `routes/console.php`:
 
 ```php
 Schedule::command('backup:projects')
-    ->dailyAt('02:00')
-    ->days([0, 2, 4, 6])
+    ->dailyAt('00:05')
     ->emailOutputOnFailure('your-email@example.com');
 
 Schedule::command('backup:database')
-    ->dailyAt('02:30')
-    ->days([0, 2, 4, 6])
+    ->dailyAt('00:00')
     ->emailOutputOnFailure('your-email@example.com');
 ```
 

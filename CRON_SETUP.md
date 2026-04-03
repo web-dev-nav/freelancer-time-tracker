@@ -2,8 +2,8 @@
 
 ## Quick Setup
 
-The application has **1 automated backup task** scheduled to run every 2 days:
-- **2:00 AM** - Full database backup (includes all projects and time logs)
+The application has **1 automated backup task** scheduled to run daily:
+- **12:00 AM** - Full database backup (includes all projects and time logs)
 
 ## Setup Instructions
 
@@ -108,7 +108,7 @@ php artisan schedule:list
 
 **Expected output:**
 ```
-0 2 * * 0,2,4,6 ........ backup:database ...... Next Due: X hours from now
+0 0 * * * ........ backup:database ...... Next Due: X hours from now
 ```
 
 ### Test Scheduler Manually
@@ -197,8 +197,8 @@ This will run the scheduler every minute in the foreground.
 ## Backup Schedule Details
 
 **Current Schedule:**
-- **Frequency:** Every 2 days (Sunday, Tuesday, Thursday, Saturday)
-- **Time:** 2:00 AM
+- **Frequency:** Daily
+- **Time:** 12:00 AM
 - **Type:** Full database backup (includes all tables: projects, time_logs, sessions, etc.)
 - **Retention:** 30 days (auto-cleanup)
 - **Location:** `storage/app/backups/`
