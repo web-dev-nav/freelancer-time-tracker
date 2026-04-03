@@ -2,14 +2,25 @@
     <div class="automation-card">
         <div class="automation-card-head">
             <div>
-                <div class="automation-client-name">Scheduler Log</div>
-                <div class="automation-client-email">Historical record of every automated run, send, reminder, and skip.</div>
+                <div class="automation-client-name">Scheduled Emails</div>
+                <div class="automation-client-email">Manage and cancel your scheduled automations.</div>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" id="scheduler-log-refresh">
+            <button type="button" class="btn btn-secondary btn-sm" id="custom-email-refresh">
                 <i class="fas fa-rotate"></i>
                 Refresh
             </button>
         </div>
+        <div id="custom-email-schedule-list" class="scheduler-table-wrap">
+            <div class="automation-empty-row">Loading scheduled emails...</div>
+        </div>
+    </div>
+
+    <div class="automation-card" style="margin-top:12px;">
+        <div class="automation-card-head">
+            <div>
+                <div class="automation-client-name">Scheduler Log</div>
+                <div class="automation-client-email">Historical record of every automated run, send, reminder, and skip.</div>
+            </div>
 
         <div class="automation-row" style="margin-bottom:12px; gap:10px;">
             <div style="flex:1;">

@@ -509,33 +509,18 @@
         <div class="automation-card">
             <div class="automation-card-head">
                 <div>
-                    <div class="automation-client-name">Scheduled Emails</div>
-                    <div class="automation-client-email">Cancel or reschedule anytime.</div>
+                    <div class="automation-client-name">Upcoming Schedule Timeline</div>
+                    <div class="automation-client-email">Next run times for every custom email, invoice send, and activity report.</div>
                 </div>
                 <div class="scheduler-actions">
-                    <button type="button" class="btn btn-secondary btn-sm" id="custom-email-refresh">
-                        <i class="fas fa-rotate"></i>
-                        Refresh
-                    </button>
                     <button type="button" class="btn btn-secondary btn-sm" id="upcoming-schedules-refresh">
-                        <i class="fas fa-calendar-day"></i>
-                        View Upcoming Runs
+                        <i class="fas fa-rotate"></i>
+                        Refresh Timeline
                     </button>
                 </div>
             </div>
-            <div id="custom-email-schedule-list" class="scheduler-table-wrap">
-                <div class="automation-empty-row">Loading scheduled emails...</div>
-            </div>
-            <div class="automation-card" style="margin-top:12px; border-top: 1px solid #e5e7eb; padding-top:12px;">
-                <div class="automation-card-head" style="padding-bottom:0;">
-                    <div>
-                        <div class="automation-client-name">Upcoming Schedule Timeline</div>
-                        <div class="automation-client-email">Next run times for every custom email, invoice send, and activity report.</div>
-                    </div>
-                </div>
-                <div id="upcoming-schedules-list" class="scheduler-table-wrap">
-                    <div class="automation-empty-row">Loading upcoming schedules...</div>
-                </div>
+            <div id="upcoming-schedules-list" class="scheduler-table-wrap">
+                <div class="automation-empty-row">Loading upcoming schedules...</div>
             </div>
         </div>
     </div>
