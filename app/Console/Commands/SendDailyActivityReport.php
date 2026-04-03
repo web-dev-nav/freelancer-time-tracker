@@ -105,6 +105,15 @@ class SendDailyActivityReport extends Command
                 ->orderBy('clock_in', 'asc')
                 ->get();
 
+            if ($logs->isEmpty()) {
+                Log::info('Daily activity schedule skipped: no logs for client', [
+                    'date' => $today,
+                    'client_email' => $clientEmail,
+                    'schedule_type' => $scheduleType,
+                ]);
+                continue;
+            }
+
             $summary = $this->buildSummary($logs);
             $reportDate = Carbon::parse($today, $timezone)->format('M d, Y');
             $clientName = trim((string) ($schedule->client_name ?? ''));
