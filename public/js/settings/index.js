@@ -1930,15 +1930,30 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    const customEmailRefresh = document.getElementById('custom-email-refresh');
+    const customEmailRefresh = document.getElementById('custom-email-refresh-section');
     if (customEmailRefresh) {
         customEmailRefresh.addEventListener('click', () => loadCustomEmailSchedules());
     }
 
-    const upcomingSchedulesRefresh = document.getElementById('upcoming-schedules-refresh');
+    const upcomingSchedulesRefresh = document.getElementById('upcoming-schedules-refresh-section');
     if (upcomingSchedulesRefresh) {
         upcomingSchedulesRefresh.addEventListener('click', () => loadCustomEmailSchedules());
     }
+
+    const tabs = document.querySelectorAll('.scheduler-sub-tab');
+    tabs.forEach((btn) => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.scheduler-sub-tab').forEach((t) => t.classList.remove('active'));
+            document.querySelectorAll('.scheduler-sub-section').forEach((section) => {
+                section.style.display = 'none';
+            });
+            btn.classList.add('active');
+            const target = document.getElementById(btn.getAttribute('data-tab'));
+            if (target) {
+                target.style.display = 'block';
+            }
+        });
+    });
 
     const schedulerLogRefresh = document.getElementById('scheduler-log-refresh');
     if (schedulerLogRefresh) {
