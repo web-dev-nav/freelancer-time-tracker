@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\CustomEmailSchedule;
+use App\Models\DailyActivitySchedule;
 use App\Models\Project;
 use App\Models\Invoice;
+use App\Models\Setting;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -15,10 +17,13 @@ class CustomEmailScheduleController extends Controller
     public function index()
     {
         if (!Schema::hasTable('custom_email_schedules')) {
+            $invoiceSchedules = $this->getInvoiceSchedules();
             return response()->json([
                 'success' => true,
                 'data' => [
                     'schedules' => [],
+                    'invoice_schedules' => $invoiceSchedules,
+                    'upcoming_schedules' => $this->getUpcomingSchedules(),
                     'suggested_recipients' => $this->getSuggestedRecipients(),
                 ],
             ]);
@@ -37,6 +42,7 @@ class CustomEmailScheduleController extends Controller
             'data' => [
                 'schedules' => $schedules,
                 'invoice_schedules' => $invoiceSchedules,
+                'upcoming_schedules' => $this->getUpcomingSchedules(),
                 'suggested_recipients' => $this->getSuggestedRecipients(),
             ],
         ]);
@@ -329,5 +335,325 @@ class CustomEmailScheduleController extends Controller
             ->pluck('email')
             ->values()
             ->all();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function getUpcomingSchedules(): array
+    {
+        $timezone = config('app.timezone', 'UTC');
+        $now = Carbon::now($timezone);
+
+        $items = array_merge(
+            $this->collectUpcomingInvoiceSchedules($now, $timezone),
+            $this->collectUpcomingCustomEmailSchedules($now, $timezone),
+            $this->collectUpcomingDailyActivitySchedules($now, $timezone),
+        );
+
+        usort($items, static function (array $a, array $b): int {
+            return strcmp((string) ($a['run_at'] ?? ''), (string) ($b['run_at'] ?? ''));
+        });
+
+        return array_slice($items, 0, 100);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function collectUpcomingInvoiceSchedules(Carbon $now, string $timezone): array
+    {
+        if (!Schema::hasTable('invoices')) {
+            return [];
+        }
+
+        $invoices = Invoice::query()
+            ->where(function ($query) {
+                $query->whereNotNull('scheduled_send_at')
+                    ->orWhereNotNull('reminder_send_at');
+            })
+            ->whereNotIn('status', ['paid', 'cancelled'])
+            ->orderBy('id')
+            ->get();
+
+        $items = [];
+
+        foreach ($invoices as $invoice) {
+            if ($invoice->scheduled_send_at) {
+                $runAt = $invoice->scheduled_send_at->copy()->setTimezone($timezone);
+                if ($runAt->gte($now)) {
+                    $items[] = $this->buildUpcomingItem(
+                        id: "invoice-send-{$invoice->id}",
+                        source: 'invoice',
+                        type: 'Invoice Send',
+                        name: "Invoice {$invoice->invoice_number}",
+                        recipients: array_values(array_filter([$invoice->client_email])),
+                        runAtLocal: $runAt,
+                        detail: 'Scheduled invoice email send'
+                    );
+                }
+            }
+
+            if ($invoice->reminder_send_at) {
+                $runAt = $invoice->reminder_send_at->copy()->setTimezone($timezone);
+                if ($runAt->gte($now)) {
+                    $items[] = $this->buildUpcomingItem(
+                        id: "invoice-reminder-{$invoice->id}",
+                        source: 'invoice',
+                        type: 'Invoice Reminder',
+                        name: "Invoice {$invoice->invoice_number}",
+                        recipients: array_values(array_filter([$invoice->client_email])),
+                        runAtLocal: $runAt,
+                        detail: 'Scheduled payment reminder'
+                    );
+                }
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function collectUpcomingCustomEmailSchedules(Carbon $now, string $timezone): array
+    {
+        if (!Schema::hasTable('custom_email_schedules')) {
+            return [];
+        }
+
+        $schedules = CustomEmailSchedule::query()
+            ->where('status', 'scheduled')
+            ->where('enabled', true)
+            ->orderBy('id')
+            ->get();
+
+        $items = [];
+
+        foreach ($schedules as $schedule) {
+            $scheduleType = strtolower(trim((string) ($schedule->schedule_type ?? 'date')));
+            $sendTime = (string) ($schedule->send_time ?? '09:00');
+            $runAt = null;
+            $detail = '';
+
+            if ($scheduleType === 'daily') {
+                $workingDays = $this->parseWorkingDays((string) ($schedule->working_days ?? ''));
+                $runAt = $this->nextRecurringRun(
+                    now: $now,
+                    sendTime: $sendTime,
+                    workingDays: $workingDays,
+                    timezone: $timezone,
+                    lastSentDate: $schedule->last_sent_date
+                );
+                $detail = 'Daily • ' . strtoupper(implode(',', $workingDays));
+            } else {
+                $sendDate = $schedule->send_date?->toDateString();
+                if ($sendDate) {
+                    $runAt = Carbon::createFromFormat('Y-m-d H:i', "{$sendDate} {$sendTime}", $timezone);
+                    if ($schedule->last_sent_date?->toDateString() === $sendDate) {
+                        $runAt = null;
+                    } elseif ($runAt->lt($now)) {
+                        $runAt = null;
+                    }
+                }
+                $detail = 'One-time date schedule';
+            }
+
+            if (!$runAt) {
+                continue;
+            }
+
+            $items[] = $this->buildUpcomingItem(
+                id: "custom-email-{$schedule->id}",
+                source: 'custom_email',
+                type: 'Custom Email',
+                name: $schedule->name ?: 'Custom Scheduled Email',
+                recipients: is_array($schedule->recipients) ? $schedule->recipients : [],
+                runAtLocal: $runAt,
+                detail: $detail
+            );
+        }
+
+        return $items;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function collectUpcomingDailyActivitySchedules(Carbon $now, string $timezone): array
+    {
+        $items = [];
+
+        if (Schema::hasTable('daily_activity_schedules') && DailyActivitySchedule::query()->exists()) {
+            $schedules = DailyActivitySchedule::query()
+                ->where('enabled', true)
+                ->orderBy('client_email')
+                ->get();
+
+            foreach ($schedules as $schedule) {
+                $scheduleType = strtolower(trim((string) ($schedule->schedule_type ?? 'daily')));
+                $sendTime = (string) ($schedule->send_time ?? '18:00');
+                $runAt = null;
+                $detail = '';
+
+                if ($scheduleType === 'date') {
+                    $sendDate = $schedule->send_date?->toDateString();
+                    if ($sendDate) {
+                        $runAt = Carbon::createFromFormat('Y-m-d H:i', "{$sendDate} {$sendTime}", $timezone);
+                        if ($schedule->last_sent_date?->toDateString() === $sendDate) {
+                            $runAt = null;
+                        } elseif ($runAt->lt($now)) {
+                            $runAt = null;
+                        }
+                    }
+                    $detail = 'Client daily activity • one-time';
+                } else {
+                    $workingDays = $this->parseWorkingDays((string) ($schedule->working_days ?? ''));
+                    $runAt = $this->nextRecurringRun(
+                        now: $now,
+                        sendTime: $sendTime,
+                        workingDays: $workingDays,
+                        timezone: $timezone,
+                        lastSentDate: $schedule->last_sent_date
+                    );
+                    $detail = 'Client daily activity • recurring';
+                }
+
+                if (!$runAt) {
+                    continue;
+                }
+
+                $items[] = $this->buildUpcomingItem(
+                    id: "daily-activity-{$schedule->id}",
+                    source: 'daily_activity',
+                    type: 'Daily Activity',
+                    name: $schedule->client_name ?: ($schedule->client_email ?: 'Daily Activity Client'),
+                    recipients: array_values(array_filter([$schedule->client_email])),
+                    runAtLocal: $runAt,
+                    detail: $detail
+                );
+            }
+
+            return $items;
+        }
+
+        $enabled = Setting::getValue('daily_activity_email_enabled', '0');
+        $isEnabled = $enabled === true || $enabled === 1 || $enabled === '1' || $enabled === 'true';
+        if (!$isEnabled) {
+            return $items;
+        }
+
+        $sendTime = (string) Setting::getValue('daily_activity_email_send_time', '18:00');
+        $recipientsRaw = (string) Setting::getValue('daily_activity_email_recipients', '');
+        $lastSentDate = (string) Setting::getValue('daily_activity_email_last_sent_date', '');
+        $recipients = $this->normalizeRecipients($recipientsRaw);
+
+        $runAt = $this->nextRecurringRun(
+            now: $now,
+            sendTime: $sendTime,
+            workingDays: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+            timezone: $timezone,
+            lastSentDate: $lastSentDate !== '' ? Carbon::parse($lastSentDate, $timezone) : null
+        );
+
+        if ($runAt) {
+            $items[] = $this->buildUpcomingItem(
+                id: 'daily-activity-global',
+                source: 'daily_activity',
+                type: 'Daily Activity',
+                name: 'Global Daily Activity Report',
+                recipients: $recipients,
+                runAtLocal: $runAt,
+                detail: 'Global fallback daily activity schedule'
+            );
+        }
+
+        return $items;
+    }
+
+    /**
+     * @param array<int, string> $workingDays
+     */
+    private function nextRecurringRun(
+        Carbon $now,
+        string $sendTime,
+        array $workingDays,
+        string $timezone,
+        ?Carbon $lastSentDate = null
+    ): ?Carbon {
+        if (!preg_match('/^([01]\\d|2[0-3]):[0-5]\\d$/', $sendTime)) {
+            return null;
+        }
+
+        $normalizedDays = array_values(array_unique(array_map('strtolower', $workingDays)));
+        if (empty($normalizedDays)) {
+            $normalizedDays = ['mon', 'tue', 'wed', 'thu', 'fri'];
+        }
+
+        for ($i = 0; $i <= 30; $i++) {
+            $date = $now->copy()->addDays($i);
+            $dayKey = strtolower($date->format('D'));
+            if (!in_array($dayKey, $normalizedDays, true)) {
+                continue;
+            }
+
+            $candidate = Carbon::createFromFormat('Y-m-d H:i', $date->toDateString() . ' ' . $sendTime, $timezone);
+            if ($candidate->lt($now)) {
+                continue;
+            }
+
+            if ($lastSentDate && $lastSentDate->toDateString() === $candidate->toDateString()) {
+                continue;
+            }
+
+            return $candidate;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function parseWorkingDays(string $raw): array
+    {
+        $allowed = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+        $parts = preg_split('/[,\s;]+/', strtolower(trim($raw))) ?: [];
+        $days = [];
+
+        foreach ($parts as $part) {
+            if ($part !== '' && in_array($part, $allowed, true)) {
+                $days[] = $part;
+            }
+        }
+
+        $days = array_values(array_unique($days));
+
+        return !empty($days) ? $days : ['mon', 'tue', 'wed', 'thu', 'fri'];
+    }
+
+    /**
+     * @param array<int, string> $recipients
+     * @return array<string, mixed>
+     */
+    private function buildUpcomingItem(
+        string $id,
+        string $source,
+        string $type,
+        string $name,
+        array $recipients,
+        Carbon $runAtLocal,
+        string $detail
+    ): array {
+        return [
+            'id' => $id,
+            'source' => $source,
+            'type' => $type,
+            'name' => $name,
+            'recipients' => array_values(array_unique(array_filter($recipients))),
+            'run_at' => $runAtLocal->copy()->setTimezone('UTC')->toIso8601String(),
+            'run_at_local' => $runAtLocal->format('Y-m-d H:i'),
+            'detail' => $detail,
+        ];
     }
 }

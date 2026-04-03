@@ -521,5 +521,21 @@
                 <div class="automation-empty-row">Loading scheduled emails...</div>
             </div>
         </div>
+
+        <div class="automation-card">
+            <div class="automation-card-head">
+                <div>
+                    <div class="automation-client-name">Upcoming Schedule Timeline</div>
+                    <div class="automation-client-email">All upcoming runs across invoice, custom email, and daily activity automations.</div>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" id="upcoming-schedules-refresh">
+                    <i class="fas fa-rotate"></i>
+                    Refresh
+                </button>
+            </div>
+            <div id="upcoming-schedules-list" class="scheduler-table-wrap">
+                <div class="automation-empty-row">Loading upcoming schedules...</div>
+            </div>
+        </div>
     </div>
 </div>

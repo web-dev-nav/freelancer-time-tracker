@@ -5,6 +5,7 @@
 let isLoading = false;
 let dailyActivityClientSchedules = [];
 let customEmailSchedules = [];
+let upcomingScheduleEntries = [];
 let customEmailRecipientSuggestions = [];
 let hasLoadedLogsTab = false;
 let latestLogPlainText = '';
@@ -1005,6 +1006,71 @@ function renderCustomEmailSchedules() {
     `;
 }
 
+function renderUpcomingSchedules() {
+    const container = document.getElementById('upcoming-schedules-list');
+    if (!container) {
+        return;
+    }
+
+    if (!Array.isArray(upcomingScheduleEntries) || upcomingScheduleEntries.length === 0) {
+        container.innerHTML = '<div class="automation-empty-row">No upcoming schedules found.</div>';
+        return;
+    }
+
+    const rowsHtml = upcomingScheduleEntries.map((entry) => {
+        const name = escapeHtml(entry.name || 'Unnamed Schedule');
+        const source = escapeHtml(String(entry.source || '').replace(/_/g, ' '));
+        const type = escapeHtml(entry.type || 'Schedule');
+        const detail = escapeHtml(entry.detail || '-');
+        const recipients = Array.isArray(entry.recipients) ? entry.recipients : [];
+        const recipientsPreview = recipients.length > 2
+            ? `${escapeHtml(recipients.slice(0, 2).join(', '))} +${recipients.length - 2} more`
+            : escapeHtml(recipients.join(', '));
+        const runAtRaw = entry.run_at ? new Date(entry.run_at) : null;
+        const runAtDisplay = runAtRaw && !Number.isNaN(runAtRaw.getTime())
+            ? runAtRaw.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+            })
+            : escapeHtml(entry.run_at_local || '-');
+
+        return `
+            <tr>
+                <td><strong>${runAtDisplay}</strong></td>
+                <td>
+                    <span class="automation-pill">${type}</span>
+                    <div class="scheduler-muted">${source}</div>
+                </td>
+                <td>
+                    <div><strong>${name}</strong></div>
+                    <div class="scheduler-muted">${detail}</div>
+                </td>
+                <td>${recipientsPreview || 'No recipients'}</td>
+            </tr>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        <table class="scheduler-table">
+            <thead>
+                <tr>
+                    <th>Next Run</th>
+                    <th>Type</th>
+                    <th>Schedule</th>
+                    <th>Recipients</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rowsHtml}
+            </tbody>
+        </table>
+    `;
+}
+
 async function loadCustomEmailSchedules() {
     try {
         const response = await window.api.request('/api/settings/custom-email-schedules');
@@ -1012,17 +1078,21 @@ async function loadCustomEmailSchedules() {
             const data = response.data || {};
             const baseSchedules = Array.isArray(data.schedules) ? data.schedules : [];
             const invoiceSchedules = Array.isArray(data.invoice_schedules) ? data.invoice_schedules : [];
+            upcomingScheduleEntries = Array.isArray(data.upcoming_schedules) ? data.upcoming_schedules : [];
             customEmailSchedules = [...invoiceSchedules, ...baseSchedules];
             customEmailRecipientSuggestions = Array.isArray(data.suggested_recipients)
                 ? data.suggested_recipients
                 : [];
             renderCustomEmailRecipientSuggestions();
             renderCustomEmailSchedules();
+            renderUpcomingSchedules();
             return;
         }
         throw new Error(response?.message || 'Failed to load custom email schedules.');
     } catch (error) {
         console.error('Failed to load custom email schedules:', error);
+        upcomingScheduleEntries = [];
+        renderUpcomingSchedules();
         setCustomEmailMessage('error', error.message || 'Failed to load custom email schedules.');
     }
 }
@@ -1726,6 +1796,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const customEmailRefresh = document.getElementById('custom-email-refresh');
     if (customEmailRefresh) {
         customEmailRefresh.addEventListener('click', () => loadCustomEmailSchedules());
+    }
+
+    const upcomingSchedulesRefresh = document.getElementById('upcoming-schedules-refresh');
+    if (upcomingSchedulesRefresh) {
+        upcomingSchedulesRefresh.addEventListener('click', () => loadCustomEmailSchedules());
     }
 
     const refreshLogsBtn = document.getElementById('refresh-logs-btn');
