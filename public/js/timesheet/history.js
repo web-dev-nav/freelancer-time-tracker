@@ -40,6 +40,16 @@ function ensureTimeInputsInitialized() {
     timeInputsInitialized = true;
 }
 
+function addMinutesToTime(time, minutesToAdd) {
+    const [hours = '00', minutes = '00'] = String(time || '00:00').split(':');
+    const baseMinutes = (parseInt(hours, 10) * 60) + parseInt(minutes, 10);
+    const normalizedMinutes = ((baseMinutes + minutesToAdd) % (24 * 60) + (24 * 60)) % (24 * 60);
+    const resultHours = String(Math.floor(normalizedMinutes / 60)).padStart(2, '0');
+    const resultMinutes = String(normalizedMinutes % 60).padStart(2, '0');
+
+    return `${resultHours}:${resultMinutes}`;
+}
+
 /**
  * Load history with pagination
  * @param {number} page - Page number to load
@@ -85,6 +95,9 @@ export async function loadHistory(page = 1, perPage = null) {
                         ? `
                         <button class="btn btn-info" onclick="viewDetails(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="View Details">
                             <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-secondary" onclick="duplicateLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="Duplicate">
+                            <i class="fas fa-copy"></i>
                         </button>
                         <button class="btn btn-primary" onclick="editLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="Edit">
                             <i class="fas fa-edit"></i>
@@ -136,6 +149,9 @@ export async function loadHistory(page = 1, perPage = null) {
                         ? `
                         <button class="btn btn-info" onclick="viewDetails(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="View Details">
                             <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-secondary" onclick="duplicateLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="Duplicate">
+                            <i class="fas fa-copy"></i>
                         </button>
                         <button class="btn btn-primary" onclick="editLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="Edit">
                             <i class="fas fa-edit"></i>
@@ -512,6 +528,62 @@ export async function deleteLog(id) {
         }
     } catch (error) {
         window.notify.error('Failed to delete entry: ' + error.message);
+    }
+}
+
+/**
+ * Duplicate an existing log entry as a new log entry for today.
+ * Uses current app date/time and copies description (and project where available).
+ * @param {number} id - Log entry ID
+ */
+export async function duplicateLog(id) {
+    try {
+        const logResponse = await window.api.request(`/api/timesheet/logs/${id}`);
+
+        if (!logResponse.success || !logResponse.data) {
+            window.notify.error(logResponse.message || 'Failed to load entry for duplication');
+            return;
+        }
+
+        const sourceLog = logResponse.data;
+        const now = Utils.getCurrentDateTime();
+        const sourceDuration = parseInt(sourceLog.total_minutes, 10);
+        const durationMinutes = Number.isFinite(sourceDuration) && sourceDuration > 0 ? sourceDuration : 1;
+        const clockOutTime = addMinutesToTime(now.time, durationMinutes);
+        const workDescription = Utils.htmlToPlainText(sourceLog.work_description || '').trim();
+
+        if (!workDescription) {
+            window.notify.error('Cannot duplicate an entry without a description');
+            return;
+        }
+
+        const requestBody = {
+            date: now.date,
+            clock_in_time: now.time,
+            clock_out_time: clockOutTime,
+            work_description: workDescription
+        };
+
+        if (sourceLog.project_id) {
+            requestBody.project_id = sourceLog.project_id;
+        } else if (State.selectedProjectId) {
+            requestBody.project_id = State.selectedProjectId;
+        }
+
+        const createResponse = await window.api.request('/api/timesheet/logs', {
+            method: 'POST',
+            body: JSON.stringify(requestBody)
+        });
+
+        if (createResponse.success) {
+            loadHistory(State.currentPage);
+            loadDashboardStats();
+            window.notify.success('Entry duplicated for today');
+        } else {
+            window.notify.error(createResponse.message || 'Failed to duplicate entry');
+        }
+    } catch (error) {
+        window.notify.error('Failed to duplicate entry: ' + error.message);
     }
 }
 
