@@ -1015,8 +1015,8 @@ export async function showSendInvoiceModal(invoiceId) {
             if (response.scheduled_send_at && scheduleDateInput && scheduleTimeInput) {
                 const scheduledDate = new Date(response.scheduled_send_at);
                 if (!Number.isNaN(scheduledDate.getTime())) {
-                    scheduleDateInput.value = scheduledDate.toISOString().slice(0, 10);
-                    scheduleTimeInput.value = scheduledDate.toISOString().slice(11, 16);
+                    scheduleDateInput.value = formatDateInputLocal(scheduledDate);
+                    scheduleTimeInput.value = formatTimeInputLocal(scheduledDate);
                     const specificInput = document.querySelector('input[name="invoice-schedule-mode"][value="specific"]');
                     if (specificInput) {
                         specificInput.checked = true;
@@ -1030,8 +1030,8 @@ export async function showSendInvoiceModal(invoiceId) {
             if (response.reminder_send_at && reminderDateInput && reminderTimeInput) {
                 const reminderDate = new Date(response.reminder_send_at);
                 if (!Number.isNaN(reminderDate.getTime())) {
-                    reminderDateInput.value = reminderDate.toISOString().slice(0, 10);
-                    reminderTimeInput.value = reminderDate.toISOString().slice(11, 16);
+                    reminderDateInput.value = formatDateInputLocal(reminderDate);
+                    reminderTimeInput.value = formatTimeInputLocal(reminderDate);
                 }
             } else {
                 if (reminderDateInput) reminderDateInput.value = '';
@@ -1146,7 +1146,26 @@ function buildLocalDateTime(dateStr, timeStr) {
     if (!dateStr || !timeStr) {
         return null;
     }
-    return `${dateStr}T${timeStr}`;
+
+    const date = new Date(`${dateStr}T${timeStr}:00`);
+    if (Number.isNaN(date.getTime())) {
+        return null;
+    }
+
+    return date.toISOString();
+}
+
+function formatDateInputLocal(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function formatTimeInputLocal(date) {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
 }
 
 function formatLocalDateTime(dateStr, timeStr) {
@@ -1239,8 +1258,8 @@ export async function sendInvoice(e) {
 
     const reminderDate = document.getElementById('invoice-reminder-date')?.value || '';
     const reminderTime = document.getElementById('invoice-reminder-time')?.value || '';
-    if ((reminderDate && !reminderTime) || (!reminderDate && reminderTime)) {
-        showInvoiceMessage('error', 'Please select both reminder date and time, or leave both blank.');
+    if (reminderDate && !reminderTime) {
+        showInvoiceMessage('error', 'Please select a reminder time.');
         return;
     }
     if (reminderDate && reminderTime) {
