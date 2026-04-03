@@ -8,12 +8,6 @@ let customEmailSchedules = [];
 let upcomingScheduleEntries = [];
 let schedulerLogItems = [];
 let schedulerLogPagination = null;
-let schedulerLogFilters = {
-    source: '',
-    type: '',
-    status: '',
-    search: '',
-};
 let customEmailRecipientSuggestions = [];
 let hasLoadedLogsTab = false;
 let latestLogPlainText = '';
@@ -1083,33 +1077,6 @@ function renderUpcomingSchedules() {
     `;
 }
 
-function renderSchedulerLogFilters(items = []) {
-    const sourceSelect = document.getElementById('scheduler-log-source');
-    const typeSelect = document.getElementById('scheduler-log-type');
-    const currentSource = sourceSelect?.value || '';
-    const currentType = typeSelect?.value || '';
-
-    if (sourceSelect) {
-        const sources = Array.from(new Set(items.map((item) => item.source))).sort();
-        sourceSelect.innerHTML = `<option value="">All</option>${
-            sources.map((value) => `<option value="${escapeHtml(value)}"${value === currentSource ? ' selected' : ''}>${escapeHtml(value)}</option>`).join('')
-        }`;
-        if (currentSource && !sources.includes(currentSource)) {
-            sourceSelect.value = currentSource;
-        }
-    }
-
-    if (typeSelect) {
-        const types = Array.from(new Set(items.map((item) => item.type))).sort();
-        typeSelect.innerHTML = `<option value="">All</option>${
-            types.map((value) => `<option value="${escapeHtml(value)}"${value === currentType ? ' selected' : ''}>${escapeHtml(value)}</option>`).join('')
-        }`;
-        if (currentType && !types.includes(currentType)) {
-            typeSelect.value = currentType;
-        }
-    }
-}
-
 function renderSchedulerLogs() {
     const container = document.getElementById('scheduler-log-list');
     if (!container) {
@@ -1220,10 +1187,6 @@ async function loadSchedulerLogs(page = 1) {
     const params = new URLSearchParams({
         per_page: 25,
         page,
-        source: schedulerLogFilters.source,
-        type: schedulerLogFilters.type,
-        status: schedulerLogFilters.status,
-        search: schedulerLogFilters.search,
     });
 
     try {
@@ -1235,7 +1198,6 @@ async function loadSchedulerLogs(page = 1) {
         const data = response.data || {};
         schedulerLogItems = Array.isArray(data.items) ? data.items : [];
         schedulerLogPagination = data.pagination || null;
-        renderSchedulerLogFilters(schedulerLogItems);
         renderSchedulerLogs();
     } catch (error) {
         console.error('Failed to load scheduler logs:', error);
@@ -1981,28 +1943,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const schedulerLogRefresh = document.getElementById('scheduler-log-refresh');
     if (schedulerLogRefresh) {
         schedulerLogRefresh.addEventListener('click', () => loadSchedulerLogs());
-    }
-
-    ['source', 'type', 'status'].forEach((field) => {
-        const el = document.getElementById(`scheduler-log-${field}`);
-        if (el) {
-            el.addEventListener('change', () => {
-                schedulerLogFilters[field] = el.value;
-                loadSchedulerLogs();
-            });
-        }
-    });
-
-    const schedulerLogSearch = document.getElementById('scheduler-log-search');
-    if (schedulerLogSearch) {
-        let timeout;
-        schedulerLogSearch.addEventListener('input', () => {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                schedulerLogFilters.search = schedulerLogSearch.value.trim();
-                loadSchedulerLogs();
-            }, 400);
-        });
     }
 
     const refreshLogsBtn = document.getElementById('refresh-logs-btn');

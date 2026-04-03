@@ -506,22 +506,5 @@
             <div id="custom-email-message" class="automation-test-message"></div>
         </div>
 
-        <div class="automation-card">
-            <div class="automation-card-head">
-                <div>
-                    <div class="automation-client-name">Upcoming Schedule Timeline</div>
-                    <div class="automation-client-email">Next run times for every custom email, invoice send, and activity report.</div>
-                </div>
-                <div class="scheduler-actions">
-                    <button type="button" class="btn btn-secondary btn-sm" id="upcoming-schedules-refresh">
-                        <i class="fas fa-rotate"></i>
-                        Refresh Timeline
-                    </button>
-                </div>
-            </div>
-            <div id="upcoming-schedules-list" class="scheduler-table-wrap">
-                <div class="automation-empty-row">Loading upcoming schedules...</div>
-            </div>
-        </div>
     </div>
 </div>
