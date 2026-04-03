@@ -537,6 +537,10 @@ export async function deleteLog(id) {
  * @param {number} id - Log entry ID
  */
 export async function duplicateLog(id) {
+    if (!confirm('A duplicate row will be created for today. Continue?')) {
+        return;
+    }
+
     try {
         const logResponse = await window.api.request(`/api/timesheet/logs/${id}`);
 
