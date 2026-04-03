@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\DailyActivitySchedule;
 use App\Models\Project;
+use App\Models\SchedulerLog;
 use App\Models\Setting;
 use App\Models\TimeLog;
 use App\Models\User;
@@ -1150,5 +1151,48 @@ class SettingController extends Controller
     </div>
 </body>
 </html>';
+    }
+
+    public function schedulerLogs(Request $request)
+    {
+        $perPage = min(max((int) $request->get('per_page', 20), 5), 100);
+        $source = $request->get('source');
+        $type = $request->get('type');
+        $status = $request->get('status');
+        $search = trim((string) $request->get('search', ''));
+
+        $query = SchedulerLog::query();
+
+        if ($source) {
+            $query->where('source', $source);
+        }
+        if ($type) {
+            $query->where('type', $type);
+        }
+        if ($status) {
+            $query->where('status', $status);
+        }
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('detail', 'like', "%{$search}%")
+                    ->orWhere('message', 'like', "%{$search}%");
+            });
+        }
+
+        $logs = $query->orderByDesc('executed_at')->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'items' => $logs->items(),
+                'pagination' => [
+                    'current_page' => $logs->currentPage(),
+                    'last_page' => $logs->lastPage(),
+                    'per_page' => $logs->perPage(),
+                    'total' => $logs->total(),
+                ],
+            ],
+        ]);
     }
 }

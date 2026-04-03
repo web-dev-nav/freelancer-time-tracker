@@ -100,19 +100,20 @@ Route::middleware('auth')->group(function () {
     });
 
     // Application settings routes (author only)
-    Route::prefix('settings')->name('settings.api.')->middleware('author')->group(function () {
-        Route::get('/', [SettingController::class, 'index'])->name('index');
-        Route::post('/', [SettingController::class, 'update'])->middleware('throttle:10,1')->name('update');
-        Route::post('/test-email', [SettingController::class, 'testEmail'])->middleware('throttle:3,1')->name('test-email');
-        Route::post('/test-daily-activity', [SettingController::class, 'testDailyActivityReport'])->middleware('throttle:3,1')->name('test-daily-activity');
-        Route::post('/flush-cache', [SettingController::class, 'flushCache'])->middleware('throttle:3,1')->name('flush-cache');
-        Route::get('/debug-email', [SettingController::class, 'debugEmail'])->name('debug-email');
-        Route::get('/logs', [SettingController::class, 'logs'])->name('logs');
-        Route::post('/logs/delete', [SettingController::class, 'deleteLogFile'])->middleware('throttle:10,1')->name('logs.delete');
-        Route::get('/custom-email-schedules', [CustomEmailScheduleController::class, 'index'])->name('custom-email-schedules.index');
-        Route::post('/custom-email-schedules', [CustomEmailScheduleController::class, 'store'])->middleware('throttle:10,1')->name('custom-email-schedules.store');
-        Route::patch('/custom-email-schedules/{schedule}', [CustomEmailScheduleController::class, 'update'])->middleware('throttle:10,1')->name('custom-email-schedules.update');
-        Route::post('/custom-email-schedules/{schedule}/cancel', [CustomEmailScheduleController::class, 'cancel'])->middleware('throttle:10,1')->name('custom-email-schedules.cancel');
-        Route::delete('/custom-email-schedules/{schedule}', [CustomEmailScheduleController::class, 'destroy'])->middleware('throttle:10,1')->name('custom-email-schedules.destroy');
-    });
+        Route::prefix('settings')->name('settings.api.')->middleware('author')->group(function () {
+            Route::get('/', [SettingController::class, 'index'])->name('index');
+            Route::post('/', [SettingController::class, 'update'])->middleware('throttle:10,1')->name('update');
+            Route::post('/test-email', [SettingController::class, 'testEmail'])->middleware('throttle:3,1')->name('test-email');
+            Route::post('/test-daily-activity', [SettingController::class, 'testDailyActivityReport'])->middleware('throttle:3,1')->name('test-daily-activity');
+            Route::post('/flush-cache', [SettingController::class, 'flushCache'])->middleware('throttle:3,1')->name('flush-cache');
+            Route::get('/debug-email', [SettingController::class, 'debugEmail'])->name('debug-email');
+            Route::get('/logs', [SettingController::class, 'logs'])->name('logs');
+            Route::post('/logs/delete', [SettingController::class, 'deleteLogFile'])->middleware('throttle:10,1')->name('logs.delete');
+            Route::get('/custom-email-schedules', [CustomEmailScheduleController::class, 'index'])->name('custom-email-schedules.index');
+            Route::post('/custom-email-schedules', [CustomEmailScheduleController::class, 'store'])->middleware('throttle:10,1')->name('custom-email-schedules.store');
+            Route::patch('/custom-email-schedules/{schedule}', [CustomEmailScheduleController::class, 'update'])->middleware('throttle:10,1')->name('custom-email-schedules.update');
+            Route::post('/custom-email-schedules/{schedule}/cancel', [CustomEmailScheduleController::class, 'cancel'])->middleware('throttle:10,1')->name('custom-email-schedules.cancel');
+            Route::delete('/custom-email-schedules/{schedule}', [CustomEmailScheduleController::class, 'destroy'])->middleware('throttle:10,1')->name('custom-email-schedules.destroy');
+            Route::get('/scheduler-logs', [SettingController::class, 'schedulerLogs'])->name('scheduler-logs');
+        });
 });

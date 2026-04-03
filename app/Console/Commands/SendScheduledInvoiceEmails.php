@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Invoice;
 use App\Models\Setting;
+use App\Services\SchedulerLogService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -57,6 +58,14 @@ class SendScheduledInvoiceEmails extends Command
                         $this->warn("Skipping invoice {$invoice->invoice_number}: No client email");
                         $invoice->scheduled_send_at = null;
                         $invoice->save();
+                        SchedulerLogService::record([
+                            'source' => 'invoice',
+                            'type' => 'Invoice Send',
+                            'name' => $invoice->invoice_number,
+                            'status' => 'skipped',
+                            'detail' => 'Missing client email',
+                            'payload' => ['invoice_id' => $invoice->id],
+                        ]);
                         continue;
                     }
 
@@ -126,6 +135,17 @@ class SendScheduledInvoiceEmails extends Command
                         'sent_via' => 'scheduled_cron',
                     ]);
 
+                    SchedulerLogService::record([
+                        'source' => 'invoice',
+                        'type' => 'Invoice Send',
+                        'name' => $invoice->invoice_number,
+                        'status' => 'sent',
+                        'detail' => 'Scheduled invoice email sent',
+                        'scheduled_at' => $invoice->scheduled_send_at,
+                        'executed_at' => Carbon::now(),
+                        'payload' => ['invoice_id' => $invoice->id, 'subject' => $subject],
+                    ]);
+
                     $this->info("✓ Sent invoice {$invoice->invoice_number} to {$invoice->client_email}");
                     $sent++;
 
@@ -134,6 +154,14 @@ class SendScheduledInvoiceEmails extends Command
                     Log::error("Failed to send scheduled invoice {$invoice->invoice_number}", [
                         'error' => $e->getMessage(),
                         'invoice_id' => $invoice->id,
+                    ]);
+                    SchedulerLogService::record([
+                        'source' => 'invoice',
+                        'type' => 'Invoice Send',
+                        'name' => $invoice->invoice_number,
+                        'status' => 'error',
+                        'detail' => $e->getMessage(),
+                        'payload' => ['invoice_id' => $invoice->id],
                     ]);
                     $failed++;
                 }
@@ -175,6 +203,14 @@ class SendScheduledInvoiceEmails extends Command
                     $this->warn("Skipping reminder {$invoice->invoice_number}: No client email");
                     $invoice->reminder_send_at = null;
                     $invoice->save();
+                    SchedulerLogService::record([
+                        'source' => 'invoice',
+                        'type' => 'Invoice Reminder',
+                        'name' => $invoice->invoice_number,
+                        'status' => 'skipped',
+                        'detail' => 'Missing client email',
+                        'payload' => ['invoice_id' => $invoice->id],
+                    ]);
                     continue;
                 }
 
@@ -224,12 +260,30 @@ class SendScheduledInvoiceEmails extends Command
                     'sent_via' => 'scheduled_reminder',
                 ]);
 
+                SchedulerLogService::record([
+                    'source' => 'invoice',
+                    'type' => 'Invoice Reminder',
+                    'name' => $invoice->invoice_number,
+                    'status' => 'sent',
+                    'detail' => 'Scheduled reminder sent',
+                    'executed_at' => Carbon::now(),
+                    'payload' => ['invoice_id' => $invoice->id, 'subject' => $subject],
+                ]);
+
                 $this->info("✓ Sent reminder for invoice {$invoice->invoice_number} to {$invoice->client_email}");
             } catch (\Exception $e) {
                 $this->error("Failed to send reminder for invoice {$invoice->invoice_number}: {$e->getMessage()}");
                 Log::error("Failed to send invoice reminder {$invoice->invoice_number}", [
                     'error' => $e->getMessage(),
                     'invoice_id' => $invoice->id,
+                ]);
+                SchedulerLogService::record([
+                    'source' => 'invoice',
+                    'type' => 'Invoice Reminder',
+                    'name' => $invoice->invoice_number,
+                    'status' => 'error',
+                    'detail' => $e->getMessage(),
+                    'payload' => ['invoice_id' => $invoice->id],
                 ]);
             }
         }

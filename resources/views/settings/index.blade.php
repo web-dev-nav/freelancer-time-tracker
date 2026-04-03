@@ -232,6 +232,10 @@
             <i class="fas fa-calendar-alt"></i>
             Scheduler
         </button>
+        <button class="settings-tab" data-tab="scheduler-log" onclick="switchTab('scheduler-log')">
+            <i class="fas fa-clipboard-list"></i>
+            Scheduler Log
+        </button>
         <button class="settings-tab" data-tab="logs" onclick="switchTab('logs')">
             <i class="fas fa-file-lines"></i>
             Logs
@@ -262,6 +266,10 @@
         {{-- Scheduler Tab --}}
         <div class="tab-content" id="scheduler-tab">
             @include('settings.tabs.scheduler')
+        </div>
+
+        <div class="tab-content" id="scheduler-log-tab">
+            @include('settings.tabs.scheduler-log')
         </div>
 
         {{-- Logs Tab --}}

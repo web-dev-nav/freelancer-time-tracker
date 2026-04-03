@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\DailyActivitySchedule;
 use App\Models\Setting;
 use App\Models\TimeLog;
+use App\Services\SchedulerLogService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
@@ -93,6 +94,14 @@ class SendDailyActivityReport extends Command
                 Log::warning('Daily activity schedule skipped: invalid client email', [
                     'client_email' => $schedule->client_email,
                 ]);
+                SchedulerLogService::record([
+                    'source' => 'daily_activity',
+                    'type' => 'Daily Activity',
+                    'name' => $schedule->client_name ?: 'Daily Activity Client',
+                    'status' => 'skipped',
+                    'detail' => 'Invalid client email',
+                    'payload' => ['client_email' => $schedule->client_email],
+                ]);
                 continue;
             }
 
@@ -166,6 +175,20 @@ class SendDailyActivityReport extends Command
                     'total_minutes' => $summary['total_minutes'],
                     'forced' => $forceSend,
                 ]);
+                SchedulerLogService::record([
+                    'source' => 'daily_activity',
+                    'type' => 'Daily Activity',
+                    'name' => $schedule->client_name ?: 'Daily Activity Client',
+                    'status' => 'sent',
+                    'detail' => 'Per-client report sent',
+                    'scheduled_at' => Carbon::createFromFormat('Y-m-d H:i', "{$today} {$sendTime}", $timezone),
+                    'executed_at' => Carbon::now(),
+                    'payload' => [
+                        'client_email' => $clientEmail,
+                        'total_sessions' => $summary['total_sessions'],
+                        'total_minutes' => $summary['total_minutes'],
+                    ],
+                ]);
             } catch (\Throwable $e) {
                 Log::error('Failed to send daily activity report (per-client)', [
                     'date' => $today,
@@ -173,6 +196,14 @@ class SendDailyActivityReport extends Command
                     'client_email' => $clientEmail,
                     'error' => $e->getMessage(),
                     'forced' => $forceSend,
+                ]);
+                SchedulerLogService::record([
+                    'source' => 'daily_activity',
+                    'type' => 'Daily Activity',
+                    'name' => $schedule->client_name ?: 'Daily Activity Client',
+                    'status' => 'error',
+                    'detail' => $e->getMessage(),
+                    'payload' => ['client_email' => $clientEmail],
                 ]);
             }
         }

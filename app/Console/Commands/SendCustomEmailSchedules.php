@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
+use App\Services\SchedulerLogService;
 
 class SendCustomEmailSchedules extends Command
 {
@@ -49,6 +50,14 @@ class SendCustomEmailSchedules extends Command
                 Log::warning('Custom email schedule skipped: no recipients', [
                     'schedule_id' => $schedule->id,
                 ]);
+                SchedulerLogService::record([
+                    'source' => 'custom_email',
+                    'type' => 'Custom Email',
+                    'name' => $schedule->name ?: 'Unnamed',
+                    'status' => 'skipped',
+                    'detail' => 'No recipients configured',
+                    'payload' => ['schedule_id' => $schedule->id],
+                ]);
                 continue;
             }
 
@@ -57,6 +66,14 @@ class SendCustomEmailSchedules extends Command
                 Log::warning('Custom email schedule skipped: invalid send time', [
                     'schedule_id' => $schedule->id,
                     'send_time' => $sendTime,
+                ]);
+                SchedulerLogService::record([
+                    'source' => 'custom_email',
+                    'type' => 'Custom Email',
+                    'name' => $schedule->name ?: 'Unnamed',
+                    'status' => 'skipped',
+                    'detail' => 'Invalid send time',
+                    'payload' => ['schedule_id' => $schedule->id, 'send_time' => $sendTime],
                 ]);
                 continue;
             }
@@ -128,10 +145,31 @@ class SendCustomEmailSchedules extends Command
                     'schedule_type' => $scheduleType,
                     'forced' => $forceSend,
                 ]);
+                $scheduledDate = $scheduleType === 'daily'
+                    ? $today
+                    : ($schedule->send_date?->toDateString() ?? $today);
+                SchedulerLogService::record([
+                    'source' => 'custom_email',
+                    'type' => 'Custom Email',
+                    'name' => $schedule->name ?: 'Unnamed',
+                    'status' => 'sent',
+                    'detail' => 'Email dispatched',
+                    'scheduled_at' => Carbon::createFromFormat('Y-m-d H:i', "{$scheduledDate} {$sendTime}", $timezone),
+                    'executed_at' => Carbon::now(),
+                    'payload' => ['schedule_id' => $schedule->id, 'recipients' => $recipients],
+                ]);
             } catch (\Throwable $e) {
                 Log::error('Failed to send custom scheduled email', [
                     'schedule_id' => $schedule->id,
                     'error' => $e->getMessage(),
+                ]);
+                SchedulerLogService::record([
+                    'source' => 'custom_email',
+                    'type' => 'Custom Email',
+                    'name' => $schedule->name ?: 'Unnamed',
+                    'status' => 'error',
+                    'detail' => $e->getMessage(),
+                    'payload' => ['schedule_id' => $schedule->id],
                 ]);
             }
         }

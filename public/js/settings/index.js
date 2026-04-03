@@ -6,6 +6,14 @@ let isLoading = false;
 let dailyActivityClientSchedules = [];
 let customEmailSchedules = [];
 let upcomingScheduleEntries = [];
+let schedulerLogItems = [];
+let schedulerLogPagination = null;
+let schedulerLogFilters = {
+    source: '',
+    type: '',
+    status: '',
+    search: '',
+};
 let customEmailRecipientSuggestions = [];
 let hasLoadedLogsTab = false;
 let latestLogPlainText = '';
@@ -226,6 +234,10 @@ window.switchTab = function(tabName) {
 
     if (window.location.hash !== `#${tabName}`) {
         window.location.hash = tabName;
+    }
+
+    if (tabName === 'scheduler-log') {
+        loadSchedulerLogs();
     }
 };
 
@@ -1071,6 +1083,169 @@ function renderUpcomingSchedules() {
     `;
 }
 
+function renderSchedulerLogFilters(items = []) {
+    const sourceSelect = document.getElementById('scheduler-log-source');
+    const typeSelect = document.getElementById('scheduler-log-type');
+    const currentSource = sourceSelect?.value || '';
+    const currentType = typeSelect?.value || '';
+
+    if (sourceSelect) {
+        const sources = Array.from(new Set(items.map((item) => item.source))).sort();
+        sourceSelect.innerHTML = `<option value="">All</option>${
+            sources.map((value) => `<option value="${escapeHtml(value)}"${value === currentSource ? ' selected' : ''}>${escapeHtml(value)}</option>`).join('')
+        }`;
+        if (currentSource && !sources.includes(currentSource)) {
+            sourceSelect.value = currentSource;
+        }
+    }
+
+    if (typeSelect) {
+        const types = Array.from(new Set(items.map((item) => item.type))).sort();
+        typeSelect.innerHTML = `<option value="">All</option>${
+            types.map((value) => `<option value="${escapeHtml(value)}"${value === currentType ? ' selected' : ''}>${escapeHtml(value)}</option>`).join('')
+        }`;
+        if (currentType && !types.includes(currentType)) {
+            typeSelect.value = currentType;
+        }
+    }
+}
+
+function renderSchedulerLogs() {
+    const container = document.getElementById('scheduler-log-list');
+    if (!container) {
+        return;
+    }
+
+    if (!Array.isArray(schedulerLogItems) || schedulerLogItems.length === 0) {
+        container.innerHTML = '<div class="automation-empty-row">No scheduler logs found.</div>';
+        renderSchedulerLogPagination();
+        return;
+    }
+
+    const rowsHtml = schedulerLogItems.map((entry) => {
+        const runAt = entry.run_at ? new Date(entry.run_at) : null;
+        const runAtDisplay = runAt && !Number.isNaN(runAt.getTime())
+            ? runAt.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+            })
+            : entry.run_at_local || '-';
+        const executedAt = entry.executed_at ? new Date(entry.executed_at) : null;
+        const executedDisplay = executedAt && !Number.isNaN(executedAt.getTime())
+            ? executedAt.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+            })
+            : '-';
+
+        const payload = entry.payload ? JSON.stringify(entry.payload) : '';
+
+        return `
+            <tr>
+                <td>
+                    <div><strong>${escapeHtml(entry.type)} • ${escapeHtml(entry.status)}</strong></div>
+                    <div class="scheduler-muted">${escapeHtml(entry.source)}</div>
+                </td>
+                <td>
+                    <div>${escapeHtml(entry.name || 'n/a')}</div>
+                    <small class="scheduler-muted">${escapeHtml(entry.detail || '')}</small>
+                </td>
+                <td>${escapeHtml(entry.message || payload || '—')}</td>
+                <td>
+                    <div>Scheduled: ${runAtDisplay}</div>
+                    <div>Executed: ${executedDisplay}</div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        <table class="scheduler-table">
+            <thead>
+                <tr>
+                    <th>Type / Status</th>
+                    <th>Name / Detail</th>
+                    <th>Message / Payload</th>
+                    <th>Timeline</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rowsHtml}
+            </tbody>
+        </table>
+    `;
+    renderSchedulerLogPagination();
+}
+
+function renderSchedulerLogPagination() {
+    const container = document.getElementById('scheduler-log-pagination');
+    if (!container) {
+        return;
+    }
+
+    if (!schedulerLogPagination) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const { current_page: current, last_page: last } = schedulerLogPagination;
+    container.innerHTML = `
+        <div style="display:flex;gap:6px;align-items:center;">
+            <button class="btn btn-sm btn-secondary" ${current <= 1 ? 'disabled' : ''} data-scheduler-page="${current - 1}">
+                <i class="fas fa-angle-left"></i>
+            </button>
+            <span style="font-size:13px;">Page ${current} of ${last}</span>
+            <button class="btn btn-sm btn-secondary" ${current >= last ? 'disabled' : ''} data-scheduler-page="${current + 1}">
+                <i class="fas fa-angle-right"></i>
+            </button>
+        </div>
+    `;
+    container.querySelectorAll('[data-scheduler-page]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const page = Number(btn.getAttribute('data-scheduler-page')) || 1;
+            loadSchedulerLogs(page);
+        });
+    });
+}
+
+async function loadSchedulerLogs(page = 1) {
+    const params = new URLSearchParams({
+        per_page: 25,
+        page,
+        source: schedulerLogFilters.source,
+        type: schedulerLogFilters.type,
+        status: schedulerLogFilters.status,
+        search: schedulerLogFilters.search,
+    });
+
+    try {
+        const response = await window.api.request(`/api/settings/scheduler-logs?${params.toString()}`);
+        if (!response?.success) {
+            throw new Error(response?.message || 'Failed to load scheduler logs');
+        }
+
+        const data = response.data || {};
+        schedulerLogItems = Array.isArray(data.items) ? data.items : [];
+        schedulerLogPagination = data.pagination || null;
+        renderSchedulerLogFilters(schedulerLogItems);
+        renderSchedulerLogs();
+    } catch (error) {
+        console.error('Failed to load scheduler logs:', error);
+        const container = document.getElementById('scheduler-log-list');
+        if (container) {
+            container.innerHTML = `<div class="automation-empty-row">Error loading logs: ${escapeHtml(error.message || 'unknown')}</div>`;
+        }
+    }
+}
+
 async function loadCustomEmailSchedules() {
     try {
         const response = await window.api.request('/api/settings/custom-email-schedules');
@@ -1801,6 +1976,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const upcomingSchedulesRefresh = document.getElementById('upcoming-schedules-refresh');
     if (upcomingSchedulesRefresh) {
         upcomingSchedulesRefresh.addEventListener('click', () => loadCustomEmailSchedules());
+    }
+
+    const schedulerLogRefresh = document.getElementById('scheduler-log-refresh');
+    if (schedulerLogRefresh) {
+        schedulerLogRefresh.addEventListener('click', () => loadSchedulerLogs());
+    }
+
+    ['source', 'type', 'status'].forEach((field) => {
+        const el = document.getElementById(`scheduler-log-${field}`);
+        if (el) {
+            el.addEventListener('change', () => {
+                schedulerLogFilters[field] = el.value;
+                loadSchedulerLogs();
+            });
+        }
+    });
+
+    const schedulerLogSearch = document.getElementById('scheduler-log-search');
+    if (schedulerLogSearch) {
+        let timeout;
+        schedulerLogSearch.addEventListener('input', () => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                schedulerLogFilters.search = schedulerLogSearch.value.trim();
+                loadSchedulerLogs();
+            }, 400);
+        });
     }
 
     const refreshLogsBtn = document.getElementById('refresh-logs-btn');
