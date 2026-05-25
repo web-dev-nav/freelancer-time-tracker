@@ -19,6 +19,53 @@ let improveButtonSelectionBound = false;
 
 let timeInputsInitialized = false;
 
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function formatPlainDescriptionForDetails(rawText) {
+    const normalized = String(rawText || '')
+        .replace(/\r\n|\r/g, '\n')
+        .replace(/([a-z0-9])\.([A-Z])/g, '$1. $2')
+        .trim();
+
+    if (!normalized) {
+        return '';
+    }
+
+    const withSectionBreaks = normalized.replace(/\b(Completed:|Next Steps:)\s*/gi, (match, label, offset) => {
+        const safeLabel = label.endsWith(':') ? label : `${label}:`;
+        if (offset === 0) {
+            return `<strong>${safeLabel}</strong> `;
+        }
+        return `<br><br><strong>${safeLabel}</strong> `;
+    });
+
+    return escapeHtml(withSectionBreaks)
+        .replace(/&lt;strong&gt;/g, '<strong>')
+        .replace(/&lt;\/strong&gt;/g, '</strong>')
+        .replace(/\n/g, '<br>');
+}
+
+function formatDescriptionForDetails(rawDescription) {
+    const raw = String(rawDescription || '');
+    if (!raw.trim()) {
+        return '';
+    }
+
+    const looksLikeHtml = /<[^>]+>/.test(raw);
+    if (looksLikeHtml) {
+        return Utils.sanitizeRichTextHtml(raw);
+    }
+
+    return formatPlainDescriptionForDetails(raw);
+}
+
 function normalizeTimeInputValue(raw) {
     const digits = String(raw || '').replace(/\D/g, '').slice(0, 4);
     if (digits.length <= 2) return digits;
@@ -805,8 +852,8 @@ export async function viewDetails(logId) {
                 : '-';
             document.getElementById('detail-duration').textContent = log.formatted_duration || (log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-');
             const detailDescription = document.getElementById('detail-work-description');
-            const sanitizedDescription = Utils.sanitizeRichTextHtml(log.work_description || '');
-            detailDescription.innerHTML = sanitizedDescription || 'No description provided';
+            const formattedDescription = formatDescriptionForDetails(log.work_description || '');
+            detailDescription.innerHTML = formattedDescription || 'No description provided';
 
             // Show modal
             showViewDetailsModal();
