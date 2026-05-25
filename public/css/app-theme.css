@@ -239,3 +239,28 @@ body.dark-mode #theme-toggle {
 body.dark-mode #theme-toggle:hover {
     background: rgba(255, 255, 255, 0.14);
 }
+
+/* Normalize legacy inline dark text colors so they remain visible in dark mode. */
+body.dark-mode [style*="color: #111827"],
+body.dark-mode [style*="color:#111827"],
+body.dark-mode [style*="color: #1f2937"],
+body.dark-mode [style*="color:#1f2937"],
+body.dark-mode [style*="color: #0f172a"],
+body.dark-mode [style*="color:#0f172a"],
+body.dark-mode [style*="color: #374151"],
+body.dark-mode [style*="color:#374151"],
+body.dark-mode [style*="color: #334155"],
+body.dark-mode [style*="color:#334155"],
+body.dark-mode [style*="color: #475569"],
+body.dark-mode [style*="color:#475569"] {
+    color: var(--text-primary) !important;
+}
+
+body.dark-mode [style*="color: #64748b"],
+body.dark-mode [style*="color:#64748b"],
+body.dark-mode [style*="color: #6b7280"],
+body.dark-mode [style*="color:#6b7280"],
+body.dark-mode [style*="color: #9ca3af"],
+body.dark-mode [style*="color:#9ca3af"] {
+    color: var(--text-secondary) !important;
+}
