@@ -6,6 +6,7 @@
  */
 
 const editors = new Map();
+const changeCallbacks = new Map();
 
 function normalizeHtml(html) {
     if (!html) return '';
@@ -61,8 +62,17 @@ export function initRichTextEditor(textareaId, options = {}) {
         quill.clipboard.dangerouslyPasteHTML(initialValue);
     }
 
-    quill.on('text-change', () => {
+    quill.on('text-change', (_delta, _oldDelta, source) => {
         syncTextarea(textareaId);
+
+        const callbacks = changeCallbacks.get(textareaId) || [];
+        callbacks.forEach((callback) => {
+            try {
+                callback({ source });
+            } catch (_error) {
+                // Ignore callback failures to avoid breaking editor input.
+            }
+        });
     });
 
     editors.set(textareaId, { quill });
@@ -156,4 +166,12 @@ export function replaceSelectedText(textareaId, text) {
     syncTextarea(textareaId);
 
     return true;
+}
+
+export function onEditorChange(textareaId, callback) {
+    if (typeof callback !== 'function') return;
+
+    const callbacks = changeCallbacks.get(textareaId) || [];
+    callbacks.push(callback);
+    changeCallbacks.set(textareaId, callbacks);
 }

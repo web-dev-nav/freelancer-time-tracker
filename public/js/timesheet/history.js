@@ -8,7 +8,13 @@
 import * as State from './state.js';
 import * as Utils from './utils.js';
 import { loadDashboardStats } from './dashboard.js';
-import { getEditorHtml, getEditorPlainText, setEditorContent, clearEditorContent, getSelectedText, replaceSelectedText } from './rich-text.js';
+import { getEditorHtml, getEditorPlainText, setEditorContent, clearEditorContent, getSelectedText, replaceSelectedText, onEditorChange } from './rich-text.js';
+
+const AUTO_SAVE_DELAY_MS = 1200;
+let autoSaveTimeoutId = null;
+let autoSaveInFlight = false;
+let autoSaveLastFingerprint = '';
+let autoSaveListenersBound = false;
 
 let timeInputsInitialized = false;
 
@@ -303,6 +309,8 @@ export function createNewEntry() {
 
     // Show the modal
     showEditLogModal();
+    setAutoSaveStatus('Auto-save starts after the entry is created.');
+    autoSaveLastFingerprint = buildAutoSaveFingerprint();
 }
 
 /**
@@ -354,6 +362,8 @@ export async function editLog(id) {
 
             // Show the modal
             showEditLogModal();
+            autoSaveLastFingerprint = buildAutoSaveFingerprint();
+            setAutoSaveStatus('All changes saved.');
         } else {
             window.notify.error(response.message);
         }
@@ -372,6 +382,7 @@ export function showEditLogModal() {
     if (!modal || !overlay) return;
 
     ensureTimeInputsInitialized();
+    bindAutoSaveListeners();
 
     modal.classList.add('show');
     overlay.classList.add('show');
@@ -458,6 +469,10 @@ export function hideEditLogModal() {
     const form = document.getElementById('edit-log-form');
     if (form) form.reset();
     clearEditorContent('edit-work-description');
+    clearAutoSaveTimer();
+    autoSaveInFlight = false;
+    autoSaveLastFingerprint = '';
+    setAutoSaveStatus('');
 }
 
 /**
@@ -511,6 +526,7 @@ export async function updateLog() {
         console.log('Response:', response);
 
         if (response.success) {
+            autoSaveLastFingerprint = buildFingerprintFromValues(date, clockInTime, clockOutTime, descriptionHtml);
             hideEditLogModal();
             loadHistory(State.currentPage); // Reload current page
             loadDashboardStats(); // Refresh dashboard stats
@@ -521,6 +537,123 @@ export async function updateLog() {
     } catch (error) {
         console.error('Error submitting log:', error);
         window.notify.error(logId ? 'Failed to update entry: ' + error.message : 'Failed to create entry: ' + error.message);
+    }
+}
+
+function bindAutoSaveListeners() {
+    if (autoSaveListenersBound) return;
+
+    const dateInput = document.getElementById('edit-clock-in-date');
+    const clockInInput = document.getElementById('edit-clock-in-time');
+    const clockOutInput = document.getElementById('edit-clock-out-time');
+
+    [dateInput, clockInInput, clockOutInput].forEach((input) => {
+        if (!input) return;
+        input.addEventListener('input', scheduleAutoSave);
+        input.addEventListener('change', scheduleAutoSave);
+    });
+
+    onEditorChange('edit-work-description', ({ source }) => {
+        if (source === 'user') {
+            scheduleAutoSave();
+        }
+    });
+
+    autoSaveListenersBound = true;
+}
+
+function getEditLogId() {
+    const logId = document.getElementById('edit-log-id')?.value || '';
+    return String(logId).trim();
+}
+
+function buildFingerprintFromValues(date, clockInTime, clockOutTime, descriptionHtml) {
+    return [date, clockInTime, clockOutTime, descriptionHtml].join('||');
+}
+
+function buildAutoSaveFingerprint() {
+    const date = document.getElementById('edit-clock-in-date')?.value || '';
+    const clockInTime = document.getElementById('edit-clock-in-time')?.value || '';
+    const clockOutTime = document.getElementById('edit-clock-out-time')?.value || '';
+    const descriptionHtml = getEditorHtml('edit-work-description');
+    return buildFingerprintFromValues(date, clockInTime, clockOutTime, descriptionHtml);
+}
+
+function clearAutoSaveTimer() {
+    if (!autoSaveTimeoutId) return;
+    clearTimeout(autoSaveTimeoutId);
+    autoSaveTimeoutId = null;
+}
+
+function setAutoSaveStatus(message) {
+    const statusEl = document.getElementById('edit-log-autosave-status');
+    if (!statusEl) return;
+    statusEl.textContent = message || '';
+}
+
+function scheduleAutoSave() {
+    const logId = getEditLogId();
+    if (!logId) return; // Only autosave existing entries
+
+    const date = document.getElementById('edit-clock-in-date')?.value || '';
+    const clockInTime = document.getElementById('edit-clock-in-time')?.value || '';
+    const clockOutTime = document.getElementById('edit-clock-out-time')?.value || '';
+    const descriptionPlainText = getEditorPlainText('edit-work-description');
+    const descriptionHtml = getEditorHtml('edit-work-description');
+
+    if (!date || !clockInTime || !clockOutTime || !descriptionPlainText) {
+        setAutoSaveStatus('Add required fields to auto-save.');
+        return;
+    }
+
+    const nextFingerprint = buildFingerprintFromValues(date, clockInTime, clockOutTime, descriptionHtml);
+    if (nextFingerprint === autoSaveLastFingerprint) {
+        setAutoSaveStatus('All changes saved.');
+        return;
+    }
+
+    clearAutoSaveTimer();
+    setAutoSaveStatus('Typing…');
+
+    autoSaveTimeoutId = setTimeout(() => {
+        performAutoSave(logId, {
+            date,
+            clock_in_time: clockInTime,
+            clock_out_time: clockOutTime,
+            work_description: descriptionHtml,
+        }, nextFingerprint);
+    }, AUTO_SAVE_DELAY_MS);
+}
+
+async function performAutoSave(logId, payload, fingerprint) {
+    if (autoSaveInFlight) {
+        // Let the in-flight save complete; next input will queue another save.
+        return;
+    }
+
+    if (!document.getElementById('edit-log-modal')?.classList.contains('show')) {
+        return;
+    }
+
+    autoSaveInFlight = true;
+    setAutoSaveStatus('Auto-saving…');
+
+    try {
+        const response = await window.api.request(`/api/timesheet/logs/${logId}`, {
+            method: 'PUT',
+            body: JSON.stringify(payload)
+        });
+
+        if (response.success) {
+            autoSaveLastFingerprint = fingerprint;
+            setAutoSaveStatus('All changes saved.');
+        } else {
+            setAutoSaveStatus('Auto-save failed.');
+        }
+    } catch (_error) {
+        setAutoSaveStatus('Auto-save failed.');
+    } finally {
+        autoSaveInFlight = false;
     }
 }
 

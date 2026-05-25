@@ -44,6 +44,7 @@
                         <i class="fas fa-edit"></i>
                         Work Description
                     </label>
+                    <span id="edit-log-autosave-status" class="autosave-status"></span>
                     <button type="button" class="btn btn-sm btn-outline-secondary" id="improve-work-description-btn" onclick="window.improveWorkDescription && window.improveWorkDescription()">
                         <i class="fas fa-magic"></i>
                         Improve
