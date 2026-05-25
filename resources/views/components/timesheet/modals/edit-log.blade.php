@@ -3,7 +3,7 @@
 <div class="modal" id="edit-log-modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Edit Time Log</h3>
+            <h3>Edit Time Log (Layout Update Check)</h3>
             <button class="modal-close" onclick="hideEditLogModal()">
                 <i class="fas fa-times"></i>
             </button>
