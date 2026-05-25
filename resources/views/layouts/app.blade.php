@@ -33,19 +33,29 @@
             : null;
     @endphp
 
-    <div class="container-xl py-2">
+    <div class="container-xl py-2 app-shell">
         <header class="app-header">
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
-                <div>
-                    <h1 class="app-title mb-1">
+            <div class="app-header-grid">
+                <div class="app-header-main">
+                    <h1 class="app-title mb-1 d-flex align-items-center gap-2">
                         <i class="fas fa-clock me-2"></i>
                         Professional Timesheet
                     </h1>
                     <p class="app-subtitle mb-0">Simple, reliable time tracking for professionals</p>
+                    <div class="app-header-meta">
+                        <span class="app-meta-pill">
+                            <i class="fas fa-bolt"></i>
+                            Live Workspace
+                        </span>
+                        <span class="app-meta-pill">
+                            <i class="fas fa-shield-alt"></i>
+                            Secure Session
+                        </span>
+                    </div>
                 </div>
-                <div class="d-flex flex-wrap align-items-center gap-2">
+                <div class="app-header-controls">
                     @auth
-                        <span class="badge text-bg-light border">
+                        <span class="badge text-bg-light border app-user-badge">
                             {{ auth()->user()->name }} ({{ auth()->user()->role }})
                         </span>
                         <form method="POST" action="{{ route('logout') }}" class="d-inline">
