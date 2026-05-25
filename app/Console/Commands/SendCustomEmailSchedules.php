@@ -117,6 +117,7 @@ class SendCustomEmailSchedules extends Command
                     'name' => $schedule->name,
                     'subject' => $schedule->subject,
                     'body' => $schedule->body,
+                    'body_html' => $this->sanitizeEmailBodyHtml((string) ($schedule->body ?? '')),
                 ], function ($message) use ($schedule, $recipients, $mailerConfig): void {
                     $message->to($recipients)->subject($schedule->subject);
 
@@ -237,5 +238,22 @@ class SendCustomEmailSchedules extends Command
             'from_address' => $emailSettings['email_from_address'] ?? config('mail.from.address'),
             'from_name' => $emailSettings['email_from_name'] ?? config('mail.from.name'),
         ];
+    }
+
+    private function sanitizeEmailBodyHtml(string $value): string
+    {
+        $raw = trim($value);
+        if ($raw === '') {
+            return '';
+        }
+
+        $withoutScripts = preg_replace('/<(script|style)\b[^>]*>.*?<\/\1>/is', '', $raw) ?? $raw;
+        $withoutComments = preg_replace('/<!--.*?-->/s', '', $withoutScripts) ?? $withoutScripts;
+        $allowed = '<p><br><strong><b><em><i><u><ul><ol><li><blockquote>';
+        $stripped = strip_tags($withoutComments, $allowed);
+        $clean = preg_replace('/<([a-z0-9]+)(?:\s[^>]*)?>/i', '<$1>', $stripped) ?? $stripped;
+        $clean = preg_replace("/\r\n|\r/", "\n", $clean) ?? $clean;
+
+        return trim($clean);
     }
 }

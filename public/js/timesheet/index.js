@@ -306,54 +306,11 @@ function setupHistoryButtonListeners() {
             }
         }
 
-        // Check if clicked on modal overlay (background)
+        // Prevent accidental modal close when clicking overlay/background.
         const modalOverlay = target.closest('#modal-overlay');
         if (modalOverlay && target.id === 'modal-overlay') {
             e.preventDefault();
             e.stopPropagation();
-
-            const openEditModal = document.querySelector('#edit-log-modal.show');
-            const editLogId = document.getElementById('edit-log-id');
-            const isCreateMode = !!(openEditModal && editLogId && !editLogId.value);
-            const sendInvoiceModalOpen = document.querySelector('#send-invoice-modal.show');
-
-            if (isCreateMode || sendInvoiceModalOpen) {
-                return;
-            }
-
-            // Find which modal is currently open and close it
-            const openEditModalForClose = document.querySelector('#edit-log-modal.show');
-            const openViewModal = document.querySelector('#view-details-modal.show');
-            const openClockOutModal = document.querySelector('#clock-out-modal.show');
-            const openProjectModal = document.querySelector('#project-modal.show');
-            const openCreateInvoiceModal = document.querySelector('#create-invoice-modal.show');
-            const openSendInvoiceModal = document.querySelector('#send-invoice-modal.show');
-            const openEditInvoiceModal = document.querySelector('#edit-invoice-modal.show');
-            const openAddItemModal = document.querySelector('#add-item-modal.show');
-            const openInvoiceHistoryModal = document.querySelector('#invoice-history-modal.show');
-            const openSettingsModal = document.querySelector('#settings-modal.show');
-
-            if (openEditModalForClose && typeof window.hideEditLogModal === 'function') {
-                window.hideEditLogModal();
-            } else if (openViewModal && typeof window.hideViewDetailsModal === 'function') {
-                window.hideViewDetailsModal();
-            } else if (openClockOutModal && typeof window.hideClockOutModal === 'function') {
-                window.hideClockOutModal();
-            } else if (openProjectModal && typeof window.hideProjectModal === 'function') {
-                window.hideProjectModal();
-            } else if (openAddItemModal && typeof window.hideAddItemModal === 'function') {
-                window.hideAddItemModal();
-            } else if (openEditInvoiceModal && typeof window.hideEditInvoiceModal === 'function') {
-                window.hideEditInvoiceModal();
-            } else if (openCreateInvoiceModal && typeof window.hideCreateInvoiceModal === 'function') {
-                window.hideCreateInvoiceModal();
-            } else if (openSendInvoiceModal && typeof window.hideSendInvoiceModal === 'function') {
-                window.hideSendInvoiceModal();
-            } else if (openInvoiceHistoryModal && typeof window.hideInvoiceHistoryModal === 'function') {
-                window.hideInvoiceHistoryModal();
-            } else if (openSettingsModal && typeof window.hideSettingsModal === 'function') {
-                window.hideSettingsModal();
-            }
             return;
         }
     }, true); // Use capture phase

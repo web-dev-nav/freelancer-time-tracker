@@ -234,11 +234,14 @@ class CustomEmailScheduleController extends Controller
 
     private function formatSchedule(CustomEmailSchedule $schedule): array
     {
+        $body = (string) ($schedule->body ?? '');
+
         return [
             'id' => $schedule->id,
             'name' => $schedule->name,
             'subject' => $schedule->subject,
-            'body' => $schedule->body,
+            'body' => $body,
+            'body_html' => $this->sanitizeEmailBodyHtml($body),
             'recipients' => $schedule->recipients ?? [],
             'schedule_type' => $schedule->schedule_type,
             'send_time' => $schedule->send_time,
@@ -251,6 +254,23 @@ class CustomEmailScheduleController extends Controller
             'created_at' => $schedule->created_at?->toDateTimeString(),
             'updated_at' => $schedule->updated_at?->toDateTimeString(),
         ];
+    }
+
+    private function sanitizeEmailBodyHtml(string $value): string
+    {
+        $raw = trim($value);
+        if ($raw === '') {
+            return '';
+        }
+
+        $withoutScripts = preg_replace('/<(script|style)\b[^>]*>.*?<\/\1>/is', '', $raw) ?? $raw;
+        $withoutComments = preg_replace('/<!--.*?-->/s', '', $withoutScripts) ?? $withoutScripts;
+        $allowed = '<p><br><strong><b><em><i><u><ul><ol><li><blockquote>';
+        $stripped = strip_tags($withoutComments, $allowed);
+        $clean = preg_replace('/<([a-z0-9]+)(?:\s[^>]*)?>/i', '<$1>', $stripped) ?? $stripped;
+        $clean = preg_replace("/\r\n|\r/", "\n", $clean) ?? $clean;
+
+        return trim($clean);
     }
 
     /**

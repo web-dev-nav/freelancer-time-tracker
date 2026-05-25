@@ -805,8 +805,8 @@ export async function viewDetails(logId) {
                 : '-';
             document.getElementById('detail-duration').textContent = log.formatted_duration || (log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-');
             const detailDescription = document.getElementById('detail-work-description');
-            const plainDescription = Utils.htmlToPlainText(log.work_description || '');
-            detailDescription.textContent = plainDescription || 'No description provided';
+            const sanitizedDescription = Utils.sanitizeRichTextHtml(log.work_description || '');
+            detailDescription.innerHTML = sanitizedDescription || 'No description provided';
 
             // Show modal
             showViewDetailsModal();

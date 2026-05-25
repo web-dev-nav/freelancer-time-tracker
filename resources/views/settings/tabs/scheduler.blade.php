@@ -334,11 +334,24 @@
         font-size: 13px;
         line-height: 1.5;
         display: none;
-        white-space: pre-wrap;
+        white-space: normal;
     }
 
     .scheduler-preview.active {
         display: block;
+    }
+
+    .scheduler-preview p {
+        margin: 0 0 10px;
+    }
+
+    .scheduler-preview p:last-child {
+        margin-bottom: 0;
+    }
+
+    .scheduler-preview ul,
+    .scheduler-preview ol {
+        margin: 8px 0 8px 18px;
     }
 
     .scheduler-actions {

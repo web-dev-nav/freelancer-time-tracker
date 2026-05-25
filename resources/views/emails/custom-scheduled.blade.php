@@ -32,6 +32,16 @@
             color: #1f2937;
             white-space: normal;
         }
+        .email-body p {
+            margin: 0 0 10px;
+        }
+        .email-body p:last-child {
+            margin-bottom: 0;
+        }
+        .email-body ul,
+        .email-body ol {
+            margin: 8px 0 8px 18px;
+        }
     </style>
 </head>
 <body>
@@ -39,7 +49,7 @@
         @if(!empty($name))
             <h1 class="email-title">{{ $name }}</h1>
         @endif
-        <div class="email-body">{!! nl2br(e($body ?? '')) !!}</div>
+        <div class="email-body">{!! $body_html ?: nl2br(e($body ?? '')) !!}</div>
     </div>
 </body>
 </html>

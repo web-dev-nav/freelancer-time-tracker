@@ -592,6 +592,20 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+function formatSchedulerBodyPreview(schedule) {
+    const bodyHtml = String(schedule?.body_html || '').trim();
+    if (bodyHtml !== '') {
+        return bodyHtml;
+    }
+
+    const plainBody = String(schedule?.body || '').trim();
+    if (plainBody === '') {
+        return 'No message body provided.';
+    }
+
+    return escapeHtml(plainBody).replace(/\r\n|\r|\n/g, '<br>');
+}
+
 function setLogsStatus(message, type = 'info') {
     const status = document.getElementById('logs-status');
     if (!status) {
@@ -951,7 +965,7 @@ function renderCustomEmailSchedules() {
         const lastSent = schedule.last_sent_date ? schedule.last_sent_date : '-';
         const sentAt = schedule.sent_at ? schedule.sent_at : '-';
 
-        const bodyPreview = escapeHtml(schedule.body || '');
+        const bodyPreview = formatSchedulerBodyPreview(schedule);
         const typeBadge = isInvoiceSchedule ? '<span class="automation-pill status-scheduled" style="margin-left:6px;">invoice</span>' : '';
 
         return `
@@ -987,7 +1001,7 @@ function renderCustomEmailSchedules() {
             </tr>
             <tr data-custom-email-preview="${schedule.id}">
                 <td colspan="6">
-                    <div class="scheduler-preview">${bodyPreview || 'No message body provided.'}</div>
+                    <div class="scheduler-preview">${bodyPreview}</div>
                 </td>
             </tr>
         `;
