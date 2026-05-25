@@ -386,6 +386,7 @@ class SendDailyActivityReport extends Command
                 'clock_out' => $clockOutLocal?->format('h:i A') ?? '-',
                 'duration' => $this->formatMinutes((int) ($log->total_minutes ?? 0)),
                 'description_text' => $this->normalizeDescriptionForEmail((string) ($log->work_description ?: '')),
+                'description_html' => $this->sanitizeDescriptionHtmlForEmail((string) ($log->work_description ?: '')),
             ];
         })->all();
     }
@@ -403,6 +404,26 @@ class SendDailyActivityReport extends Command
         $normalized = preg_replace("/\r\n|\r/", "\n", $decoded) ?? $decoded;
 
         return trim($normalized) !== '' ? trim($normalized) : '-';
+    }
+
+    private function sanitizeDescriptionHtmlForEmail(string $value): string
+    {
+        $raw = trim($value);
+        if ($raw === '') {
+            return '-';
+        }
+
+        $withoutScripts = preg_replace('/<(script|style)\b[^>]*>.*?<\/\1>/is', '', $raw) ?? $raw;
+        $withoutComments = preg_replace('/<!--.*?-->/s', '', $withoutScripts) ?? $withoutScripts;
+        $allowed = '<p><br><strong><b><em><i><u><ul><ol><li><blockquote>';
+        $stripped = strip_tags($withoutComments, $allowed);
+
+        // Remove all attributes from allowed tags to avoid unsafe inline payloads.
+        $clean = preg_replace('/<([a-z0-9]+)(?:\s[^>]*)?>/i', '<$1>', $stripped) ?? $stripped;
+        $clean = preg_replace("/\r\n|\r/", "\n", $clean) ?? $clean;
+        $clean = trim($clean);
+
+        return $clean !== '' ? $clean : '-';
     }
 
     private function formatMinutes(int $minutes): string

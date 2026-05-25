@@ -186,6 +186,31 @@
             margin-top: 4px;
         }
 
+        .rich-text p {
+            margin: 0 0 6px;
+        }
+
+        .rich-text p:last-child {
+            margin-bottom: 0;
+        }
+
+        .rich-text ul,
+        .rich-text ol {
+            margin: 6px 0 6px 18px;
+            padding-left: 0;
+        }
+
+        .rich-text li {
+            margin: 2px 0;
+        }
+
+        .rich-text blockquote {
+            margin: 6px 0;
+            padding-left: 10px;
+            border-left: 3px solid #d1d5db;
+            color: #4b5563;
+        }
+
         .totals-section {
             margin: 30px 0;
             text-align: right;
@@ -318,6 +343,18 @@
         $companyAddress = $formatAddress(
             $invoice->company_address ?? ($companySettings['invoice_company_address'] ?? null)
         );
+        $sanitizeRichTextForPdf = function ($value) {
+            $raw = trim((string) $value);
+            if ($raw === '') {
+                return '';
+            }
+            $withoutScripts = preg_replace('/<(script|style)\b[^>]*>.*?<\/\1>/is', '', $raw) ?? $raw;
+            $withoutComments = preg_replace('/<!--.*?-->/s', '', $withoutScripts) ?? $withoutScripts;
+            $allowed = '<p><br><strong><b><em><i><u><ul><ol><li><blockquote>';
+            $stripped = strip_tags($withoutComments, $allowed);
+            $clean = preg_replace('/<([a-z0-9]+)(?:\s[^>]*)?>/i', '<$1>', $stripped) ?? $stripped;
+            return trim($clean);
+        };
         $taxNumber = $companySettings['invoice_tax_number'] ?? null;
     @endphp
     <div class="invoice-header">
@@ -379,7 +416,7 @@
     @if($invoice->description)
         <div style="margin: 20px 0; padding: 15px; background-color: #f0f9ff; border-left: 4px solid #3b82f6;">
             <div style="font-size: 12px; color: #6b7280; margin-bottom: 5px;">PROJECT DESCRIPTION</div>
-            <div style="color: #1f2937; font-size: 14px;">{{ $invoice->description }}</div>
+            <div class="rich-text" style="color: #1f2937; font-size: 14px;">{!! $sanitizeRichTextForPdf($invoice->description) !!}</div>
         </div>
     @endif
 
@@ -398,7 +435,7 @@
                 <tr>
                     <td>{{ $item->formatted_work_date }}</td>
                     <td>
-                        {{ $item->description }}
+                        <div class="rich-text">{!! $sanitizeRichTextForPdf($item->description) !!}</div>
                     </td>
                     <td>{{ number_format($item->hours, 2) }}</td>
                     <td>${{ number_format($item->rate, 2) }}</td>
