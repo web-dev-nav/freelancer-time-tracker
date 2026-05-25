@@ -15,6 +15,7 @@ let autoSaveTimeoutId = null;
 let autoSaveInFlight = false;
 let autoSaveLastFingerprint = '';
 let autoSaveListenersBound = false;
+let improveButtonSelectionBound = false;
 
 let timeInputsInitialized = false;
 
@@ -426,9 +427,9 @@ export async function improveWorkDescription() {
 
     if (!button) return;
 
-    const selectedText = getSelectedText('edit-work-description');
+    const selectedText = getSelectedText('edit-work-description') || window.getSelection()?.toString() || '';
     const isSelectionMode = selectedText.length > 0;
-    const originalText = isSelectionMode ? selectedText : '';
+    const originalText = isSelectionMode ? selectedText.trim() : '';
 
     if (!originalText) {
         window.notify.error('Please highlight the text you want AI to improve.');
@@ -581,7 +582,23 @@ function bindAutoSaveListeners() {
         }
     });
 
+    bindImproveButtonSelectionPreserver();
+
     autoSaveListenersBound = true;
+}
+
+function bindImproveButtonSelectionPreserver() {
+    if (improveButtonSelectionBound) return;
+
+    const button = document.getElementById('improve-work-description-btn');
+    if (!button) return;
+
+    // Preserve editor selection while clicking Improve so highlighted text remains available.
+    button.addEventListener('mousedown', (event) => {
+        event.preventDefault();
+    });
+
+    improveButtonSelectionBound = true;
 }
 
 function getEditLogId() {

@@ -154,7 +154,7 @@ export function getSelectedText(textareaId) {
     const range = getEditorSelection(textareaId);
     if (!range || !range.length) return '';
 
-    return String(entry.quill.getText(range.index, range.length) || '').trim();
+    return String(entry.quill.getText(range.index, range.length) || '');
 }
 
 export function replaceSelectedText(textareaId, text) {
