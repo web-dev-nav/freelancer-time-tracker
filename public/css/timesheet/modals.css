@@ -151,8 +151,8 @@
 }
 
 #edit-log-modal {
-    max-width: 1180px;
-    width: min(96vw, 1180px);
+    max-width: 1320px;
+    width: min(98vw, 1320px);
 }
 
 #clock-out-modal {
