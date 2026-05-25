@@ -8,7 +8,7 @@
 import * as State from './state.js';
 import * as Utils from './utils.js';
 import { loadDashboardStats } from './dashboard.js';
-import { getEditorHtml, getEditorPlainText, setEditorContent, clearEditorContent } from './rich-text.js';
+import { getEditorHtml, getEditorPlainText, setEditorContent, clearEditorContent, getSelectedText, replaceSelectedText } from './rich-text.js';
 
 let timeInputsInitialized = false;
 
@@ -388,7 +388,9 @@ export async function improveWorkDescription() {
 
     if (!button) return;
 
-    const originalText = getEditorPlainText('edit-work-description');
+    const selectedText = getSelectedText('edit-work-description');
+    const isSelectionMode = selectedText.length > 0;
+    const originalText = isSelectionMode ? selectedText : getEditorPlainText('edit-work-description');
 
     if (!originalText) {
         window.notify.error('Please enter a work description first.');
@@ -414,8 +416,17 @@ export async function improveWorkDescription() {
                 return;
             }
 
-            setEditorContent('edit-work-description', improvedText);
-            window.notify.success('Description improved.');
+            if (isSelectionMode) {
+                const replaced = replaceSelectedText('edit-work-description', improvedText);
+                if (!replaced) {
+                    window.notify.error('Could not replace the selected text. Please try again.');
+                    return;
+                }
+                window.notify.success('Selected text improved.');
+            } else {
+                setEditorContent('edit-work-description', improvedText);
+                window.notify.success('Description improved.');
+            }
         } else {
             window.notify.error(response.message || 'Failed to improve description.');
         }

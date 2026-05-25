@@ -124,3 +124,36 @@ export function getEditorPlainText(textareaId) {
     return String(entry.quill.getText() || '').trim();
 }
 
+export function getEditorSelection(textareaId) {
+    const entry = getEditor(textareaId);
+    if (!entry) return null;
+    return entry.quill.getSelection();
+}
+
+export function getSelectedText(textareaId) {
+    const entry = getEditor(textareaId);
+    if (!entry) return '';
+
+    const range = entry.quill.getSelection();
+    if (!range || !range.length) return '';
+
+    return String(entry.quill.getText(range.index, range.length) || '').trim();
+}
+
+export function replaceSelectedText(textareaId, text) {
+    const entry = getEditor(textareaId);
+    if (!entry) return false;
+
+    const range = entry.quill.getSelection();
+    if (!range || !range.length) return false;
+
+    const replacement = String(text || '').trim();
+    if (!replacement) return false;
+
+    entry.quill.deleteText(range.index, range.length, 'user');
+    entry.quill.insertText(range.index, replacement, 'user');
+    entry.quill.setSelection(range.index + replacement.length, 0, 'silent');
+    syncTextarea(textareaId);
+
+    return true;
+}
