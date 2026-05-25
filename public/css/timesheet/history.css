@@ -169,6 +169,30 @@
     align-items: center;
 }
 
+.history-row-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.history-actions-desktop {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.history-action-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+.history-actions-mobile {
+    display: none;
+    min-width: 130px;
+    font-size: 0.813rem;
+    padding: 6px 10px;
+}
+
 
 /* ============================================
    Responsive Design
@@ -267,6 +291,16 @@
 
     .history-table tbody tr:hover td:nth-child(6) {
         background: var(--secondary-color);
+    }
+
+    .history-actions-desktop {
+        display: none;
+    }
+
+    .history-actions-mobile {
+        display: block;
+        width: 100%;
+        min-width: 120px;
     }
 
     .pagination-container {

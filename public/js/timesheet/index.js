@@ -42,6 +42,7 @@ window.editLog = History.editLog;
 window.deleteLog = History.deleteLog;
 window.viewDetails = History.viewDetails;
 window.changePageSize = History.changePageSize;
+window.handleHistoryAction = History.handleHistoryAction;
 window.hideViewDetailsModal = History.hideViewDetailsModal;
 window.hideEditLogModal = History.hideEditLogModal;
 window.showEditLogModal = History.showEditLogModal;

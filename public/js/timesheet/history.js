@@ -98,26 +98,7 @@ export async function loadHistory(page = 1, perPage = null) {
                     // Use server-provided clock_in_display_date to avoid timezone issues
                     const displayDate = log.clock_in_display_date || window.utils.formatDate(log.clock_in);
 
-                    const actionButtons = isAuthor
-                        ? `
-                        <button class="btn btn-info" onclick="viewDetails(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="View Details">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn btn-secondary" onclick="duplicateLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="Duplicate">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                        <button class="btn btn-primary" onclick="editLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-danger" onclick="deleteLog(${log.id})" style="padding: 6px 12px; font-size: 12px;" title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    `
-                        : `
-                        <button class="btn btn-info" onclick="viewDetails(${log.id})" style="padding: 6px 12px; font-size: 12px;" title="View Details">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    `;
+                    const actionButtons = renderHistoryActions(log.id, isAuthor);
 
                     row.innerHTML = `
                         <td>${displayDate}</td>
@@ -152,26 +133,7 @@ export async function loadHistory(page = 1, perPage = null) {
                         day: 'numeric'
                     });
 
-                    const actionButtons = isAuthor
-                        ? `
-                        <button class="btn btn-info" onclick="viewDetails(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="View Details">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn btn-secondary" onclick="duplicateLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="Duplicate">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                        <button class="btn btn-primary" onclick="editLog(${log.id})" style="padding: 6px 12px; font-size: 12px; margin-right: 8px;" title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-danger" onclick="deleteLog(${log.id})" style="padding: 6px 12px; font-size: 12px;" title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    `
-                        : `
-                        <button class="btn btn-info" onclick="viewDetails(${log.id})" style="padding: 6px 12px; font-size: 12px;" title="View Details">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    `;
+                    const actionButtons = renderHistoryActions(log.id, isAuthor);
 
                     row.innerHTML = `
                         <td>${displayDate}</td>
@@ -197,6 +159,71 @@ export async function loadHistory(page = 1, perPage = null) {
         tbody.innerHTML = `<tr><td colspan="${columns}" class="text-center text-danger">Failed to load history. Please try again.</td></tr>`;
         window.notify.error('Failed to load history: ' + error.message);
         updatePagination(null);
+    }
+}
+
+function renderHistoryActions(logId, isAuthor) {
+    const desktopButtons = isAuthor
+        ? `
+            <button class="btn btn-info history-action-btn" onclick="viewDetails(${logId})" title="View Details">
+                <i class="fas fa-eye"></i>
+            </button>
+            <button class="btn btn-secondary history-action-btn" onclick="duplicateLog(${logId})" title="Duplicate">
+                <i class="fas fa-copy"></i>
+            </button>
+            <button class="btn btn-primary history-action-btn" onclick="editLog(${logId})" title="Edit">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-danger history-action-btn" onclick="deleteLog(${logId})" title="Delete">
+                <i class="fas fa-trash"></i>
+            </button>
+        `
+        : `
+            <button class="btn btn-info history-action-btn" onclick="viewDetails(${logId})" title="View Details">
+                <i class="fas fa-eye"></i>
+            </button>
+        `;
+
+    const mobileOptions = isAuthor
+        ? `
+            <option value="">Actions</option>
+            <option value="view">View Details</option>
+            <option value="duplicate">Duplicate</option>
+            <option value="edit">Edit</option>
+            <option value="delete">Delete</option>
+        `
+        : `
+            <option value="">Actions</option>
+            <option value="view">View Details</option>
+        `;
+
+    return `
+        <div class="history-row-actions">
+            <div class="history-actions-desktop">
+                ${desktopButtons}
+            </div>
+            <select class="history-actions-mobile form-control" onchange="handleHistoryAction(${logId}, this.value, this)">
+                ${mobileOptions}
+            </select>
+        </div>
+    `;
+}
+
+export function handleHistoryAction(logId, action, selectElement = null) {
+    if (!action) return;
+
+    if (action === 'view') {
+        viewDetails(logId);
+    } else if (action === 'duplicate') {
+        duplicateLog(logId);
+    } else if (action === 'edit') {
+        editLog(logId);
+    } else if (action === 'delete') {
+        deleteLog(logId);
+    }
+
+    if (selectElement) {
+        selectElement.value = '';
     }
 }
 
