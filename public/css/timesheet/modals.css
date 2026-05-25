@@ -191,8 +191,8 @@
 }
 
 #view-details-modal .modal-content {
-    width: min(96vw, 1200px);
-    max-width: 1200px;
+    width: min(98vw, 1400px);
+    max-width: 1400px;
 }
 
 
