@@ -151,7 +151,21 @@
 }
 
 #edit-log-modal {
-    max-width: 920px;
+    max-width: 1180px;
+    width: min(96vw, 1180px);
+}
+
+#clock-out-modal {
+    max-width: 880px;
+    width: min(94vw, 880px);
+}
+
+#edit-work-description,
+#work-description {
+    width: 100%;
+    min-height: 280px;
+    line-height: 1.6;
+    font-size: 1rem;
 }
 
 #view-details-modal {
@@ -395,7 +409,14 @@
 
 @media (max-width: 768px) {
     #edit-log-modal,
-    #view-details-modal {
+    #view-details-modal,
+    #clock-out-modal {
         max-width: 95%;
+        width: calc(100% - 24px);
+    }
+
+    #edit-work-description,
+    #work-description {
+        min-height: 180px;
     }
 }
