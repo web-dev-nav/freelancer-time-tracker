@@ -49,8 +49,28 @@
                         Improve
                     </button>
                 </div>
-                <textarea id="edit-work-description" class="form-control" rows="6"
-                         placeholder="Describe what you accomplished during this work session..." required></textarea>
+                <div id="edit-work-description-toolbar" class="quill-toolbar">
+                    <span class="ql-formats">
+                        <button type="button" class="ql-bold"></button>
+                        <button type="button" class="ql-italic"></button>
+                        <button type="button" class="ql-underline"></button>
+                    </span>
+                    <span class="ql-formats">
+                        <button type="button" class="ql-list" value="ordered"></button>
+                        <button type="button" class="ql-list" value="bullet"></button>
+                    </span>
+                    <span class="ql-formats">
+                        <button type="button" class="ql-align" value=""></button>
+                        <button type="button" class="ql-align" value="center"></button>
+                        <button type="button" class="ql-align" value="right"></button>
+                    </span>
+                    <span class="ql-formats">
+                        <button type="button" class="ql-clean"></button>
+                    </span>
+                </div>
+                <div id="edit-work-description-editor" class="quill-editor"></div>
+                <textarea id="edit-work-description" class="form-control"
+                    placeholder="Describe what you accomplished during this work session..." required></textarea>
             </div>
         </form>
 

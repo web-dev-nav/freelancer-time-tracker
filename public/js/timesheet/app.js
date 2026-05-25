@@ -15,6 +15,7 @@ import { loadProjectsForSelector, onProjectChange, loadProjects, saveProject, ba
 import { loadInvoices } from './invoices.js';
 import { loadBackups } from './backups.js';
 import { hideClockOutModal } from './tracker.js';
+import { initWorkDescriptionEditors } from './rich-text.js';
 
 const ACTIVE_TAB_STORAGE_KEY = 'timesheetActiveTab';
 
@@ -210,6 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     initializeApp();
+    initWorkDescriptionEditors();
     setupEventListeners();
     loadProjectsForSelector();  // Load projects first
 

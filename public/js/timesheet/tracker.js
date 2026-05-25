@@ -8,6 +8,7 @@
 import * as State from './state.js';
 import * as Utils from './utils.js';
 import { loadDashboardStats, showActiveSessionUI, hideActiveSessionUI, startSessionTimer } from './dashboard.js';
+import { clearEditorContent, getEditorHtml, getEditorPlainText } from './rich-text.js';
 
 /**
  * Clock in with specified date and time
@@ -92,6 +93,7 @@ export function hideClockOutModal() {
 
     // Clear form
     document.getElementById('clock-out-form').reset();
+    clearEditorContent('work-description');
 }
 
 /**
@@ -99,9 +101,10 @@ export function hideClockOutModal() {
  */
 export async function clockOut() {
     const time = document.getElementById('clock-out-time').value;
-    const description = document.getElementById('work-description').value.trim();
+    const descriptionText = getEditorPlainText('work-description');
+    const descriptionHtml = getEditorHtml('work-description');
 
-    if (!time || !description) {
+    if (!time || !descriptionText) {
         window.notify.error('Please fill in end time and work description');
         return;
     }
@@ -112,7 +115,7 @@ export async function clockOut() {
             body: JSON.stringify({
                 session_id: State.currentActiveSession.session_id,
                 time: time,
-                work_description: description
+                work_description: descriptionHtml
             })
         });
 

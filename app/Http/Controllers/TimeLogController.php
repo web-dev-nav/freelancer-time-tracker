@@ -240,7 +240,8 @@ class TimeLogController extends Controller
             ], 400);
         }
 
-        $systemPrompt = 'You improve work log descriptions. Rewrite the text in clear, professional, and concise language. Preserve all facts, avoid adding new information, keep the original tense, and output only the improved description.';
+        $originalDescription = trim((string) $request->input('description'));
+        $systemPrompt = 'You improve work log descriptions with minimal edits. Keep all facts, dates, numbers, names, and action items unchanged. Preserve bullet lists/line breaks and keep roughly the same length. Do not remove key points. Output only the improved description text.';
 
         try {
             $response = Http::withToken($apiKey)
@@ -248,10 +249,10 @@ class TimeLogController extends Controller
                     'model' => $model,
                     'messages' => [
                         ['role' => 'developer', 'content' => $systemPrompt],
-                        ['role' => 'user', 'content' => $request->input('description')],
+                        ['role' => 'user', 'content' => $originalDescription],
                     ],
-                    'temperature' => 0.4,
-                    'max_tokens' => 200,
+                    'temperature' => 0.2,
+                    'max_tokens' => 600,
                 ]);
 
             if (!$response->successful()) {
@@ -270,9 +271,18 @@ class TimeLogController extends Controller
                 ], 502);
             }
 
+            $improved = trim((string) $improved);
+
+            if ($this->looksLikeOverAggressiveRewrite($originalDescription, $improved)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'AI output looked incomplete, so the original description was preserved.',
+                ], 422);
+            }
+
             return response()->json([
                 'success' => true,
-                'improved_text' => trim($improved),
+                'improved_text' => $improved,
             ]);
         } catch (\Throwable $exception) {
             return response()->json([
@@ -644,5 +654,24 @@ class TimeLogController extends Controller
         }
 
         return $query->whereKey($id)->firstOrFail();
+    }
+
+    private function looksLikeOverAggressiveRewrite(string $original, string $improved): bool
+    {
+        $original = trim($original);
+        $improved = trim($improved);
+
+        if ($original === '' || $improved === '') {
+            return true;
+        }
+
+        $originalLength = mb_strlen($original);
+        $improvedLength = mb_strlen($improved);
+
+        if ($improvedLength < max(25, (int) floor($originalLength * 0.55))) {
+            return true;
+        }
+
+        return false;
     }
 }

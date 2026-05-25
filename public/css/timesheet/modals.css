@@ -168,6 +168,28 @@
     font-size: 1rem;
 }
 
+.quill-toolbar {
+    border: 1px solid var(--surface-border);
+    border-bottom: 0;
+    border-radius: 12px 12px 0 0;
+    background: var(--surface-muted);
+}
+
+.quill-editor {
+    min-height: 280px;
+    max-height: 480px;
+    overflow-y: auto;
+    border: 1px solid var(--surface-border);
+    border-radius: 0 0 12px 12px;
+    background: #fff;
+}
+
+.quill-editor .ql-editor {
+    min-height: 250px;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
 #view-details-modal {
     max-width: 980px;
 }
@@ -416,7 +438,12 @@
     }
 
     #edit-work-description,
-    #work-description {
+    #work-description,
+    .quill-editor {
         min-height: 180px;
+    }
+
+    .quill-editor .ql-editor {
+        min-height: 150px;
     }
 }

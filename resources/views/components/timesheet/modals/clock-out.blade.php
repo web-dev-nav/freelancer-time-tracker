@@ -23,8 +23,28 @@
                     <i class="fas fa-edit"></i>
                     What did you work on?
                 </label>
-                <textarea id="work-description" class="form-control" rows="4"
-                         placeholder="Describe what you accomplished during this work session..." required></textarea>
+                <div id="work-description-toolbar" class="quill-toolbar">
+                    <span class="ql-formats">
+                        <button type="button" class="ql-bold"></button>
+                        <button type="button" class="ql-italic"></button>
+                        <button type="button" class="ql-underline"></button>
+                    </span>
+                    <span class="ql-formats">
+                        <button type="button" class="ql-list" value="ordered"></button>
+                        <button type="button" class="ql-list" value="bullet"></button>
+                    </span>
+                    <span class="ql-formats">
+                        <button type="button" class="ql-align" value=""></button>
+                        <button type="button" class="ql-align" value="center"></button>
+                        <button type="button" class="ql-align" value="right"></button>
+                    </span>
+                    <span class="ql-formats">
+                        <button type="button" class="ql-clean"></button>
+                    </span>
+                </div>
+                <div id="work-description-editor" class="quill-editor"></div>
+                <textarea id="work-description" class="form-control"
+                    placeholder="Describe what you accomplished during this work session..." required></textarea>
             </div>
         </form>
 

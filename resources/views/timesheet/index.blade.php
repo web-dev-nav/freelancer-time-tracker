@@ -4,6 +4,7 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset_version('css/timesheet/main.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css">
 @endpush
 
 @section('content')
@@ -56,5 +57,6 @@
 @endpush
 
 @push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
     <script type="module" src="{{ asset_version('js/timesheet/index.js') }}"></script>
 @endpush

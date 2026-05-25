@@ -8,6 +8,7 @@
 import * as State from './state.js';
 import * as Utils from './utils.js';
 import { loadDashboardStats } from './dashboard.js';
+import { getEditorHtml, getEditorPlainText, setEditorContent, clearEditorContent } from './rich-text.js';
 
 let timeInputsInitialized = false;
 
@@ -291,12 +292,11 @@ export function createNewEntry() {
     const dateField = document.getElementById('edit-clock-in-date');
     const clockInField = document.getElementById('edit-clock-in-time');
     const clockOutField = document.getElementById('edit-clock-out-time');
-    const descField = document.getElementById('edit-work-description');
 
     if (dateField) dateField.value = currentDateTime.date;
     if (clockInField) clockInField.value = currentDateTime.time;
     if (clockOutField) clockOutField.value = currentDateTime.time;
-    if (descField) descField.value = '';
+    clearEditorContent('edit-work-description');
 
     // Store the currently selected project for the new entry
     editLogId.setAttribute('data-create-project-id', State.selectedProjectId || '');
@@ -350,8 +350,7 @@ export async function editLog(id) {
                 document.getElementById('edit-clock-out-time').value = '';
             }
 
-            const normalizedDescription = Utils.htmlToPlainText(log.work_description || '');
-            document.getElementById('edit-work-description').value = normalizedDescription || '';
+            setEditorContent('edit-work-description', log.work_description || '');
 
             // Show the modal
             showEditLogModal();
@@ -385,12 +384,11 @@ export function showEditLogModal() {
  * Improve work description using OpenAI
  */
 export async function improveWorkDescription() {
-    const textarea = document.getElementById('edit-work-description');
     const button = document.getElementById('improve-work-description-btn');
 
-    if (!textarea || !button) return;
+    if (!button) return;
 
-    const originalText = textarea.value.trim();
+    const originalText = getEditorPlainText('edit-work-description');
 
     if (!originalText) {
         window.notify.error('Please enter a work description first.');
@@ -408,7 +406,15 @@ export async function improveWorkDescription() {
         });
 
         if (response.success && response.improved_text) {
-            textarea.value = response.improved_text;
+            const improvedText = String(response.improved_text || '').trim();
+            const isSuspiciousRewrite = improvedText.length < Math.max(25, Math.floor(originalText.length * 0.55));
+
+            if (isSuspiciousRewrite) {
+                window.notify.error('AI suggestion looked incomplete, so your original text was kept.');
+                return;
+            }
+
+            setEditorContent('edit-work-description', improvedText);
             window.notify.success('Description improved.');
         } else {
             window.notify.error(response.message || 'Failed to improve description.');
@@ -440,6 +446,7 @@ export function hideEditLogModal() {
     // Clear form
     const form = document.getElementById('edit-log-form');
     if (form) form.reset();
+    clearEditorContent('edit-work-description');
 }
 
 /**
@@ -450,9 +457,10 @@ export async function updateLog() {
     const date = document.getElementById('edit-clock-in-date').value;
     const clockInTime = document.getElementById('edit-clock-in-time').value;
     const clockOutTime = document.getElementById('edit-clock-out-time').value;
-    const description = document.getElementById('edit-work-description').value.trim();
+    const descriptionPlainText = getEditorPlainText('edit-work-description');
+    const descriptionHtml = getEditorHtml('edit-work-description');
 
-    if (!date || !clockInTime || !clockOutTime || !description) {
+    if (!date || !clockInTime || !clockOutTime || !descriptionPlainText) {
         window.notify.error('Please fill in all required fields');
         return;
     }
@@ -476,7 +484,7 @@ export async function updateLog() {
             date: date,
             clock_in_time: clockInTime,
             clock_out_time: clockOutTime,
-            work_description: description
+            work_description: descriptionHtml
         };
 
         // Add project_id only for new entries
