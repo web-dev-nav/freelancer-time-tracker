@@ -7,6 +7,7 @@
 
 const editors = new Map();
 const changeCallbacks = new Map();
+const lastSelections = new Map();
 
 function normalizeHtml(html) {
     if (!html) return '';
@@ -75,6 +76,12 @@ export function initRichTextEditor(textareaId, options = {}) {
         });
     });
 
+    quill.on('selection-change', (range) => {
+        if (range && typeof range.index === 'number' && typeof range.length === 'number') {
+            lastSelections.set(textareaId, { index: range.index, length: range.length });
+        }
+    });
+
     editors.set(textareaId, { quill });
     syncTextarea(textareaId);
 
@@ -137,14 +144,14 @@ export function getEditorPlainText(textareaId) {
 export function getEditorSelection(textareaId) {
     const entry = getEditor(textareaId);
     if (!entry) return null;
-    return entry.quill.getSelection();
+    return entry.quill.getSelection() || lastSelections.get(textareaId) || null;
 }
 
 export function getSelectedText(textareaId) {
     const entry = getEditor(textareaId);
     if (!entry) return '';
 
-    const range = entry.quill.getSelection();
+    const range = getEditorSelection(textareaId);
     if (!range || !range.length) return '';
 
     return String(entry.quill.getText(range.index, range.length) || '').trim();
@@ -154,15 +161,22 @@ export function replaceSelectedText(textareaId, text) {
     const entry = getEditor(textareaId);
     if (!entry) return false;
 
-    const range = entry.quill.getSelection();
+    const range = getEditorSelection(textareaId);
     if (!range || !range.length) return false;
 
     const replacement = String(text || '').trim();
     if (!replacement) return false;
 
+    const escaped = replacement
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    const html = escaped.replace(/\n/g, '<br>');
+
     entry.quill.deleteText(range.index, range.length, 'user');
-    entry.quill.insertText(range.index, replacement, 'user');
+    entry.quill.clipboard.dangerouslyPasteHTML(range.index, html, 'user');
     entry.quill.setSelection(range.index + replacement.length, 0, 'silent');
+    lastSelections.set(textareaId, { index: range.index, length: replacement.length });
     syncTextarea(textareaId);
 
     return true;

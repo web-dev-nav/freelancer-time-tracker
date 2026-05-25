@@ -428,10 +428,10 @@ export async function improveWorkDescription() {
 
     const selectedText = getSelectedText('edit-work-description');
     const isSelectionMode = selectedText.length > 0;
-    const originalText = isSelectionMode ? selectedText : getEditorPlainText('edit-work-description');
+    const originalText = isSelectionMode ? selectedText : '';
 
     if (!originalText) {
-        window.notify.error('Please enter a work description first.');
+        window.notify.error('Please highlight the text you want AI to improve.');
         return;
     }
 
@@ -454,17 +454,12 @@ export async function improveWorkDescription() {
                 return;
             }
 
-            if (isSelectionMode) {
-                const replaced = replaceSelectedText('edit-work-description', improvedText);
-                if (!replaced) {
-                    window.notify.error('Could not replace the selected text. Please try again.');
-                    return;
-                }
-                window.notify.success('Selected text improved.');
-            } else {
-                setEditorContent('edit-work-description', improvedText);
-                window.notify.success('Description improved.');
+            const replaced = replaceSelectedText('edit-work-description', improvedText);
+            if (!replaced) {
+                window.notify.error('Could not replace the selected text. Please highlight it again and retry.');
+                return;
             }
+            window.notify.success('Selected text improved.');
         } else {
             window.notify.error(response.message || 'Failed to improve description.');
         }
