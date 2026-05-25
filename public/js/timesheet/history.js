@@ -443,7 +443,10 @@ export async function improveWorkDescription() {
     try {
         const response = await window.api.request('/api/timesheet/improve-description', {
             method: 'POST',
-            body: JSON.stringify({ description: originalText })
+            body: JSON.stringify({
+                description: originalText,
+                is_partial: true
+            })
         });
 
         if (response.success && response.improved_text) {

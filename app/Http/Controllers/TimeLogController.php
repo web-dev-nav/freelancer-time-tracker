@@ -228,6 +228,7 @@ class TimeLogController extends Controller
     {
         $request->validate([
             'description' => 'required|string|min:3|max:2000',
+            'is_partial' => 'nullable|boolean',
         ]);
 
         $apiKey = config('services.openai.key');
@@ -273,7 +274,11 @@ class TimeLogController extends Controller
 
             $improved = trim((string) $improved);
 
-            if ($this->looksLikeOverAggressiveRewrite($originalDescription, $improved)) {
+            if ($this->looksLikeOverAggressiveRewrite(
+                $originalDescription,
+                $improved,
+                (bool) $request->boolean('is_partial')
+            )) {
                 return response()->json([
                     'success' => false,
                     'message' => 'AI output looked incomplete, so the original description was preserved.',
@@ -656,7 +661,7 @@ class TimeLogController extends Controller
         return $query->whereKey($id)->firstOrFail();
     }
 
-    private function looksLikeOverAggressiveRewrite(string $original, string $improved): bool
+    private function looksLikeOverAggressiveRewrite(string $original, string $improved, bool $isPartial = false): bool
     {
         $original = trim($original);
         $improved = trim($improved);
@@ -667,6 +672,12 @@ class TimeLogController extends Controller
 
         $originalLength = mb_strlen($original);
         $improvedLength = mb_strlen($improved);
+
+        if ($isPartial) {
+            // For selected snippets, allow much shorter outputs than full-description mode.
+            $partialMin = max(2, (int) floor($originalLength * 0.35));
+            return $improvedLength < $partialMin;
+        }
 
         if ($improvedLength < max(25, (int) floor($originalLength * 0.55))) {
             return true;
