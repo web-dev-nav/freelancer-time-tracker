@@ -190,9 +190,13 @@
     line-height: 1.6;
 }
 
-#view-details-modal .modal-content {
+#view-details-modal {
     width: min(98vw, 1400px);
     max-width: 1400px;
+}
+
+#view-details-modal .modal-content {
+    width: 100%;
 }
 
 
