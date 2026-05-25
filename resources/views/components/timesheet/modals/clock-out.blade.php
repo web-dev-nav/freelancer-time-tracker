@@ -44,7 +44,7 @@
                 </div>
                 <div id="work-description-editor" class="quill-editor"></div>
                 <textarea id="work-description" class="form-control"
-                    placeholder="Describe what you accomplished during this work session..." required></textarea>
+                    placeholder="Describe what you accomplished during this work session..."></textarea>
             </div>
         </form>
 

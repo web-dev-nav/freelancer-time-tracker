@@ -3,7 +3,7 @@
 <div class="modal" id="edit-log-modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Edit Time Log (Layout Update Check)</h3>
+            <h3>Edit Time Log</h3>
             <button class="modal-close" onclick="hideEditLogModal()">
                 <i class="fas fa-times"></i>
             </button>
@@ -70,7 +70,7 @@
                 </div>
                 <div id="edit-work-description-editor" class="quill-editor"></div>
                 <textarea id="edit-work-description" class="form-control"
-                    placeholder="Describe what you accomplished during this work session..." required></textarea>
+                    placeholder="Describe what you accomplished during this work session..."></textarea>
             </div>
         </form>
 
