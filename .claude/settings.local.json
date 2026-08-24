@@ -11,7 +11,10 @@
       "Bash(tree:*)",
       "Bash(find:*)",
       "Bash(php:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ],
     "deny": []
   }
