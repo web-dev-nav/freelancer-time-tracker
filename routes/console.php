@@ -20,6 +20,18 @@ Schedule::command('backup:database')
         error_log('Full database backup failed');
     });
 
+// Schedule per-project backups every 2 days at 1:00 AM
+// Generates individual SQL exports per active project (separate from the full daily database backup)
+Schedule::command('backup:projects')
+    ->cron('0 1 */2 * *')
+    ->name('project-backups')
+    ->onSuccess(function () {
+        info('Per-project backup completed successfully');
+    })
+    ->onFailure(function () {
+        error_log('Per-project backup failed');
+    });
+
 // Schedule invoice payment reminders daily at 9:00 AM
 // Checks for unpaid invoices due within 3 days or overdue
 Schedule::command('invoices:send-reminders')
