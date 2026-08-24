@@ -795,9 +795,9 @@ export async function duplicateLog(id) {
         const sourceDuration = parseInt(sourceLog.total_minutes, 10);
         const durationMinutes = Number.isFinite(sourceDuration) && sourceDuration > 0 ? sourceDuration : 1;
         const clockOutTime = addMinutesToTime(now.time, durationMinutes);
-        const workDescription = Utils.htmlToPlainText(sourceLog.work_description || '').trim();
+        const workDescription = sourceLog.work_description || '';
 
-        if (!workDescription) {
+        if (!workDescription || !Utils.htmlToPlainText(workDescription).trim()) {
             window.notify.error('Cannot duplicate an entry without a description');
             return;
         }
