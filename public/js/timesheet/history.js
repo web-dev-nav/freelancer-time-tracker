@@ -774,7 +774,8 @@ export async function deleteLog(id) {
 
 /**
  * Duplicate an existing log entry as a new log entry for today.
- * Uses current app date/time and copies description (and project where available).
+ * Uses today's date but keeps the original clock-in/clock-out time-of-day,
+ * and copies description (and project where available).
  * @param {number} id - Log entry ID
  */
 export async function duplicateLog(id) {
@@ -792,9 +793,25 @@ export async function duplicateLog(id) {
 
         const sourceLog = logResponse.data;
         const now = Utils.getCurrentDateTime();
+        const timezone = Utils.getAppTimezone();
         const sourceDuration = parseInt(sourceLog.total_minutes, 10);
         const durationMinutes = Number.isFinite(sourceDuration) && sourceDuration > 0 ? sourceDuration : 1;
-        const clockOutTime = addMinutesToTime(now.time, durationMinutes);
+
+        const clockInTime = sourceLog.clock_in_time || new Date(sourceLog.clock_in).toLocaleTimeString('en-CA', {
+            timeZone: timezone,
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+        const clockOutTime = sourceLog.clock_out
+            ? (sourceLog.clock_out_time || new Date(sourceLog.clock_out).toLocaleTimeString('en-CA', {
+                timeZone: timezone,
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }))
+            : addMinutesToTime(clockInTime, durationMinutes);
+
         const rawDescription = sourceLog.work_description || '';
         const looksLikeHtml = /<[^>]+>/.test(rawDescription);
         const workDescription = looksLikeHtml ? rawDescription : formatPlainDescriptionForDetails(rawDescription);
@@ -806,7 +823,7 @@ export async function duplicateLog(id) {
 
         const requestBody = {
             date: now.date,
-            clock_in_time: now.time,
+            clock_in_time: clockInTime,
             clock_out_time: clockOutTime,
             work_description: workDescription
         };
