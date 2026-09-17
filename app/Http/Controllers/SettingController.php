@@ -364,12 +364,19 @@ class SettingController extends Controller
             $activityColumns = ['summary_sessions', 'summary_hours', 'date', 'project', 'clock_in', 'clock_out', 'duration', 'description'];
             $subject = sprintf('Daily Activity Report (Test) - %s', $reportDate);
 
-            Mail::mailer($mailerConfig['mailer'])->send('emails.daily-activity-report', [
+            // Mirrors the scheduled send (multipart + List-Unsubscribe) so this button
+            // is a valid deliverability probe rather than a different kind of message.
+            Mail::mailer($mailerConfig['mailer'])->send([
+                'html' => 'emails.daily-activity-report',
+                'text' => 'emails.daily-activity-report-text',
+            ], [
                 'reportDate' => $reportDate,
                 'timezone' => $timezone,
                 'summary' => $summary,
                 'logs' => $this->formatLogsForDailyActivityEmail($logs, $timezone),
                 'activityColumns' => $activityColumns,
+                'clientName' => null,
+                'clientEmail' => null,
             ], function ($message) use ($validated, $subject, $mailerConfig): void {
                 $message->to($validated['test_email'])
                     ->subject($subject);
@@ -378,6 +385,11 @@ class SettingController extends Controller
                     $message->from(
                         $mailerConfig['from_address'],
                         $mailerConfig['from_name'] ?: $mailerConfig['from_address']
+                    );
+
+                    $message->getSymfonyMessage()->getHeaders()->addTextHeader(
+                        'List-Unsubscribe',
+                        '<mailto:' . $mailerConfig['from_address'] . '?subject=Unsubscribe>'
                     );
                 }
             });
