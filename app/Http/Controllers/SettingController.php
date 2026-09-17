@@ -1199,6 +1199,48 @@ class SettingController extends Controller
             });
         }
 
+        if ($request->filled('date')) {
+            $query->whereDate('executed_at', $request->get('date'));
+        }
+
+        // Day-wise summary: one row per day instead of every individual entry, so the
+        // log stays small enough to render when a failing schedule logs hundreds of rows.
+        if ($request->get('group') === 'day') {
+            $days = (clone $query)
+                ->selectRaw('DATE(executed_at) as day')
+                ->selectRaw('COUNT(*) as total')
+                ->selectRaw("SUM(status = 'sent') as sent")
+                ->selectRaw("SUM(status = 'error') as errors")
+                ->selectRaw("SUM(status = 'skipped') as skipped")
+                ->selectRaw('MIN(executed_at) as first_at')
+                ->selectRaw('MAX(executed_at) as last_at')
+                ->whereNotNull('executed_at')
+                ->groupByRaw('DATE(executed_at)')
+                ->orderByDesc('day')
+                ->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'items' => collect($days->items())->map(fn ($row) => [
+                        'day' => (string) $row->day,
+                        'total' => (int) $row->total,
+                        'sent' => (int) $row->sent,
+                        'errors' => (int) $row->errors,
+                        'skipped' => (int) $row->skipped,
+                        'first_at' => $row->first_at,
+                        'last_at' => $row->last_at,
+                    ])->all(),
+                    'pagination' => [
+                        'current_page' => $days->currentPage(),
+                        'last_page' => $days->lastPage(),
+                        'per_page' => $days->perPage(),
+                        'total' => $days->total(),
+                    ],
+                ],
+            ]);
+        }
+
         $logs = $query->orderByDesc('executed_at')->paginate($perPage);
 
         return response()->json([

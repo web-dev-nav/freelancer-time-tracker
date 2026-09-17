@@ -8,6 +8,8 @@ let customEmailSchedules = [];
 let upcomingScheduleEntries = [];
 let schedulerLogItems = [];
 let schedulerLogPagination = null;
+let schedulerLogExpandedDay = null;
+let schedulerLogDayEntries = [];
 let customEmailRecipientSuggestions = [];
 let hasLoadedLogsTab = false;
 let latestLogPlainText = '';
@@ -1091,6 +1093,52 @@ function renderUpcomingSchedules() {
     `;
 }
 
+function formatSchedulerDateTime(value) {
+    if (!value) {
+        return '-';
+    }
+    const parsed = new Date(String(value).replace(' ', 'T'));
+    if (Number.isNaN(parsed.getTime())) {
+        return String(value);
+    }
+    return parsed.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+    });
+}
+
+function formatSchedulerTime(value) {
+    if (!value) {
+        return '-';
+    }
+    const parsed = new Date(String(value).replace(' ', 'T'));
+    if (Number.isNaN(parsed.getTime())) {
+        return String(value);
+    }
+    return parsed.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+    });
+}
+
+function formatSchedulerDay(day) {
+    const parsed = new Date(`${day}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) {
+        return day;
+    }
+    return parsed.toLocaleDateString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+    });
+}
+
 function renderSchedulerLogs() {
     const container = document.getElementById('scheduler-log-list');
     if (!container) {
@@ -1103,47 +1151,38 @@ function renderSchedulerLogs() {
         return;
     }
 
-    const rowsHtml = schedulerLogItems.map((entry) => {
-        const runAt = entry.run_at ? new Date(entry.run_at) : null;
-        const runAtDisplay = runAt && !Number.isNaN(runAt.getTime())
-            ? runAt.toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-            })
-            : entry.run_at_local || '-';
-        const executedAt = entry.executed_at ? new Date(entry.executed_at) : null;
-        const executedDisplay = executedAt && !Number.isNaN(executedAt.getTime())
-            ? executedAt.toLocaleString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-            })
-            : '-';
+    const rowsHtml = schedulerLogItems.map((day) => {
+        const isOpen = schedulerLogExpandedDay === day.day;
+        const counts = [];
+        if (day.sent) {
+            counts.push(`<span class="scheduler-count scheduler-count-sent">${day.sent} sent</span>`);
+        }
+        if (day.errors) {
+            counts.push(`<span class="scheduler-count scheduler-count-error">${day.errors} error</span>`);
+        }
+        if (day.skipped) {
+            counts.push(`<span class="scheduler-count scheduler-count-skipped">${day.skipped} skipped</span>`);
+        }
 
-        const payload = entry.payload ? JSON.stringify(entry.payload) : '';
+        const summaryRow = `
+            <tr class="scheduler-day-row" data-scheduler-day="${escapeHtml(day.day)}">
+                <td style="width:32px;">
+                    <i class="fas fa-chevron-${isOpen ? 'down' : 'right'}"></i>
+                </td>
+                <td><strong>${escapeHtml(formatSchedulerDay(day.day))}</strong></td>
+                <td>${day.total} ${day.total === 1 ? 'entry' : 'entries'}</td>
+                <td>${counts.join(' ') || '<span class="scheduler-muted">-</span>'}</td>
+                <td class="scheduler-muted">${escapeHtml(formatSchedulerTime(day.first_at))} - ${escapeHtml(formatSchedulerTime(day.last_at))}</td>
+            </tr>
+        `;
 
-        return `
-            <tr>
-                <td>
-                    <div><strong>${escapeHtml(entry.type)} • ${escapeHtml(entry.status)}</strong></div>
-                    <div class="scheduler-muted">${escapeHtml(entry.source)}</div>
-                </td>
-                <td>
-                    <div>${escapeHtml(entry.name || 'n/a')}</div>
-                    <small class="scheduler-muted">${escapeHtml(entry.detail || '')}</small>
-                </td>
-                <td>${escapeHtml(entry.message || payload || '—')}</td>
-                <td>
-                    <div>Scheduled: ${runAtDisplay}</div>
-                    <div>Executed: ${executedDisplay}</div>
-                </td>
+        if (!isOpen) {
+            return summaryRow;
+        }
+
+        return summaryRow + `
+            <tr class="scheduler-day-detail">
+                <td colspan="5">${renderSchedulerDayEntries(day.total)}</td>
             </tr>
         `;
     }).join('');
@@ -1152,10 +1191,11 @@ function renderSchedulerLogs() {
         <table class="scheduler-table">
             <thead>
                 <tr>
-                    <th>Type / Status</th>
-                    <th>Name / Detail</th>
-                    <th>Message / Payload</th>
-                    <th>Timeline</th>
+                    <th></th>
+                    <th>Day</th>
+                    <th>Entries</th>
+                    <th>Outcome</th>
+                    <th>First - Last</th>
                 </tr>
             </thead>
             <tbody>
@@ -1163,7 +1203,92 @@ function renderSchedulerLogs() {
             </tbody>
         </table>
     `;
+
+    container.querySelectorAll('[data-scheduler-day]').forEach((row) => {
+        row.addEventListener('click', () => {
+            const day = row.getAttribute('data-scheduler-day');
+            toggleSchedulerLogDay(day);
+        });
+    });
+
     renderSchedulerLogPagination();
+}
+
+function renderSchedulerDayEntries(dayTotal) {
+    if (schedulerLogDayEntries === null) {
+        return '<div class="automation-empty-row">Loading entries...</div>';
+    }
+
+    if (!schedulerLogDayEntries.length) {
+        return '<div class="automation-empty-row">No entries for this day.</div>';
+    }
+
+    const rows = schedulerLogDayEntries.map((entry) => {
+        const payload = entry.payload ? JSON.stringify(entry.payload) : '';
+        return `
+            <tr>
+                <td>
+                    <div><strong>${escapeHtml(entry.type)} &bull; ${escapeHtml(entry.status)}</strong></div>
+                    <div class="scheduler-muted">${escapeHtml(entry.source)}</div>
+                </td>
+                <td>
+                    <div>${escapeHtml(entry.name || 'n/a')}</div>
+                    <small class="scheduler-muted">${escapeHtml(entry.detail || '')}</small>
+                </td>
+                <td>${escapeHtml(entry.message || payload || '\u2014')}</td>
+                <td>
+                    <div>Scheduled: ${escapeHtml(formatSchedulerDateTime(entry.scheduled_at || entry.run_at))}</div>
+                    <div>Executed: ${escapeHtml(formatSchedulerDateTime(entry.executed_at))}</div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    const truncated = Number(dayTotal) > schedulerLogDayEntries.length
+        ? `<div class="scheduler-muted" style="padding:8px 2px;">Showing the ${schedulerLogDayEntries.length} most recent of ${dayTotal} entries for this day.</div>`
+        : '';
+
+    return `
+        <table class="scheduler-table scheduler-table-nested">
+            <thead>
+                <tr>
+                    <th>Type / Status</th>
+                    <th>Name / Detail</th>
+                    <th>Message / Payload</th>
+                    <th>Timeline</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>
+        ${truncated}
+    `;
+}
+
+async function toggleSchedulerLogDay(day) {
+    if (schedulerLogExpandedDay === day) {
+        schedulerLogExpandedDay = null;
+        schedulerLogDayEntries = [];
+        renderSchedulerLogs();
+        return;
+    }
+
+    schedulerLogExpandedDay = day;
+    schedulerLogDayEntries = null;
+    renderSchedulerLogs();
+
+    try {
+        const params = new URLSearchParams({ date: day, per_page: 100 });
+        const response = await window.api.request(`/api/settings/scheduler-logs?${params.toString()}`);
+        if (!response?.success) {
+            throw new Error(response?.message || 'Failed to load entries');
+        }
+        schedulerLogDayEntries = Array.isArray(response.data?.items) ? response.data.items : [];
+    } catch (error) {
+        console.error('Failed to load scheduler log day:', error);
+        schedulerLogDayEntries = [];
+    }
+
+    renderSchedulerLogs();
 }
 
 function renderSchedulerLogPagination() {
@@ -1199,8 +1324,9 @@ function renderSchedulerLogPagination() {
 
 async function loadSchedulerLogs(page = 1) {
     const params = new URLSearchParams({
-        per_page: 25,
+        per_page: 30,
         page,
+        group: 'day',
     });
 
     try {
@@ -1212,6 +1338,8 @@ async function loadSchedulerLogs(page = 1) {
         const data = response.data || {};
         schedulerLogItems = Array.isArray(data.items) ? data.items : [];
         schedulerLogPagination = data.pagination || null;
+        schedulerLogExpandedDay = null;
+        schedulerLogDayEntries = [];
         renderSchedulerLogs();
     } catch (error) {
         console.error('Failed to load scheduler logs:', error);

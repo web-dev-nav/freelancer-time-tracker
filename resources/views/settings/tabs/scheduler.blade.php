@@ -275,6 +275,55 @@
         font-size: 12px;
     }
 
+    .scheduler-day-row {
+        cursor: pointer;
+    }
+
+    .scheduler-day-row td {
+        vertical-align: middle;
+    }
+
+    .scheduler-day-detail td {
+        background: #f8fafc;
+        padding: 0 12px 12px;
+    }
+
+    .scheduler-table-nested {
+        min-width: 0;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .scheduler-table-nested thead th {
+        position: static;
+    }
+
+    .scheduler-count {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-right: 4px;
+    }
+
+    .scheduler-count-sent {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .scheduler-count-error {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .scheduler-count-skipped {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
     .automation-pill {
         display: inline-flex;
         align-items: center;
