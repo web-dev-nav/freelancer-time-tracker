@@ -16,6 +16,13 @@ use Illuminate\Support\Facades\Schema;
 
 class SendDailyActivityReport extends Command
 {
+    /**
+     * Minutes to wait before each retry after a failed send. The command runs every
+     * minute, so without this spacing a failure retries ~1,440 times a day. The count
+     * of entries also caps attempts: 3 delays = 4 attempts max per day.
+     */
+    private const RETRY_BACKOFF_MINUTES = [5, 15, 30];
+
     protected $signature = 'activity:send-daily-summary {--force : Ignore time and last-sent checks}';
 
     protected $description = 'Send daily activity summary email for today\'s completed work logs';
@@ -89,6 +96,17 @@ class SendDailyActivityReport extends Command
                 continue;
             }
 
+            $lastAttempt = $schedule->last_attempt_at
+                ? Carbon::parse($schedule->last_attempt_at)->setTimezone($timezone)
+                : null;
+            $attemptsToday = $lastAttempt?->toDateString() === $today
+                ? (int) $schedule->failed_attempts
+                : 0;
+
+            if (!$forceSend && !$this->mayAttemptNow($attemptsToday, $lastAttempt, $nowLocal)) {
+                continue;
+            }
+
             $clientEmail = strtolower(trim((string) $schedule->client_email));
             if ($clientEmail === '' || !filter_var($clientEmail, FILTER_VALIDATE_EMAIL)) {
                 Log::warning('Daily activity schedule skipped: invalid client email', [
@@ -138,7 +156,10 @@ class SendDailyActivityReport extends Command
             try {
                 $ccRecipients = $this->parseRecipients((string) ($schedule->cc_emails ?? ''));
 
-                Mail::mailer($mailerConfig['mailer'])->send('emails.daily-activity-report', [
+                Mail::mailer($mailerConfig['mailer'])->send([
+                    'html' => 'emails.daily-activity-report',
+                    'text' => 'emails.daily-activity-report-text',
+                ], [
                     'reportDate' => $reportDate,
                     'timezone' => $timezone,
                     'summary' => $summary,
@@ -159,10 +180,19 @@ class SendDailyActivityReport extends Command
                             $mailerConfig['from_address'],
                             $mailerConfig['from_name'] ?: $mailerConfig['from_address']
                         );
+
+                        // Recurring automated mail without an unsubscribe path scores
+                        // badly with spam filters.
+                        $message->getSymfonyMessage()->getHeaders()->addTextHeader(
+                            'List-Unsubscribe',
+                            '<mailto:' . $mailerConfig['from_address'] . '?subject=Unsubscribe>'
+                        );
                     }
                 });
 
                 $schedule->last_sent_date = $today;
+                $schedule->last_attempt_at = Carbon::now();
+                $schedule->failed_attempts = 0;
                 $schedule->save();
                 $sentCount++;
 
@@ -190,11 +220,23 @@ class SendDailyActivityReport extends Command
                     ],
                 ]);
             } catch (\Throwable $e) {
+                $attemptsToday++;
+                $schedule->last_attempt_at = Carbon::now();
+                $schedule->failed_attempts = $attemptsToday;
+                $schedule->save();
+
+                $nextRetry = $this->nextRetryDelayMinutes($attemptsToday);
+                $givingUp = $nextRetry === null;
+
                 Log::error('Failed to send daily activity report (per-client)', [
                     'date' => $today,
                     'timezone' => $timezone,
                     'client_email' => $clientEmail,
                     'error' => $e->getMessage(),
+                    'attempt' => $attemptsToday,
+                    'max_attempts' => $this->maxAttempts(),
+                    'retry_in_minutes' => $nextRetry,
+                    'giving_up_for_today' => $givingUp,
                     'forced' => $forceSend,
                 ]);
                 SchedulerLogService::record([
@@ -202,8 +244,17 @@ class SendDailyActivityReport extends Command
                     'type' => 'Daily Activity',
                     'name' => $schedule->client_name ?: 'Daily Activity Client',
                     'status' => 'error',
-                    'detail' => $e->getMessage(),
-                    'payload' => ['client_email' => $clientEmail],
+                    'detail' => $givingUp
+                        ? sprintf('%s (attempt %d/%d - no further attempts today)', $e->getMessage(), $attemptsToday, $this->maxAttempts())
+                        : sprintf('%s (attempt %d/%d - retrying in %d min)', $e->getMessage(), $attemptsToday, $this->maxAttempts(), $nextRetry),
+                    'scheduled_at' => Carbon::createFromFormat('Y-m-d H:i', "{$today} {$sendTime}", $timezone),
+                    'executed_at' => Carbon::now(),
+                    'payload' => [
+                        'client_email' => $clientEmail,
+                        'attempt' => $attemptsToday,
+                        'max_attempts' => $this->maxAttempts(),
+                        'retry_in_minutes' => $nextRetry,
+                    ],
                 ]);
             }
         }
@@ -267,12 +318,17 @@ class SendDailyActivityReport extends Command
         try {
             $mailerConfig = $this->prepareMailerConfiguration($this->getEmailSettings());
 
-            Mail::mailer($mailerConfig['mailer'])->send('emails.daily-activity-report', [
+            Mail::mailer($mailerConfig['mailer'])->send([
+                'html' => 'emails.daily-activity-report',
+                'text' => 'emails.daily-activity-report-text',
+            ], [
                 'reportDate' => Carbon::parse($today, $timezone)->format('M d, Y'),
                 'timezone' => $timezone,
                 'summary' => $summary,
                 'logs' => $this->formatLogsForEmail($logs, $timezone),
                 'activityColumns' => ['project', 'clock_in', 'clock_out', 'duration', 'description'],
+                'clientName' => null,
+                'clientEmail' => null,
             ], function ($message) use ($recipients, $subject, $mailerConfig): void {
                 $message->to($recipients)
                     ->subject($subject);
@@ -281,6 +337,11 @@ class SendDailyActivityReport extends Command
                     $message->from(
                         $mailerConfig['from_address'],
                         $mailerConfig['from_name'] ?: $mailerConfig['from_address']
+                    );
+
+                    $message->getSymfonyMessage()->getHeaders()->addTextHeader(
+                        'List-Unsubscribe',
+                        '<mailto:' . $mailerConfig['from_address'] . '?subject=Unsubscribe>'
                     );
                 }
             });
@@ -309,6 +370,33 @@ class SendDailyActivityReport extends Command
             $this->error('Failed to send daily activity report: ' . $e->getMessage());
             return self::FAILURE;
         }
+    }
+
+    private function maxAttempts(): int
+    {
+        return count(self::RETRY_BACKOFF_MINUTES) + 1;
+    }
+
+    /**
+     * Minutes until the next retry, or null when the attempt budget is spent.
+     */
+    private function nextRetryDelayMinutes(int $attemptsMade): ?int
+    {
+        return self::RETRY_BACKOFF_MINUTES[$attemptsMade - 1] ?? null;
+    }
+
+    private function mayAttemptNow(int $attemptsToday, ?Carbon $lastAttempt, Carbon $now): bool
+    {
+        if ($attemptsToday === 0) {
+            return true;
+        }
+
+        $delay = $this->nextRetryDelayMinutes($attemptsToday);
+        if ($delay === null) {
+            return false;
+        }
+
+        return $lastAttempt === null || $now->gte($lastAttempt->copy()->addMinutes($delay));
     }
 
     private function isReportEnabled(): bool

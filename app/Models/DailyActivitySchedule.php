@@ -21,11 +21,14 @@ class DailyActivitySchedule extends Model
         'activity_columns',
         'cc_emails',
         'last_sent_date',
+        'failed_attempts',
+        'last_attempt_at',
     ];
 
     protected $casts = [
         'enabled' => 'boolean',
         'send_date' => 'date',
         'last_sent_date' => 'date',
+        'last_attempt_at' => 'datetime',
     ];
 }

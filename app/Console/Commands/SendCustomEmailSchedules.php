@@ -14,6 +14,13 @@ use App\Services\SchedulerLogService;
 
 class SendCustomEmailSchedules extends Command
 {
+    /**
+     * Minutes to wait before each retry after a failed send. The command runs every
+     * minute, so without this spacing a failure retries ~1,440 times a day. The count
+     * of entries also caps attempts: 3 delays = 4 attempts max per day.
+     */
+    private const RETRY_BACKOFF_MINUTES = [5, 15, 30];
+
     protected $signature = 'emails:send-custom-scheduled {--force : Ignore time and last-sent checks}';
 
     protected $description = 'Send scheduled custom emails';
@@ -112,8 +119,22 @@ class SendCustomEmailSchedules extends Command
                 }
             }
 
+            $lastAttempt = $schedule->last_attempt_at
+                ? Carbon::parse($schedule->last_attempt_at)->setTimezone($timezone)
+                : null;
+            $attemptsToday = $lastAttempt?->toDateString() === $today
+                ? (int) $schedule->failed_attempts
+                : 0;
+
+            if (!$forceSend && !$this->mayAttemptNow($attemptsToday, $lastAttempt, $nowLocal)) {
+                continue;
+            }
+
             try {
-                Mail::mailer($mailerConfig['mailer'])->send('emails.custom-scheduled', [
+                Mail::mailer($mailerConfig['mailer'])->send([
+                    'html' => 'emails.custom-scheduled',
+                    'text' => 'emails.custom-scheduled-text',
+                ], [
                     'name' => $schedule->name,
                     'subject' => $schedule->subject,
                     'body' => $schedule->body,
@@ -137,6 +158,8 @@ class SendCustomEmailSchedules extends Command
                     $schedule->last_sent_date = $today;
                 }
 
+                $schedule->last_attempt_at = Carbon::now();
+                $schedule->failed_attempts = 0;
                 $schedule->save();
                 $sentCount++;
 
@@ -160,17 +183,37 @@ class SendCustomEmailSchedules extends Command
                     'payload' => ['schedule_id' => $schedule->id, 'recipients' => $recipients],
                 ]);
             } catch (\Throwable $e) {
+                $attemptsToday++;
+                $schedule->last_attempt_at = Carbon::now();
+                $schedule->failed_attempts = $attemptsToday;
+                $schedule->save();
+
+                $nextRetry = $this->nextRetryDelayMinutes($attemptsToday);
+                $givingUp = $nextRetry === null;
+
                 Log::error('Failed to send custom scheduled email', [
                     'schedule_id' => $schedule->id,
                     'error' => $e->getMessage(),
+                    'attempt' => $attemptsToday,
+                    'max_attempts' => $this->maxAttempts(),
+                    'retry_in_minutes' => $nextRetry,
+                    'giving_up_for_today' => $givingUp,
                 ]);
                 SchedulerLogService::record([
                     'source' => 'custom_email',
                     'type' => 'Custom Email',
                     'name' => $schedule->name ?: 'Unnamed',
                     'status' => 'error',
-                    'detail' => $e->getMessage(),
-                    'payload' => ['schedule_id' => $schedule->id],
+                    'detail' => $givingUp
+                        ? sprintf('%s (attempt %d/%d - no further attempts today)', $e->getMessage(), $attemptsToday, $this->maxAttempts())
+                        : sprintf('%s (attempt %d/%d - retrying in %d min)', $e->getMessage(), $attemptsToday, $this->maxAttempts(), $nextRetry),
+                    'executed_at' => Carbon::now(),
+                    'payload' => [
+                        'schedule_id' => $schedule->id,
+                        'attempt' => $attemptsToday,
+                        'max_attempts' => $this->maxAttempts(),
+                        'retry_in_minutes' => $nextRetry,
+                    ],
                 ]);
             }
         }
@@ -183,6 +226,33 @@ class SendCustomEmailSchedules extends Command
     /**
      * @return array<int, string>
      */
+    private function maxAttempts(): int
+    {
+        return count(self::RETRY_BACKOFF_MINUTES) + 1;
+    }
+
+    /**
+     * Minutes until the next retry, or null when the attempt budget is spent.
+     */
+    private function nextRetryDelayMinutes(int $attemptsMade): ?int
+    {
+        return self::RETRY_BACKOFF_MINUTES[$attemptsMade - 1] ?? null;
+    }
+
+    private function mayAttemptNow(int $attemptsToday, ?Carbon $lastAttempt, Carbon $now): bool
+    {
+        if ($attemptsToday === 0) {
+            return true;
+        }
+
+        $delay = $this->nextRetryDelayMinutes($attemptsToday);
+        if ($delay === null) {
+            return false;
+        }
+
+        return $lastAttempt === null || $now->gte($lastAttempt->copy()->addMinutes($delay));
+    }
+
     private function parseWorkingDays(string $raw): array
     {
         $allowed = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
