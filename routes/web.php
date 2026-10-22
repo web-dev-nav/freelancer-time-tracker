@@ -119,8 +119,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
     Route::middleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class, 'throttle:6,1'])->group(function () {
-        Route::patch('/profile/email', [\App\Http\Controllers\ProfileController::class, 'updateEmail'])->name('profile.email.update');
-        Route::patch('/profile/password', [\App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('profile.password.update');
+        Route::patch('/profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
     });
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
