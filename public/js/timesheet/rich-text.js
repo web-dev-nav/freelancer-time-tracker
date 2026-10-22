@@ -58,6 +58,14 @@ export function initRichTextEditor(textareaId, options = {}) {
         placeholder: options.placeholder || textarea.getAttribute('placeholder') || '',
     });
 
+    quill.root.setAttribute('role', 'textbox');
+    quill.root.setAttribute('aria-label', 'Work description');
+    quill.root.setAttribute('aria-multiline', 'true');
+    toolbar.querySelectorAll('button').forEach(button => {
+        const action = Array.from(button.classList).find(name => name.startsWith('ql-'))?.slice(3) || 'format';
+        button.setAttribute('aria-label', `${action}${button.value ? ` ${button.value}` : ''}`);
+    });
+
     const initialValue = textarea.value ? String(textarea.value) : '';
     if (initialValue.trim() !== '') {
         quill.clipboard.dangerouslyPasteHTML(initialValue);

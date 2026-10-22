@@ -9,9 +9,21 @@ import * as State from './state.js';
 import * as Utils from './utils.js';
 import { loadDashboardStats, checkActiveSession } from './dashboard.js';
 import { clockIn, clockOut } from './tracker.js';
-import { loadHistory, updateLog, hideEditLogModal, createNewEntry } from './history.js';
+import {
+    loadHistory,
+    updateLog,
+    hideEditLogModal,
+    createNewEntry,
+} from './history.js';
 import { generateReport, selectThisWeek } from './reports.js';
-import { loadProjectsForSelector, onProjectChange, loadProjects, saveProject, backupProject, backupDatabase } from './projects.js';
+import {
+    loadProjectsForSelector,
+    onProjectChange,
+    loadProjects,
+    saveProject,
+    backupProject,
+    backupDatabase,
+} from './projects.js';
 import { loadInvoices } from './invoices.js';
 import { loadBackups } from './backups.js';
 import { hideClockOutModal } from './tracker.js';
@@ -21,7 +33,7 @@ const ACTIVE_TAB_STORAGE_KEY = 'timesheetActiveTab';
 
 function getAvailableTabs() {
     return Array.from(document.querySelectorAll('.nav-tab'))
-        .map(tab => tab.getAttribute('data-tab'))
+        .map((tab) => tab.getAttribute('data-tab'))
         .filter(Boolean);
 }
 
@@ -33,7 +45,9 @@ function resolveInitialTab() {
         return savedTab;
     }
 
-    return availableTabs.includes('dashboard') ? 'dashboard' : (availableTabs[0] || null);
+    return availableTabs.includes('dashboard')
+        ? 'dashboard'
+        : availableTabs[0] || null;
 }
 
 /**
@@ -61,16 +75,19 @@ export function setupEventListeners() {
     // Project selector change
     const projectSelector = document.getElementById('project-selector');
     if (projectSelector) {
-        projectSelector.addEventListener('change', function() {
+        projectSelector.addEventListener('change', function () {
             State.setSelectedProjectId(this.value || null);
-            localStorage.setItem('selectedProjectId', State.selectedProjectId || '');
+            localStorage.setItem(
+                'selectedProjectId',
+                State.selectedProjectId || '',
+            );
             onProjectChange();
         });
     }
 
     // Tab navigation
-    document.querySelectorAll('.nav-tab').forEach(tab => {
-        tab.addEventListener('click', function() {
+    document.querySelectorAll('.nav-tab').forEach((tab) => {
+        tab.addEventListener('click', function () {
             const tabName = this.getAttribute('data-tab');
             showTab(tabName);
         });
@@ -79,7 +96,7 @@ export function setupEventListeners() {
     // Clock in form
     const clockInForm = document.getElementById('clock-in-form');
     if (clockInForm) {
-        clockInForm.addEventListener('submit', function(e) {
+        clockInForm.addEventListener('submit', function (e) {
             e.preventDefault();
             clockIn();
         });
@@ -88,7 +105,7 @@ export function setupEventListeners() {
     // Clock out form
     const clockOutForm = document.getElementById('clock-out-form');
     if (clockOutForm) {
-        clockOutForm.addEventListener('submit', function(e) {
+        clockOutForm.addEventListener('submit', function (e) {
             e.preventDefault();
             clockOut();
         });
@@ -97,7 +114,7 @@ export function setupEventListeners() {
     // Edit log form
     const editLogForm = document.getElementById('edit-log-form');
     if (editLogForm) {
-        editLogForm.addEventListener('submit', function(e) {
+        editLogForm.addEventListener('submit', function (e) {
             e.preventDefault();
             updateLog();
         });
@@ -106,7 +123,7 @@ export function setupEventListeners() {
     // Report form
     const reportForm = document.getElementById('report-form');
     if (reportForm) {
-        reportForm.addEventListener('submit', function(e) {
+        reportForm.addEventListener('submit', function (e) {
             e.preventDefault();
             generateReport();
         });
@@ -115,10 +132,16 @@ export function setupEventListeners() {
     // Modal overlay
     const modalOverlay = document.getElementById('modal-overlay');
     if (modalOverlay) {
-        modalOverlay.addEventListener('click', function() {
-            const editModalOpen = document.querySelector('#edit-log-modal.show');
+        modalOverlay.addEventListener('click', function () {
+            const editModalOpen = document.querySelector(
+                '#edit-log-modal.show',
+            );
             const editLogId = document.getElementById('edit-log-id');
-            const isCreateMode = !!(editModalOpen && editLogId && !editLogId.value);
+            const isCreateMode = !!(
+                editModalOpen &&
+                editLogId &&
+                !editLogId.value
+            );
 
             if (isCreateMode) {
                 return;
@@ -146,19 +169,53 @@ export function setupEventListeners() {
  * @param {string} tabName - Name of the tab to show
  */
 export function showTab(tabName) {
+    const target = document.getElementById(`${tabName}-tab`);
+    const selected = document.querySelector(`[data-tab="${tabName}"]`);
+    if (!target || !selected || selected.style.display === 'none') return;
+    const descriptions = {
+        dashboard: [
+            'Overview',
+            'A clear view of your time. A little more room to focus.',
+        ],
+        history: [
+            'Work history',
+            'Review your sessions, add missing time, and keep every detail in order.',
+        ],
+        reports: [
+            'Reports',
+            'Turn your tracked hours into a timesheet that is ready to share.',
+        ],
+        projects: [
+            'Projects',
+            'Organize your client work and choose what to focus on next.',
+        ],
+        invoices: [
+            'Invoices',
+            'Keep your billing and payment status in one place.',
+        ],
+        backups: [
+            'Backups',
+            'Keep a copy of your work and restore it when you need it.',
+        ],
+    };
+    const [title, description] = descriptions[tabName] || [tabName, ''];
+    document.getElementById('workspace-title').textContent = title;
+    document.getElementById('workspace-description').textContent = description;
     // Update nav tabs
-    document.querySelectorAll('.nav-tab').forEach(tab => {
+    document.querySelectorAll('.nav-tab').forEach((tab) => {
         tab.classList.remove('active');
+        tab.removeAttribute('aria-current');
     });
     const navTab = document.querySelector(`[data-tab="${tabName}"]`);
     if (!navTab) {
         return;
     }
     navTab.classList.add('active');
+    navTab.setAttribute('aria-current', 'page');
     localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, tabName);
 
     // Update tab content
-    document.querySelectorAll('.tab-content').forEach(content => {
+    document.querySelectorAll('.tab-content').forEach((content) => {
         content.classList.remove('active');
     });
     const tabContent = document.getElementById(`${tabName}-tab`);
@@ -192,7 +249,7 @@ export function showTab(tabName) {
 /**
  * Main application entry point
  */
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Initialize utility functions
     Utils.initializeUtils();
 
@@ -205,15 +262,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Save week start preference when changed
     if (weekStartDay) {
-        weekStartDay.addEventListener('change', function() {
+        weekStartDay.addEventListener('change', function () {
             localStorage.setItem('weekStartDay', this.value);
         });
     }
 
+    const dateLabel = document.getElementById('workspace-date');
+    if (dateLabel)
+        dateLabel.textContent = new Intl.DateTimeFormat(undefined, {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            timeZone: window.appTimezone || 'UTC',
+        }).format(new Date());
     initializeApp();
     initWorkDescriptionEditors();
     setupEventListeners();
-    loadProjectsForSelector();  // Load projects first
+    loadProjectsForSelector(); // Load projects first
 
     const initialTab = resolveInitialTab();
     if (initialTab) {

@@ -7,8 +7,17 @@
 
 import * as State from './state.js';
 import * as Utils from './utils.js';
-import { loadDashboardStats, showActiveSessionUI, hideActiveSessionUI, startSessionTimer } from './dashboard.js';
-import { clearEditorContent, getEditorHtml, getEditorPlainText } from './rich-text.js';
+import {
+    loadDashboardStats,
+    showActiveSessionUI,
+    hideActiveSessionUI,
+    startSessionTimer,
+} from './dashboard.js';
+import {
+    clearEditorContent,
+    getEditorHtml,
+    getEditorPlainText,
+} from './rich-text.js';
 
 /**
  * Clock in with specified date and time
@@ -33,8 +42,8 @@ export async function clockIn() {
             body: JSON.stringify({
                 date: date,
                 time: time,
-                project_id: State.selectedProjectId
-            })
+                project_id: State.selectedProjectId,
+            }),
         });
 
         if (response.success) {
@@ -59,11 +68,27 @@ export async function clockIn() {
 /**
  * Quick clock in with current date and time
  */
+let startingSession = false;
 export async function quickClockIn() {
-    const now = Utils.getCurrentDateTime();
-    document.getElementById('clock-in-date').value = now.date;
-    document.getElementById('clock-in-time').value = now.time;
-    await clockIn();
+    if (startingSession || State.currentActiveSession) return;
+    startingSession = true;
+    const button = document.getElementById('start-timer-btn');
+    if (button) {
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+    }
+    try {
+        const now = Utils.getCurrentDateTime();
+        document.getElementById('clock-in-date').value = now.date;
+        document.getElementById('clock-in-time').value = now.time;
+        await clockIn();
+    } finally {
+        startingSession = false;
+        if (button) {
+            button.disabled = !State.selectedProjectId;
+            button.removeAttribute('aria-busy');
+        }
+    }
 }
 
 /**
@@ -115,8 +140,8 @@ export async function clockOut() {
             body: JSON.stringify({
                 session_id: State.currentActiveSession.session_id,
                 time: time,
-                work_description: descriptionHtml
-            })
+                work_description: descriptionHtml,
+            }),
         });
 
         if (response.success) {
@@ -124,7 +149,9 @@ export async function clockOut() {
             hideActiveSessionUI();
             hideClockOutModal();
             loadDashboardStats();
-            window.notify.success(`Successfully clocked out! Duration: ${window.utils.formatTime(response.session.total_minutes)}`);
+            window.notify.success(
+                `Successfully clocked out! Duration: ${window.utils.formatTime(response.session.total_minutes)}`,
+            );
         } else {
             window.notify.error(response.message);
         }
@@ -137,14 +164,21 @@ export async function clockOut() {
  * Cancel the current active session
  */
 export async function cancelActiveSession() {
-    if (!confirm('Are you sure you want to cancel the current session? This will delete the session data.')) {
+    if (
+        !confirm(
+            'Are you sure you want to cancel the current session? This will delete the session data.',
+        )
+    ) {
         return;
     }
 
     try {
-        const response = await window.api.request('/api/timesheet/cancel-session', {
-            method: 'DELETE'
-        });
+        const response = await window.api.request(
+            '/api/timesheet/cancel-session',
+            {
+                method: 'DELETE',
+            },
+        );
 
         if (response.success) {
             State.setCurrentActiveSession(null);
@@ -160,7 +194,9 @@ export async function cancelActiveSession() {
             State.setCurrentActiveSession(null);
             hideActiveSessionUI();
             loadDashboardStats();
-            window.notify.info('No active session to cancel. Refreshing display...');
+            window.notify.info(
+                'No active session to cancel. Refreshing display...',
+            );
         } else {
             window.notify.error('Failed to cancel session: ' + error.message);
         }

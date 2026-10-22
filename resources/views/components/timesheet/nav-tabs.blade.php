@@ -1,8 +1,9 @@
-<div class="nav-bar">
+<nav class="nav-bar" aria-label="Workspace navigation">
+    <p class="nav-section-label">Workspace</p>
     <div class="nav-tabs">
         <button class="nav-tab active" data-tab="dashboard">
             <i class="fas fa-tachometer-alt"></i>
-            Dashboard
+            Overview
         </button>
         <button class="nav-tab" data-tab="history">
             <i class="fas fa-history"></i>
@@ -29,4 +30,7 @@
             </button>
         @endif
     </div>
-</div>
+    @if(auth()->user()?->isAuthor())
+        <div class="sidebar-footer"><p class="nav-section-label">Manage</p><a href="{{ route('settings.index') }}"><i class="fas fa-cog" aria-hidden="true"></i> Settings</a><p>Less admin.<br>More time for your work.</p></div>
+    @endif
+</nav>

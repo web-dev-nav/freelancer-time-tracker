@@ -242,18 +242,18 @@ export function displayInvoices(invoices) {
         }
 
         return `
-            <div class="invoice-card invoice-card-compact" style="background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); border-left: 4px solid ${
+            <div class="invoice-card invoice-card-compact" style="background: var(--surface-card); border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); border-left: 4px solid ${
                 isScheduled ? '#8b5cf6' :
                 invoice.status === 'paid' ? '#10b981' :
                 invoice.status === 'sent' ? '#f59e0b' :
                 invoice.status === 'cancelled' ? '#ef4444' :
-                isOverdue ? '#dc2626' : '#6b7280'
+                isOverdue ? '#dc2626' : 'var(--text-secondary)'
             }; margin-bottom: 16px; transition: box-shadow 0.2s;">
 
-                <div class="invoice-card-header" style="padding: 12px; border-bottom: 1px solid #f3f4f6;">
+                <div class="invoice-card-header" style="padding: 12px; border-bottom: 1px solid var(--surface-muted);">
                     <div style="display: flex; justify-content: space-between; align-items: start; gap: 12px; margin-bottom: 8px;">
                         <div style="flex: 1;">
-                            <h3 style="font-size: 16px; font-weight: 700; color: #111827; margin: 0 0 4px 0;">${invoice.invoice_number}</h3>
+                            <h3 style="font-size: 16px; font-weight: 700; color: var(--text-primary); margin: 0 0 4px 0;">${invoice.invoice_number}</h3>
                             <div class="invoice-status-meta">
                                 ${isScheduled ? `
                                     <span class="badge" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; font-size: 11px; padding: 4px 8px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px;">
@@ -268,34 +268,34 @@ export function displayInvoices(invoices) {
                             </div>
                         </div>
                         <div style="text-align: right; min-width: 100px;">
-                            <div style="font-size: 11px; color: #6b7280; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Total</div>
-                            <div style="font-size: 20px; font-weight: 800; color: #111827; line-height: 1;">$${parseFloat(invoice.total).toFixed(2)}</div>
+                            <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;">Total</div>
+                            <div style="font-size: 20px; font-weight: 800; color: var(--text-primary); line-height: 1;">$${parseFloat(invoice.total).toFixed(2)}</div>
                         </div>
                     </div>
 
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <i class="fas fa-user-circle" style="color: #6b7280; font-size: 16px;"></i>
+                        <i class="fas fa-user-circle" style="color: var(--text-secondary); font-size: 16px;"></i>
                         <div>
-                            <div style="font-size: 14px; font-weight: 600; color: #374151;">${invoice.client_name}</div>
-                            ${invoice.client_email ? `<div style="font-size: 12px; color: #9ca3af;">${invoice.client_email}</div>` : ''}
+                            <div style="font-size: 14px; font-weight: 600; color: var(--text-primary);">${invoice.client_name}</div>
+                            ${invoice.client_email ? `<div style="font-size: 12px; color: var(--text-secondary);">${invoice.client_email}</div>` : ''}
                         </div>
                     </div>
                 </div>
 
                 <div class="invoice-card-body" style="padding: 12px;">
                     ${invoice.description ? `
-                        <div style="padding: 8px 10px; background: #f9fafb; border-radius: 6px; margin-bottom: 10px;">
-                            <p style="margin: 0; color: #4b5563; font-size: 13px; font-style: italic;">${invoice.description}</p>
+                        <div style="padding: 8px 10px; background: var(--surface-muted); border-radius: 6px; margin-bottom: 10px;">
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 13px; font-style: italic;">${invoice.description}</p>
                         </div>
                     ` : ''}
 
                     ${isScheduled ? `
-                        <div style="padding: 8px 10px; background: linear-gradient(135deg, #f3e8ff, #e9d5ff); border-radius: 6px; margin-bottom: 10px; border-left: 3px solid #8b5cf6;">
+                        <div style="padding: 8px 10px; background: linear-gradient(135deg, var(--accent-soft), var(--accent-soft)); border-radius: 6px; margin-bottom: 10px; border-left: 3px solid #8b5cf6;">
                             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                                 <i class="fas fa-clock" style="color: #7c3aed; font-size: 16px;"></i>
                                 <div>
-                                    <div style="font-size: 10px; color: #6b21a8; text-transform: uppercase; font-weight: 700; margin-bottom: 2px; letter-spacing: 0.5px;">Scheduled Time</div>
-                                    <div style="font-size: 14px; font-weight: 700; color: #581c87;">${new Date(invoice.scheduled_send_at).toLocaleString('en-US', {
+                                    <div style="font-size: 10px; color: var(--primary-color); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; letter-spacing: 0.5px;">Scheduled Time</div>
+                                    <div style="font-size: 14px; font-weight: 700; color: var(--primary-color);">${new Date(invoice.scheduled_send_at).toLocaleString('en-US', {
                                         year: 'numeric',
                                         month: 'short',
                                         day: 'numeric',
@@ -307,7 +307,7 @@ export function displayInvoices(invoices) {
                             </div>
                             <div style="padding: 6px 8px; background: rgba(59, 130, 246, 0.15); border-radius: 4px; display: flex; align-items: center; gap: 6px;">
                                 <i class="fas fa-paper-plane" style="color: #3b82f6; font-size: 12px;"></i>
-                                <div style="font-size: 11px; color: #1e40af;">
+                                <div style="font-size: 11px; color: var(--primary-color);">
                                     <strong>Will send at:</strong> ${(() => {
                                         const scheduled = new Date(invoice.scheduled_send_at);
                                         const minutes = scheduled.getMinutes();
@@ -331,55 +331,55 @@ export function displayInvoices(invoices) {
                     <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px;">
                         <div class="invoice-detail">
                             <i class="fas fa-calendar" style="color: #3b82f6;"></i>
-                            <span style="font-size: 13px; color: #6b7280;">Invoice: <strong style="color: #111827;">${invoice.formatted_invoice_date || invoice.invoice_date}</strong></span>
+                            <span style="font-size: 13px; color: var(--text-secondary);">Invoice: <strong style="color: var(--text-primary);">${invoice.formatted_invoice_date || invoice.invoice_date}</strong></span>
                         </div>
                         <div class="invoice-detail">
                             <i class="fas fa-calendar-check" style="color: #f59e0b;"></i>
-                            <span style="font-size: 13px; color: #6b7280;">Due: <strong style="color: #111827;">${invoice.formatted_due_date || invoice.due_date}</strong></span>
+                            <span style="font-size: 13px; color: var(--text-secondary);">Due: <strong style="color: var(--text-primary);">${invoice.formatted_due_date || invoice.due_date}</strong></span>
                         </div>
                         <div class="invoice-detail">
                             <i class="fas fa-folder" style="color: #8b5cf6;"></i>
-                            <span style="font-size: 13px; color: #6b7280;">Project: <strong style="color: #111827;">${invoice.project?.name || 'N/A'}</strong></span>
+                            <span style="font-size: 13px; color: var(--text-secondary);">Project: <strong style="color: var(--text-primary);">${invoice.project?.name || 'N/A'}</strong></span>
                         </div>
                         ${invoice.sent_at ? `
                             <div class="invoice-detail">
                                 <i class="fas fa-paper-plane" style="color: #06b6d4;"></i>
-                                <span style="font-size: 13px; color: #6b7280;">Sent: <strong style="color: #111827;">${new Date(invoice.sent_at).toLocaleDateString()}</strong></span>
+                                <span style="font-size: 13px; color: var(--text-secondary);">Sent: <strong style="color: var(--text-primary);">${new Date(invoice.sent_at).toLocaleDateString()}</strong></span>
                             </div>
                         ` : ''}
                         ${invoice.paid_at ? `
                             <div class="invoice-detail">
                                 <i class="fas fa-check-circle" style="color: #10b981;"></i>
-                                <span style="font-size: 13px; color: #6b7280;">Paid: <strong style="color: #111827;">${new Date(invoice.paid_at).toLocaleDateString()}</strong></span>
+                                <span style="font-size: 13px; color: var(--text-secondary);">Paid: <strong style="color: var(--text-primary);">${new Date(invoice.paid_at).toLocaleDateString()}</strong></span>
                             </div>
                         ` : ''}
                         ${invoice.cancelled_at ? `
                             <div class="invoice-detail">
                                 <i class="fas fa-ban" style="color: #ef4444;"></i>
-                                <span style="font-size: 13px; color: #6b7280;">Cancelled: <strong style="color: #111827;">${new Date(invoice.cancelled_at).toLocaleDateString()}</strong></span>
+                                <span style="font-size: 13px; color: var(--text-secondary);">Cancelled: <strong style="color: var(--text-primary);">${new Date(invoice.cancelled_at).toLocaleDateString()}</strong></span>
                             </div>
                         ` : ''}
                     </div>
 
-                    <div style="background: #f9fafb; border-radius: 6px; padding: 10px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                    <div style="background: var(--surface-muted); border-radius: 6px; padding: 10px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
                         <div>
-                            <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Subtotal</div>
-                            <div style="font-size: 16px; font-weight: 700; color: #374151;">$${parseFloat(invoice.subtotal || 0).toFixed(2)}</div>
+                            <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Subtotal</div>
+                            <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">$${parseFloat(invoice.subtotal || 0).toFixed(2)}</div>
                         </div>
                         <div>
-                            <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Tax (${parseFloat(invoice.tax_rate || 0).toFixed(0)}%)</div>
-                            <div style="font-size: 16px; font-weight: 700; color: #374151;">$${parseFloat(invoice.tax_amount || 0).toFixed(2)}</div>
+                            <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Tax (${parseFloat(invoice.tax_rate || 0).toFixed(0)}%)</div>
+                            <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">$${parseFloat(invoice.tax_amount || 0).toFixed(2)}</div>
                         </div>
                         <div>
-                            <div style="font-size: 11px; color: #111827; text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">Total</div>
-                            <div style="font-size: 16px; font-weight: 800; color: #111827;">$${parseFloat(invoice.total).toFixed(2)}</div>
+                            <div style="font-size: 11px; color: var(--text-primary); text-transform: uppercase; font-weight: 700; margin-bottom: 4px;">Total</div>
+                            <div style="font-size: 16px; font-weight: 800; color: var(--text-primary);">$${parseFloat(invoice.total).toFixed(2)}</div>
                         </div>
                     </div>
 
                     ${invoice.notes ? `
-                        <div style="margin-top: 10px; padding: 8px 10px; background: #fffbeb; border-radius: 6px; border-left: 3px solid #f59e0b;">
-                            <div style="font-size: 10px; color: #92400e; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.5px;">Note</div>
-                            <p style="margin: 0; color: #78350f; font-size: 13px; line-height: 1.5;">${invoice.notes}</p>
+                        <div style="margin-top: 10px; padding: 8px 10px; background: var(--surface-muted); border-radius: 6px; border-left: 3px solid #f59e0b;">
+                            <div style="font-size: 10px; color: var(--warning-color); text-transform: uppercase; font-weight: 700; margin-bottom: 4px; letter-spacing: 0.5px;">Note</div>
+                            <p style="margin: 0; color: var(--warning-color); font-size: 13px; line-height: 1.5;">${invoice.notes}</p>
                         </div>
                     ` : ''}
 
@@ -415,7 +415,7 @@ export function displayInvoices(invoices) {
                     ` : ''}
                 </div>
 
-                <div class="invoice-card-actions" style="padding: 10px 12px; background: #f9fafb; border-top: 1px solid #e5e7eb; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end;">
+                <div class="invoice-card-actions" style="padding: 10px 12px; background: var(--surface-muted); border-top: 1px solid var(--surface-border); display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end;">
                     ${isAuthor && invoice.status === 'draft' ? `
                         <button class="btn btn-sm btn-primary" onclick="showEditInvoiceModal(${invoice.id})" title="Edit Invoice">
                             <i class="fas fa-edit"></i>
@@ -1871,12 +1871,12 @@ function updateTriggerTimePreview() {
         });
 
         previewDiv.innerHTML = `
-            <div style="padding: 10px 12px; background: #dbeafe; border-radius: 6px; border-left: 3px solid #3b82f6;">
+            <div style="padding: 10px 12px; background: var(--accent-soft); border-radius: 6px; border-left: 3px solid #3b82f6;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-info-circle" style="color: #1e40af; font-size: 14px;"></i>
+                    <i class="fas fa-info-circle" style="color: var(--primary-color); font-size: 14px;"></i>
                     <div>
-                        <div style="font-size: 10px; color: #1e40af; text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Email will be sent at</div>
-                        <div style="font-size: 13px; font-weight: 700; color: #1e3a8a;">${formattedTime}</div>
+                        <div style="font-size: 10px; color: var(--primary-color); text-transform: uppercase; font-weight: 700; margin-bottom: 2px;">Email will be sent at</div>
+                        <div style="font-size: 13px; font-weight: 700; color: var(--primary-color);">${formattedTime}</div>
                     </div>
                 </div>
             </div>
@@ -1996,7 +1996,7 @@ function displayInvoiceHistory(historyItems) {
             case 'paid': return '#22c55e';
             case 'cancelled': return '#ef4444';
             case 'viewed': return '#8b5cf6';
-            default: return '#6b7280';
+            default: return 'var(--text-secondary)';
         }
     };
 

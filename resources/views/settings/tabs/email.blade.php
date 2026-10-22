@@ -25,12 +25,12 @@
         <div style="display: flex; align-items: start;">
             <i class="fas fa-exclamation-triangle" style="color: #f59e0b; margin-right: 10px; margin-top: 2px;"></i>
             <div style="flex: 1;">
-                <strong style="color: #92400e; display: block; margin-bottom: 8px;">⚠️ Common Issue: mail() Says "Sent" But Email Not Received</strong>
-                <p style="margin: 0 0 8px 0; color: #92400e; font-size: 13px;">
+                <strong style="color: var(--warning-color); display: block; margin-bottom: 8px;">⚠️ Common Issue: mail() Says "Sent" But Email Not Received</strong>
+                <p style="margin: 0 0 8px 0; color: var(--warning-color); font-size: 13px;">
                     PHP mail() function often returns "success" even when emails fail to deliver. This is because it only confirms the email was passed to the server, not that it was actually sent.
                 </p>
-                <strong style="color: #92400e; display: block; margin-top: 10px; margin-bottom: 5px;">Solutions:</strong>
-                <ol style="margin: 5px 0 0 15px; color: #92400e; font-size: 13px; line-height: 1.6;">
+                <strong style="color: var(--warning-color); display: block; margin-top: 10px; margin-bottom: 5px;">Solutions:</strong>
+                <ol style="margin: 5px 0 0 15px; color: var(--warning-color); font-size: 13px; line-height: 1.6;">
                     <li><strong>Critical:</strong> "From Email Address" MUST match your domain (e.g., noreply@yourdomain.com, NOT gmail.com)</li>
                     <li>Use the <strong>"Send Test Email"</strong> button below to verify</li>
                     <li>Check spam/junk folder (mark as "Not Spam" if found)</li>
@@ -43,7 +43,7 @@
 
     {{-- SMTP Settings (hidden by default) --}}
     <div id="smtp-settings" style="display: none;">
-        <h4 style="margin: 20px 0 15px 0; color: #1f2937; font-size: 15px;">
+        <h4 style="margin: 20px 0 15px 0; color: var(--text-primary); font-size: 15px;">
             <i class="fas fa-server"></i> SMTP Server Settings
         </h4>
 
@@ -82,9 +82,9 @@
         </div>
     </div>
 
-    <hr style="margin: 25px 0; border: none; border-top: 1px solid #e5e7eb;">
+    <hr style="margin: 25px 0; border: none; border-top: 1px solid var(--surface-border);">
 
-    <h4 style="margin: 20px 0 15px 0; color: #1f2937; font-size: 15px;">
+    <h4 style="margin: 20px 0 15px 0; color: var(--text-primary); font-size: 15px;">
         <i class="fas fa-user"></i> Email Sender Information
     </h4>
 

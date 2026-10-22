@@ -58,7 +58,7 @@
                 </p>
             </div>
             <div class="invoices-page-actions">
-                <select class="form-control" id="invoice-status-filter" onchange="loadInvoices()" style="width: auto; display: inline-block;">
+                <select class="form-control" id="invoice-status-filter" aria-label="Filter invoices by status" onchange="loadInvoices()" style="width: auto; display: inline-block;">
                     <option value="all">All Statuses</option>
                     <option value="draft">Draft</option>
                     <option value="sent">Sent</option>

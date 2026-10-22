@@ -664,6 +664,12 @@ export function applyClientTabPermissions() {
         invoices: selectedProject.client_can_access_invoices !== false,
     };
 
+    document.querySelectorAll('[data-dashboard-destination]').forEach(button => {
+        button.hidden = !permissions[button.dataset.dashboardDestination];
+    });
+    const recentPanel = document.getElementById('recent-work-panel');
+    if (recentPanel) recentPanel.hidden = !permissions.history;
+
     const clientTabs = ['dashboard', 'history', 'reports', 'invoices'];
 
     clientTabs.forEach(tabName => {

@@ -11,7 +11,7 @@
 
     .automation-header {
         padding: 20px 22px 18px;
-        border-bottom: 1px solid #dbeafe;
+        border-bottom: 1px solid var(--accent-soft);
         background: linear-gradient(90deg, rgba(2, 132, 199, 0.08), rgba(59, 130, 246, 0.03));
     }
 
@@ -21,12 +21,12 @@
         align-items: center;
         gap: 10px;
         font-size: 18px;
-        color: #0f172a;
+        color: var(--text-primary);
     }
 
     .automation-subtitle {
         margin: 8px 0 0;
-        color: #475569;
+        color: var(--text-secondary);
         font-size: 14px;
         line-height: 1.45;
     }
@@ -48,8 +48,8 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: .04em;
-        background: #e0f2fe;
-        color: #075985;
+        background: var(--accent-soft);
+        color: var(--primary-color);
         border: 1px solid #bae6fd;
     }
 
@@ -59,9 +59,9 @@
 
     .automation-table-wrap {
         overflow: auto;
-        border: 1px solid #dbeafe;
+        border: 1px solid var(--accent-soft);
         border-radius: 12px;
-        background: #ffffff;
+        background: var(--surface-card);
     }
 
     .automation-table {
@@ -80,21 +80,21 @@
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: .06em;
-        color: #475569;
-        background: #f8fafc;
-        border-bottom: 1px solid #e2e8f0;
+        color: var(--text-secondary);
+        background: var(--surface-muted);
+        border-bottom: 1px solid var(--surface-border);
     }
 
     .automation-table tbody td {
         padding: 10px 12px;
-        border-bottom: 1px solid #f1f5f9;
+        border-bottom: 1px solid var(--surface-muted);
         vertical-align: middle;
-        color: #0f172a;
+        color: var(--text-primary);
         font-size: 13px;
     }
 
     .automation-table tbody tr:hover {
-        background: #f8fafc;
+        background: var(--surface-muted);
     }
 
     .automation-cell-center {
@@ -103,11 +103,11 @@
 
     .automation-client-name {
         font-weight: 600;
-        color: #0f172a;
+        color: var(--text-primary);
     }
 
     .automation-client-email {
-        color: #64748b;
+        color: var(--text-secondary);
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
         font-size: 12px;
     }
@@ -115,12 +115,12 @@
     .automation-input {
         width: 100%;
         min-height: 36px;
-        border: 1px solid #cbd5e1;
+        border: 1px solid var(--border-color);
         border-radius: 10px;
         padding: 7px 10px;
         font-size: 13px;
-        color: #0f172a;
-        background: #ffffff;
+        color: var(--text-primary);
+        background: var(--surface-card);
     }
 
     .automation-input:focus {
@@ -136,14 +136,14 @@
     }
 
     .automation-tag {
-        border: 1px solid #cbd5e1;
+        border: 1px solid var(--border-color);
         border-radius: 999px;
         padding: 4px 10px;
         font-size: 11px;
         font-weight: 600;
         letter-spacing: .02em;
-        background: #ffffff;
-        color: #334155;
+        background: var(--surface-card);
+        color: var(--text-primary);
         cursor: pointer;
         user-select: none;
         transition: all .15s ease;
@@ -152,13 +152,13 @@
     .automation-tag:hover {
         border-color: #7dd3fc;
         background: #f0f9ff;
-        color: #0c4a6e;
+        color: var(--primary-color);
     }
 
     .automation-tag.active {
         border-color: #0ea5e9;
-        background: #e0f2fe;
-        color: #075985;
+        background: var(--accent-soft);
+        color: var(--primary-color);
         box-shadow: 0 0 0 1px rgba(14, 165, 233, 0.15) inset;
     }
 
@@ -169,12 +169,12 @@
 
     .automation-select {
         min-height: 36px;
-        border: 1px solid #cbd5e1;
+        border: 1px solid var(--border-color);
         border-radius: 10px;
         padding: 6px 10px;
         font-size: 13px;
-        background: #fff;
-        color: #0f172a;
+        background: var(--surface-card);
+        color: var(--text-primary);
     }
 
     .automation-day-tags {
@@ -184,14 +184,14 @@
     }
 
     .automation-day-tag {
-        border: 1px solid #cbd5e1;
+        border: 1px solid var(--border-color);
         border-radius: 999px;
         padding: 3px 8px;
         font-size: 10px;
         font-weight: 700;
         letter-spacing: .03em;
-        background: #ffffff;
-        color: #334155;
+        background: var(--surface-card);
+        color: var(--text-primary);
         cursor: pointer;
         user-select: none;
         text-transform: uppercase;
@@ -205,17 +205,17 @@
 
     .automation-empty-row {
         text-align: center;
-        color: #64748b;
+        color: var(--text-secondary);
         padding: 24px 12px;
     }
 
     .automation-note {
         margin-top: 12px;
-        background: #f8fafc;
-        border: 1px dashed #cbd5e1;
+        background: var(--surface-muted);
+        border: 1px dashed var(--border-color);
         border-radius: 10px;
         padding: 10px 12px;
-        color: #475569;
+        color: var(--text-secondary);
         font-size: 12px;
         line-height: 1.5;
     }
@@ -225,7 +225,7 @@
         border: 1px solid #c7d2fe;
         border-radius: 12px;
         padding: 14px;
-        background: #ffffff;
+        background: var(--surface-card);
         box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
     }
 
@@ -244,8 +244,8 @@
     }
 
     .automation-card {
-        background: #ffffff;
-        border: 1px solid #dbeafe;
+        background: var(--surface-card);
+        border: 1px solid var(--accent-soft);
         border-radius: 14px;
         padding: 14px;
         box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
@@ -261,7 +261,7 @@
 
     .automation-card-status {
         font-size: 12px;
-        color: #64748b;
+        color: var(--text-secondary);
         white-space: nowrap;
     }
 
@@ -278,7 +278,7 @@
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: .05em;
-        color: #64748b;
+        color: var(--text-secondary);
         margin-bottom: 6px;
         font-weight: 700;
     }
@@ -293,7 +293,7 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        color: #334155;
+        color: var(--text-primary);
         font-size: 13px;
         font-weight: 600;
     }
@@ -385,11 +385,11 @@
         </div>
 
         <div class="automation-test-card">
-            <h3 style="margin:0 0 6px;font-size:15px;color:#0f172a;">
+            <h3 style="margin:0 0 6px;font-size:15px;color:var(--text-primary);">
                 <i class="fas fa-vial" style="color:#4338ca;"></i>
                 Test Daily Activity Email
             </h3>
-            <p style="margin:0 0 10px;color:#64748b;font-size:13px;">
+            <p style="margin:0 0 10px;color:var(--text-secondary);font-size:13px;">
                 Send today’s activity report to a specific email to verify delivery. Uses the email settings from the Email tab.
             </p>
             <div class="form-group" style="margin-bottom:10px;">

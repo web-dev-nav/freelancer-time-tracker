@@ -6,22 +6,22 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Professional Timesheet')</title>
     
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="{{ asset_version('js/theme.js') }}"></script>
     
     <!-- Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://bootswatch.com/5/lumen/bootstrap.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://bootswatch.com/_vendor/bootstrap-icons/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://bootswatch.com/_vendor/prismjs/themes/prism-okaidia.css">
-    <link rel="stylesheet" href="https://bootswatch.com/_assets/css/custom.min.css">
+
     <link rel="stylesheet" href="{{ asset_version('css/app-theme.css') }}">
 
 
     
     @stack('styles')
+    <link rel="stylesheet" href="{{ asset_version('css/workspace.css') }}">
 </head>
 <body>
+    <a class="skip-link" href="#@yield('main-anchor', 'main-content')">Skip to content</a>
     @php
         $currentUserPayload = auth()->check()
             ? [
@@ -35,49 +35,24 @@
 
     <div class="container-xl py-2 app-shell">
         <header class="app-header">
-            <div class="app-header-grid">
-                <div class="app-header-main">
-                    <h1 class="app-title mb-1 d-flex align-items-center gap-2">
-                        <i class="fas fa-clock me-2"></i>
-                        Professional Timesheet
-                    </h1>
-                    <p class="app-subtitle mb-0">Simple, reliable time tracking for professionals</p>
-                    <div class="app-header-meta">
-                        <span class="app-meta-pill">
-                            <i class="fas fa-bolt"></i>
-                            Live Workspace
-                        </span>
-                        <span class="app-meta-pill">
-                            <i class="fas fa-shield-alt"></i>
-                            Secure Session
-                        </span>
-                    </div>
-                </div>
-                <div class="app-header-controls">
-                    @auth
-                        <span class="badge text-bg-light border app-user-badge">
-                            {{ auth()->user()->name }} ({{ auth()->user()->role }})
-                        </span>
-                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-outline-danger btn-sm">
-                                <i class="fas fa-sign-out-alt me-1"></i>
-                                Logout
-                            </button>
-                        </form>
-                    @endauth
-                    <button id="theme-toggle" type="button" class="btn btn-outline-secondary d-inline-flex align-items-center">
-                        <i class="bi bi-moon-stars-fill me-2"></i>
-                        <span>Dark Mode</span>
-                    </button>
-                </div>
+            <a class="workspace-brand" href="{{ route('timesheet.index') }}"><span class="brand-mark"><i class="fas fa-clock" aria-hidden="true"></i></span> Timesheet <span class="workspace-caption">Workspace</span></a>
+            <div class="app-header-controls">
+                @auth
+                    <span class="app-user-badge">{{ auth()->user()->name }}</span>
+                @endauth
+                <button id="theme-toggle" type="button" class="btn btn-outline-secondary" aria-label="Switch color theme"><i class="fas fa-moon" aria-hidden="true"></i><span>Dark mode</span></button>
+                @auth
+                    <form method="POST" action="{{ route('logout') }}">@csrf<button type="submit" class="btn btn-outline-secondary" aria-label="Sign out"><i class="fas fa-sign-out-alt" aria-hidden="true"></i><span class="signout-label">Sign out</span></button></form>
+                @endauth
             </div>
         </header>
 
-        <main class="main-content">
+        <main class="main-content" id="main-content" tabindex="-1">
             @yield('content')
         </main>
     </div>
+
+    <div id="notification-region" class="notification-region" aria-live="polite"></div>
 
     {{-- Modals Stack (renders outside main-content) --}}
     @stack('modals')
@@ -85,48 +60,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <!-- Scripts -->
     <script>
-        (function initThemeToggle() {
-            const themeToggle = document.getElementById('theme-toggle');
-            const body = document.body;
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const storedTheme = localStorage.getItem('app-theme');
-
-            function applyTheme(theme) {
-                const useDark = theme === 'dark';
-                body.classList.toggle('dark-mode', useDark);
-
-                if (themeToggle) {
-                    const icon = themeToggle.querySelector('i');
-                    const label = themeToggle.querySelector('span');
-                    if (icon && label) {
-                        if (useDark) {
-                            icon.classList.remove('bi-moon-stars-fill');
-                            icon.classList.add('bi-sun-fill');
-                            label.textContent = 'Light Mode';
-                        } else {
-                            icon.classList.remove('bi-sun-fill');
-                            icon.classList.add('bi-moon-stars-fill');
-                            label.textContent = 'Dark Mode';
-                        }
-                    }
-                }
-            }
-
-            const initialTheme = storedTheme || (prefersDark ? 'dark' : 'light');
-            applyTheme(initialTheme);
-            if (storedTheme !== initialTheme) {
-                localStorage.setItem('app-theme', initialTheme);
-            }
-
-            if (themeToggle) {
-                themeToggle.addEventListener('click', () => {
-                    const nextTheme = body.classList.contains('dark-mode') ? 'light' : 'dark';
-                    applyTheme(nextTheme);
-                    localStorage.setItem('app-theme', nextTheme);
-                });
-            }
-        })();
-
         // Global CSRF token
         window.csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
@@ -180,13 +113,14 @@
         window.notify = {
             show(message, type = 'success') {
                 const alert = document.createElement('div');
-                alert.className = `alert alert-${type}`;
+                alert.className = `alert alert-${type === 'error' ? 'danger' : type}`;
+                alert.setAttribute('role', type === 'error' ? 'alert' : 'status');
                 alert.innerHTML = `
                     <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
                     ${message}
                 `;
 
-                const container = document.querySelector('.main-content');
+                const container = document.getElementById('notification-region');
                 container.insertBefore(alert, container.firstChild);
 
                 setTimeout(() => {
@@ -221,6 +155,7 @@
         };
     </script>
     
+    <script src="{{ asset_version('js/dialogs.js') }}" defer></script>
     @stack('scripts')
 </body>
 </html>

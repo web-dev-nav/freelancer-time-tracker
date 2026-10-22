@@ -29,7 +29,7 @@
     .logs-output {
         margin: 0;
         background: #0b1220;
-        color: #e2e8f0;
+        color: var(--surface-border);
         border: 1px solid #1e293b;
         border-radius: 10px;
         max-height: 58vh;
@@ -110,7 +110,7 @@
     }
 
     .log-line.level-debug .log-level {
-        color: #cbd5e1;
+        color: var(--border-color);
     }
 
     .log-line.stack-line {

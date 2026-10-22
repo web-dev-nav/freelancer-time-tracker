@@ -6,11 +6,12 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Login')</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="{{ asset_version('js/theme.js') }}"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://bootswatch.com/5/lumen/bootstrap.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="{{ asset_version('css/app-theme.css') }}">
     @stack('styles')
+    <link rel="stylesheet" href="{{ asset_version('css/workspace.css') }}">
 </head>
 <body>
     <div class="container py-4">
@@ -19,6 +20,7 @@
                 <i class="fas fa-clock text-primary"></i>
                 <strong>Professional Timesheet</strong>
             </div>
+            <button id="theme-toggle" type="button" class="btn btn-outline-secondary"><i class="fas fa-moon" aria-hidden="true"></i><span>Dark mode</span></button>
         </header>
 
         <main class="py-3">

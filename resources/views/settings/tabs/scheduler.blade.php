@@ -11,7 +11,7 @@
 
     .scheduler-header {
         padding: 20px 22px 18px;
-        border-bottom: 1px solid #dbeafe;
+        border-bottom: 1px solid var(--accent-soft);
         background: linear-gradient(90deg, rgba(2, 132, 199, 0.08), rgba(59, 130, 246, 0.03));
     }
 
@@ -21,12 +21,12 @@
         align-items: center;
         gap: 10px;
         font-size: 18px;
-        color: #0f172a;
+        color: var(--text-primary);
     }
 
     .scheduler-subtitle {
         margin: 8px 0 0;
-        color: #475569;
+        color: var(--text-secondary);
         font-size: 14px;
         line-height: 1.45;
     }
@@ -38,8 +38,8 @@
     }
 
     .automation-card {
-        background: #ffffff;
-        border: 1px solid #dbeafe;
+        background: var(--surface-card);
+        border: 1px solid var(--accent-soft);
         border-radius: 14px;
         padding: 14px;
         box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
@@ -55,17 +55,17 @@
 
     .automation-card-status {
         font-size: 12px;
-        color: #64748b;
+        color: var(--text-secondary);
         white-space: nowrap;
     }
 
     .automation-client-name {
         font-weight: 600;
-        color: #0f172a;
+        color: var(--text-primary);
     }
 
     .automation-client-email {
-        color: #64748b;
+        color: var(--text-secondary);
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
         font-size: 12px;
     }
@@ -83,7 +83,7 @@
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: .05em;
-        color: #64748b;
+        color: var(--text-secondary);
         margin-bottom: 6px;
         font-weight: 700;
     }
@@ -97,12 +97,12 @@
     .automation-input {
         width: 100%;
         min-height: 36px;
-        border: 1px solid #cbd5e1;
+        border: 1px solid var(--border-color);
         border-radius: 10px;
         padding: 7px 10px;
         font-size: 13px;
-        color: #0f172a;
-        background: #ffffff;
+        color: var(--text-primary);
+        background: var(--surface-card);
     }
 
     .automation-input:focus {
@@ -113,8 +113,8 @@
 
     .automation-select {
         appearance: none;
-        background-image: linear-gradient(45deg, transparent 50%, #64748b 50%),
-            linear-gradient(135deg, #64748b 50%, transparent 50%);
+        background-image: linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%),
+            linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
         background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%;
         background-size: 5px 5px, 5px 5px;
         background-repeat: no-repeat;
@@ -129,7 +129,7 @@
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        color: #334155;
+        color: var(--text-primary);
         font-size: 13px;
         font-weight: 600;
     }
@@ -146,12 +146,12 @@
     }
 
     .automation-day-tag {
-        border: 1px solid #cbd5e1;
+        border: 1px solid var(--border-color);
         border-radius: 999px;
         padding: 4px 10px;
         font-size: 12px;
-        color: #475569;
-        background: #ffffff;
+        color: var(--text-secondary);
+        background: var(--surface-card);
         cursor: pointer;
     }
 
@@ -171,7 +171,7 @@
     .scheduler-range-input {
         flex: 1;
         cursor: pointer;
-        background: #f8fafc;
+        background: var(--surface-muted);
     }
 
     .scheduler-range-panel {
@@ -179,8 +179,8 @@
         top: calc(100% + 8px);
         left: 0;
         z-index: 5;
-        background: #ffffff;
-        border: 1px solid #cbd5e1;
+        background: var(--surface-card);
+        border: 1px solid var(--border-color);
         border-radius: 12px;
         padding: 12px;
         box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
@@ -219,7 +219,7 @@
 
     .automation-inline-help {
         font-size: 12px;
-        color: #64748b;
+        color: var(--text-secondary);
         margin-top: 6px;
     }
 
@@ -233,9 +233,9 @@
 
     .scheduler-table-wrap {
         overflow: auto;
-        border: 1px solid #dbeafe;
+        border: 1px solid var(--accent-soft);
         border-radius: 12px;
-        background: #ffffff;
+        background: var(--surface-card);
     }
 
     .scheduler-table {
@@ -250,9 +250,9 @@
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: .06em;
-        color: #475569;
-        background: #f8fafc;
-        border-bottom: 1px solid #e2e8f0;
+        color: var(--text-secondary);
+        background: var(--surface-muted);
+        border-bottom: 1px solid var(--surface-border);
         position: sticky;
         top: 0;
         z-index: 1;
@@ -260,18 +260,18 @@
 
     .scheduler-table tbody td {
         padding: 10px 12px;
-        border-bottom: 1px solid #f1f5f9;
+        border-bottom: 1px solid var(--surface-muted);
         font-size: 13px;
-        color: #0f172a;
+        color: var(--text-primary);
         vertical-align: top;
     }
 
     .scheduler-table tbody tr:hover {
-        background: #f8fafc;
+        background: var(--surface-muted);
     }
 
     .scheduler-muted {
-        color: #64748b;
+        color: var(--text-secondary);
         font-size: 12px;
     }
 
@@ -284,14 +284,14 @@
     }
 
     .scheduler-day-detail td {
-        background: #f8fafc;
+        background: var(--surface-muted);
         padding: 0 12px 12px;
     }
 
     .scheduler-table-nested {
         min-width: 0;
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
+        background: var(--surface-card);
+        border: 1px solid var(--surface-border);
         border-radius: 10px;
         overflow: hidden;
     }
@@ -320,8 +320,8 @@
     }
 
     .scheduler-count-skipped {
-        background: #f1f5f9;
-        color: #475569;
+        background: var(--surface-muted);
+        color: var(--text-secondary);
     }
 
     .automation-pill {
@@ -330,8 +330,8 @@
         gap: 6px;
         padding: 2px 8px;
         border-radius: 999px;
-        background: #f1f5f9;
-        color: #0f172a;
+        background: var(--surface-muted);
+        color: var(--text-primary);
         font-size: 11px;
         font-weight: 700;
         text-transform: uppercase;
@@ -339,8 +339,8 @@
     }
 
     .automation-pill.status-scheduled {
-        background: #dbeafe;
-        color: #1e3a8a;
+        background: var(--accent-soft);
+        color: var(--primary-color);
     }
 
     .automation-pill.status-sent {
@@ -377,9 +377,9 @@
         margin-top: 8px;
         padding: 10px 12px;
         border-radius: 10px;
-        border: 1px dashed #cbd5e1;
-        background: #f8fafc;
-        color: #0f172a;
+        border: 1px dashed var(--border-color);
+        background: var(--surface-muted);
+        color: var(--text-primary);
         font-size: 13px;
         line-height: 1.5;
         display: none;
@@ -425,7 +425,7 @@
 
     .automation-empty-row {
         text-align: center;
-        color: #64748b;
+        color: var(--text-secondary);
         padding: 24px 12px;
     }
 
