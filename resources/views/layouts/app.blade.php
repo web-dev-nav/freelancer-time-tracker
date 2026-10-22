@@ -38,6 +38,7 @@
             <div class="app-header-controls">
                 @auth
                     <span class="app-user-badge">{{ auth()->user()->name }}</span>
+                    <a class="btn btn-outline-secondary profile-link" href="{{ route('profile.edit') }}" aria-label="Profile" @if(request()->routeIs('profile.*')) aria-current="page" @endif><i class="fas fa-user-circle" aria-hidden="true"></i><span class="profile-link-label">Profile</span></a>
                 @endauth
                 <button id="theme-toggle" type="button" class="btn btn-outline-secondary" aria-label="Switch color theme"><i class="fas fa-moon" aria-hidden="true"></i><span>Dark mode</span></button>
                 @auth
