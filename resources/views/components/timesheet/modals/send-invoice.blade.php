@@ -57,11 +57,11 @@
                     </label>
                     <label class="checkbox-label" style="margin:0;">
                         <input type="radio" name="invoice-schedule-mode" value="specific">
-                        <span>Schedule Specific Date</span>
+                        <span>Schedule delivery</span>
                     </label>
                 </div>
                 <small style="color: var(--text-secondary); display: block; margin-top: 6px;">
-                    <i class="fas fa-info-circle"></i> Cron runs every 5 minutes. Emails send on the next interval.
+                    <i class="fas fa-info-circle"></i> Times use {{ config('app.timezone') }}. Delivery is checked every minute when the server scheduler is running.
                 </small>
             </div>
 
@@ -133,7 +133,7 @@
             <button type="button" class="btn btn-secondary" onclick="hideSendInvoiceModal()">
                 Cancel
             </button>
-            <button type="submit" form="send-invoice-form" class="btn btn-success">
+            <button type="submit" form="send-invoice-form" id="invoice-delivery-submit" class="btn btn-success">
                 <i class="fas fa-paper-plane"></i>
                 Send Invoice
             </button>

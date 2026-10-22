@@ -10,10 +10,10 @@
             <section class="focus-card" id="idle-session-card">
                 <div class="panel-heading"><span class="eyebrow">TIME TRACKER</span><span class="neutral-badge">Ready when you are</span></div>
                 <div class="timer-face" aria-hidden="true">0:00<span>:00</span></div>
-                <h2>Make time for good work.</h2><p>Choose your project above, then start your timer. Add a work summary when you finish.</p>
+                <h2>Make time for good work.</h2><p>Choose your organization above, then start your timer. Add a work summary when you finish.</p>
                 <button class="btn btn-primary" id="start-timer-btn" disabled onclick="quickClockIn()"><i class="fas fa-play" aria-hidden="true"></i> Start timer</button>
                 <button class="btn btn-secondary" onclick="createNewEntry()"><i class="fas fa-plus" aria-hidden="true"></i> Add time manually</button>
-                <p class="timer-hint" id="timer-project-hint">Loading projects…</p>
+                <p class="timer-hint" id="timer-project-hint">Loading organizations…</p>
             </section>
             <section class="active-session-card hidden focus-card" id="active-session-card">
                 <div class="panel-heading"><span class="eyebrow">TIME TRACKER</span><span class="session-status"><span class="status-indicator active"></span> Timer running</span></div>
@@ -29,6 +29,6 @@
                 <button class="action-btn" data-dashboard-destination="invoices" onclick="showTab('invoices')"><span class="action-icon"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i></span><span><strong>Stay on top of billing</strong><small>View invoices and payment status</small></span><i class="fas fa-chevron-right" aria-hidden="true"></i></button>
             </div>
         </section>
-        <section class="recent-work" id="recent-work-panel"><div class="panel-heading"><div><h2>Recent work</h2><p>Your latest entries for this project</p></div><button class="btn btn-secondary btn-sm" onclick="showTab('history')">View all <i class="fas fa-arrow-right" aria-hidden="true"></i></button></div><div id="recent-work-list" aria-live="polite"><p class="empty-state">Loading recent work…</p></div></section>
+        <section class="recent-work" id="recent-work-panel"><div class="panel-heading"><div><h2>Recent work</h2><p>Your latest entries for this organization</p></div><button class="btn btn-secondary btn-sm" onclick="showTab('history')">View all <i class="fas fa-arrow-right" aria-hidden="true"></i></button></div><div id="recent-work-list" aria-live="polite"><p class="empty-state">Loading recent work…</p></div></section>
     </div>
 </div>

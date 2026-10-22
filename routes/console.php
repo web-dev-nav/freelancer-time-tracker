@@ -8,17 +8,12 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Schedule full database backup daily at 12:00 AM
-// This backs up the entire database including all projects and time logs
-Schedule::command('backup:database')
-    ->dailyAt('00:00')
-    ->name('database-backup')
-    ->onSuccess(function () {
-        info('Full database backup completed successfully');
-    })
-    ->onFailure(function () {
-        error_log('Full database backup failed');
-    });
+// A minute heartbeat makes missing host cron visible in Settings.
+Schedule::call(fn () => \App\Models\Setting::setValue('scheduler_last_seen_at', now()->toIso8601String()))
+    ->everyMinute()->name('scheduler-heartbeat');
+
+// Evaluate the saved daily schedule each minute; catch up when cron resumes.
+Schedule::command('backup:scheduled')->everyMinute()->withoutOverlapping()->name('database-backup');
 
 // Schedule per-project backups every 2 days at 1:00 AM
 // Generates individual SQL exports per active project (separate from the full daily database backup)
@@ -48,6 +43,7 @@ Schedule::command('invoices:send-reminders')
 // Running per-minute avoids missed runs on hosts with offset cron timing.
 Schedule::command('invoices:send-scheduled')
     ->everyMinute()
+    ->withoutOverlapping(10)
     ->name('send-scheduled-invoices')
     ->onSuccess(function () {
         info('Scheduled invoices processed successfully');

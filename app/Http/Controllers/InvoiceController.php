@@ -535,6 +535,17 @@ class InvoiceController extends Controller
      */
     public function sendEmail(Request $request, $id)
     {
+        $lock = \Illuminate\Support\Facades\Cache::lock('invoice-delivery-'.$id, 600);
+        if (!$lock->get()) return response()->json(['success' => false, 'message' => 'This invoice is being processed. Please try again shortly.'], 409);
+        try {
+            return $this->processInvoiceEmail($request, $id);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function processInvoiceEmail(Request $request, $id)
+    {
         $invoice = Invoice::with(['project', 'items'])->findOrFail($id);
         $invoice->ensureViewToken();
         if ($invoice->isDirty('view_token')) {
@@ -574,7 +585,7 @@ class InvoiceController extends Controller
                     'message' => 'Scheduling is disabled for paid or cancelled invoices.',
                 ], 422);
             }
-            $scheduledTime = Carbon::parse($request->scheduled_send_at);
+            $scheduledTime = Carbon::parse($request->scheduled_send_at, config('app.timezone'))->setTimezone(config('app.timezone'));
 
             // Check if scheduled time is in the past (with 1 minute buffer for processing time)
             if ($scheduledTime->lt(Carbon::now()->subMinute())) {
@@ -592,7 +603,7 @@ class InvoiceController extends Controller
                     'message' => 'Reminders are disabled for paid or cancelled invoices.',
                 ], 422);
             }
-            $reminderTime = Carbon::parse($request->reminder_send_at);
+            $reminderTime = Carbon::parse($request->reminder_send_at, config('app.timezone'))->setTimezone(config('app.timezone'));
             if ($reminderTime->lt(Carbon::now()->subMinute())) {
                 return response()->json([
                     'success' => false,
@@ -601,9 +612,16 @@ class InvoiceController extends Controller
             }
         }
 
+        if ($scheduledTime && $reminderTime && $reminderTime->lte($scheduledTime)) {
+            return response()->json(['success' => false, 'message' => 'Choose a reminder time after the invoice delivery time.'], 422);
+        }
+
         // Handle scheduled send
         if ($scheduledTime) {
             $invoice->scheduled_send_at = $scheduledTime;
+            $invoice->scheduled_send_attempts = 0;
+            $invoice->last_send_error = null;
+            $invoice->next_send_attempt_at = null;
             $invoice->client_email = $recipientEmail; // Save email for later sending
             $invoice->scheduled_email_subject = $request->subject ?? null;
             $invoice->scheduled_email_message = $request->message ?? null;
@@ -653,12 +671,8 @@ class InvoiceController extends Controller
         }
 
         try {
-            // Mark invoice as sent BEFORE generating PDF
-            if ($invoice->status === 'draft') {
-                $invoice->markAsSent();
-                // Refresh the invoice to get updated status for PDF
-                $invoice->refresh();
-            }
+            // Render the intended status without persisting success before mail delivery.
+            if ($invoice->status === 'draft') $invoice->status = 'sent';
 
             $qrCode = $this->generateQrCode($invoice->stripe_payment_link);
 
@@ -696,6 +710,16 @@ class InvoiceController extends Controller
                         );
                     }
                 });
+
+            $invoice->refresh();
+            if ($invoice->status === 'draft') $invoice->markAsSent();
+            $invoice->scheduled_send_at = null;
+            $invoice->scheduled_email_subject = null;
+            $invoice->scheduled_email_message = null;
+            $invoice->scheduled_send_attempts = 0;
+            $invoice->last_send_error = null;
+            $invoice->next_send_attempt_at = null;
+            $invoice->save();
 
             // Log history
             $invoice->logHistory('sent', 'Invoice email sent to ' . $recipientEmail, [
@@ -859,6 +883,9 @@ class InvoiceController extends Controller
                 $invoice->scheduled_send_at = null;
                 $invoice->scheduled_email_subject = null;
                 $invoice->scheduled_email_message = null;
+                $invoice->scheduled_send_attempts = 0;
+                $invoice->last_send_error = null;
+                $invoice->next_send_attempt_at = null;
                 $changed = true;
                 $invoice->logHistory('schedule_cancelled', 'Invoice scheduled send cancelled');
             }

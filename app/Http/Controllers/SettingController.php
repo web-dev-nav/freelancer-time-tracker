@@ -234,6 +234,8 @@ class SettingController extends Controller
                 'message' => 'Settings updated successfully',
                 'data' => $data,
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
         } catch (\Throwable $e) {
             report($e);
 
@@ -936,88 +938,20 @@ class SettingController extends Controller
     public function logs(Request $request)
     {
         $validated = $request->validate([
-            'lines' => 'nullable|integer|min:50|max:3000',
-            'file' => 'nullable|string|max:255',
+            'date' => 'nullable|date_format:Y-m-d',
+            'lines' => 'nullable|integer|min:50|max:1000',
+            'file' => 'nullable|in:laravel.log',
+            'before' => 'nullable|integer|min:0',
+            'start_time' => 'nullable|date_format:H:i',
+            'end_time' => 'nullable|date_format:H:i',
             'level' => 'nullable|in:all,debug,info,notice,warning,error,critical,alert,emergency',
         ]);
-
-        $lineLimit = (int) ($validated['lines'] ?? 400);
-        $level = (string) ($validated['level'] ?? 'all');
-        $logsDir = storage_path('logs');
-
-        if (!File::isDirectory($logsDir)) {
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'selected_file' => null,
-                    'available_files' => [],
-                    'content' => '',
-                    'line_count' => 0,
-                    'level' => $level,
-                ],
-            ]);
+        if (!empty($validated['start_time']) && !empty($validated['end_time']) && $validated['end_time'] < $validated['start_time']) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['end_time' => 'Until time must be after From time.']);
         }
-
-        $availableFiles = collect(File::files($logsDir))
-            ->filter(fn ($file) => str_ends_with($file->getFilename(), '.log'))
-            ->map(function ($file) {
-                return [
-                    'name' => $file->getFilename(),
-                    'size' => $file->getSize(),
-                    'modified_at' => date('Y-m-d H:i:s', $file->getMTime()),
-                    'modified_ts' => $file->getMTime(),
-                ];
-            })
-            ->sortByDesc('modified_ts')
-            ->values()
-            ->all();
-
-        if (empty($availableFiles)) {
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'selected_file' => null,
-                    'available_files' => [],
-                    'content' => '',
-                    'line_count' => 0,
-                    'level' => $level,
-                ],
-            ]);
-        }
-
-        $requestedFile = trim((string) ($validated['file'] ?? ''));
-        $selectedFile = $availableFiles[0]['name'];
-
-        foreach ($availableFiles as $fileMeta) {
-            if ($requestedFile !== '' && $fileMeta['name'] === $requestedFile) {
-                $selectedFile = $fileMeta['name'];
-                break;
-            }
-            if ($requestedFile === '' && $fileMeta['name'] === 'laravel.log') {
-                $selectedFile = 'laravel.log';
-                break;
-            }
-        }
-
-        $selectedPath = $logsDir . DIRECTORY_SEPARATOR . $selectedFile;
-        $lines = $this->tailFileLines($selectedPath, $lineLimit);
-
-        if ($level !== 'all') {
-            $needle = ".{$level}:";
-            $lines = array_values(array_filter($lines, function (string $line) use ($needle): bool {
-                return stripos($line, $needle) !== false;
-            }));
-        }
-
         return response()->json([
             'success' => true,
-            'data' => [
-                'selected_file' => $selectedFile,
-                'available_files' => $availableFiles,
-                'content' => implode("\n", $lines),
-                'line_count' => count($lines),
-                'level' => $level,
-            ],
+            'data' => app(\App\Services\ApplicationLogReader::class)->read($validated),
         ]);
     }
 
@@ -1068,41 +1002,6 @@ class SettingController extends Controller
                 'success' => false,
                 'message' => 'Failed to delete log file.',
             ], 500);
-        }
-    }
-
-    /**
-     * Read the last N lines of a text file efficiently.
-     *
-     * @return array<int, string>
-     */
-    protected function tailFileLines(string $path, int $lineLimit): array
-    {
-        if (!File::exists($path) || $lineLimit <= 0) {
-            return [];
-        }
-
-        try {
-            $file = new \SplFileObject($path, 'r');
-            $file->seek(PHP_INT_MAX);
-            $lastLine = $file->key();
-            $startLine = max(0, $lastLine - $lineLimit + 1);
-
-            $lines = [];
-            for ($lineNo = $startLine; $lineNo <= $lastLine; $lineNo++) {
-                $file->seek($lineNo);
-                if (!$file->eof()) {
-                    $line = rtrim((string) $file->current(), "\r\n");
-                    if ($line !== '') {
-                        $lines[] = $line;
-                    }
-                }
-            }
-
-            return $lines;
-        } catch (\Throwable $e) {
-            report($e);
-            return [];
         }
     }
 

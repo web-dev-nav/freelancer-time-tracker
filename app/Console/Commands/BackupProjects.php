@@ -66,7 +66,7 @@ class BackupProjects extends Command
                 );
 
                 // Save to storage/app/backups
-                Storage::put("backups/{$filename}", $sql);
+                Storage::disk('local')->put("backups/{$filename}", $sql);
 
                 $this->info("✓ Backed up: {$project->name} ({$timeLogs->count()} time logs)");
                 $backupCount++;
@@ -260,14 +260,14 @@ class BackupProjects extends Command
     {
         $this->line('Cleaning up old backups (keeping last 30 days)...');
 
-        $files = Storage::files('backups');
+        $files = Storage::disk('local')->files('backups');
         $deletedCount = 0;
         $cutoffDate = now()->subDays(30);
 
         foreach ($files as $file) {
-            $lastModified = Storage::lastModified($file);
+            $lastModified = Storage::disk('local')->lastModified($file);
             if ($lastModified < $cutoffDate->timestamp) {
-                Storage::delete($file);
+                Storage::disk('local')->delete($file);
                 $deletedCount++;
             }
         }

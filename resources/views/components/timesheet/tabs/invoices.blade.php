@@ -53,7 +53,7 @@
                 <p class="invoices-subtitle">
                     Create and manage client invoices
                     <span class="invoice-view-legend">
-                        <i class="bi bi-eye-fill"></i> indicates the client has opened the invoice email
+                        <i class="fas fa-eye"></i> indicates the client has opened the invoice email
                     </span>
                 </p>
             </div>

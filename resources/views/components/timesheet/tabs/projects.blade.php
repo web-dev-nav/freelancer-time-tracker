@@ -1,11 +1,11 @@
-{{-- Projects Tab Component --}}
-{{-- Project management page with grid layout for project cards --}}
+{{-- Organizations Tab Component --}}
+{{-- Organization management page with grid layout for project cards --}}
 <div class="tab-content" id="projects-tab">
     <div class="projects-page">
         <div class="projects-page-header">
             <div>
-                <h2>Manage Projects</h2>
-                <p class="projects-subtitle">Organize your freelance work by projects</p>
+                <h2>Manage Organizations</h2>
+                <p class="projects-subtitle">Organize your freelance work by organizations</p>
             </div>
             <div class="projects-page-actions">
                 <button class="btn btn-sm btn-secondary" onclick="toggleArchivedProjects()">
@@ -14,13 +14,13 @@
                 </button>
                 <button class="btn btn-primary" onclick="showAddProjectModal()">
                     <i class="fas fa-plus"></i>
-                    Add New Project
+                    Add New Organization
                 </button>
             </div>
         </div>
 
         <div class="projects-grid" id="projects-grid">
-            <!-- Project cards will be loaded here dynamically by JavaScript -->
+            <!-- Organization cards will be loaded here dynamically by JavaScript -->
         </div>
     </div>
 </div>

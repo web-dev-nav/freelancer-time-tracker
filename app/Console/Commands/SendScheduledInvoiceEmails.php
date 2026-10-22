@@ -33,13 +33,26 @@ class SendScheduledInvoiceEmails extends Command
      */
     public function handle()
     {
+        $lock = \Illuminate\Support\Facades\Cache::lock('invoice-delivery-scheduler', 600);
+        if (!$lock->get()) return self::SUCCESS;
+        try {
+            return $this->processDeliveries();
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function processDeliveries(): int
+    {
         $this->info('Checking for scheduled invoices to send...');
 
         // Find invoices scheduled to be sent now or in the past
         $invoices = Invoice::with(['project', 'items'])
             ->whereNotNull('scheduled_send_at')
             ->where('scheduled_send_at', '<=', Carbon::now())
-            ->whereNull('sent_at')
+            ->whereNotIn('status', ['paid', 'cancelled'])
+            ->where('scheduled_send_attempts', '<', 5)
+            ->where(fn ($query) => $query->whereNull('next_send_attempt_at')->orWhere('next_send_attempt_at', '<=', now()))
             ->get();
 
         $sent = 0;
@@ -51,7 +64,11 @@ class SendScheduledInvoiceEmails extends Command
             $this->info("Found {$invoices->count()} scheduled invoice(s) to send.");
 
             foreach ($invoices as $invoice) {
+                $deliveryLock = \Illuminate\Support\Facades\Cache::lock('invoice-delivery-'.$invoice->id, 600);
+                if (!$deliveryLock->get()) continue;
                 try {
+                    $invoice->refresh();
+                    if (!$invoice->scheduled_send_at || $invoice->scheduled_send_at->isFuture() || in_array($invoice->status, ['paid', 'cancelled'], true)) continue;
                     $this->info("Processing invoice {$invoice->invoice_number}...");
 
                     if (!$invoice->client_email) {
@@ -74,17 +91,14 @@ class SendScheduledInvoiceEmails extends Command
                     $emailSettings = $this->getEmailSettings();
                     $mailerConfig = $this->prepareMailerConfiguration($emailSettings);
 
-                    // Mark invoice as sent BEFORE generating PDF
-                    if ($invoice->status === 'draft') {
-                        $invoice->markAsSent();
-                        $invoice->refresh();
-                    }
-
                     $invoice->ensureViewToken();
                     if ($invoice->isDirty('view_token')) {
                         $invoice->save();
                         $invoice->refresh();
                     }
+
+                    $scheduledAt = $invoice->scheduled_send_at?->copy();
+                    if ($invoice->status === 'draft') $invoice->status = 'sent';
 
                     // Generate PDF
                     $pdf = PDF::loadView('invoices.pdf', [
@@ -122,6 +136,12 @@ class SendScheduledInvoiceEmails extends Command
                             }
                         });
 
+                    $invoice->refresh();
+                    if ($invoice->status === 'draft') $invoice->markAsSent();
+                    $invoice->scheduled_send_attempts = 0;
+                    $invoice->last_send_error = null;
+                    $invoice->next_send_attempt_at = null;
+
                     // Clear scheduled send time
                     $invoice->scheduled_send_at = null;
                     $invoice->scheduled_email_subject = null;
@@ -141,7 +161,7 @@ class SendScheduledInvoiceEmails extends Command
                         'name' => $invoice->invoice_number,
                         'status' => 'sent',
                         'detail' => 'Scheduled invoice email sent',
-                        'scheduled_at' => $invoice->scheduled_send_at,
+                        'scheduled_at' => $scheduledAt,
                         'executed_at' => Carbon::now(),
                         'payload' => ['invoice_id' => $invoice->id, 'subject' => $subject],
                     ]);
@@ -149,7 +169,12 @@ class SendScheduledInvoiceEmails extends Command
                     $this->info("✓ Sent invoice {$invoice->invoice_number} to {$invoice->client_email}");
                     $sent++;
 
-                } catch (\Exception $e) {
+                } catch (\Throwable $e) {
+                    $invoice->refresh();
+                    $invoice->scheduled_send_attempts++;
+                    $invoice->last_send_error = mb_substr($e->getMessage(), 0, 2000);
+                    $invoice->next_send_attempt_at = $invoice->scheduled_send_attempts < 5 ? now()->addMinutes(5 * $invoice->scheduled_send_attempts) : null;
+                    $invoice->save();
                     $this->error("Failed to send invoice {$invoice->invoice_number}: {$e->getMessage()}");
                     Log::error("Failed to send scheduled invoice {$invoice->invoice_number}", [
                         'error' => $e->getMessage(),
@@ -164,6 +189,8 @@ class SendScheduledInvoiceEmails extends Command
                         'payload' => ['invoice_id' => $invoice->id],
                     ]);
                     $failed++;
+                } finally {
+                    $deliveryLock->release();
                 }
             }
         }
@@ -175,7 +202,7 @@ class SendScheduledInvoiceEmails extends Command
 
         $this->processScheduledReminders();
 
-        return 0;
+        return $failed > 0 ? self::FAILURE : self::SUCCESS;
     }
 
     private function processScheduledReminders(): void
@@ -185,7 +212,8 @@ class SendScheduledInvoiceEmails extends Command
         $reminders = Invoice::with(['project', 'items'])
             ->whereNotNull('reminder_send_at')
             ->where('reminder_send_at', '<=', Carbon::now())
-            ->whereNotIn('status', ['paid', 'cancelled'])
+            ->where('status', 'sent')
+            ->whereNull('scheduled_send_at')
             ->get();
 
         if ($reminders->isEmpty()) {

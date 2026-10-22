@@ -18,7 +18,7 @@ class DatabaseBackupController extends Controller
         $files = Storage::disk('local')->files('backups');
 
         foreach ($files as $file) {
-            if (pathinfo($file, PATHINFO_EXTENSION) === 'sql') {
+            if (in_array(pathinfo($file, PATHINFO_EXTENSION), ['sql', 'sqlite'], true)) {
                 $backups[] = [
                     'filename' => basename($file),
                     'path' => $file,
@@ -30,12 +30,25 @@ class DatabaseBackupController extends Controller
             }
         }
 
+        // Retain access to backups written by the old scheduler before the disk-path fix.
+        $knownNames = array_column($backups, 'filename');
+        foreach (glob(storage_path('app/backups').'/*') ?: [] as $legacy) {
+            $name = basename($legacy);
+            if (!is_file($legacy) || is_link($legacy) || !in_array(pathinfo($legacy, PATHINFO_EXTENSION), ['sql', 'sqlite'], true) || in_array($name, $knownNames, true)) continue;
+            $backups[] = [
+                'filename' => $name, 'path' => 'backups/'.$name, 'size' => filesize($legacy),
+                'created_at' => filemtime($legacy), 'formatted_size' => $this->formatBytes(filesize($legacy)),
+                'formatted_date' => date('Y-m-d H:i:s', filemtime($legacy)),
+            ];
+        }
+
         // Sort by date descending (newest first)
         usort($backups, function($a, $b) {
             return $b['created_at'] - $a['created_at'];
         });
 
         // Pagination
+        $request->validate(['per_page' => 'nullable|integer|min:1|max:100', 'page' => 'nullable|integer|min:1']);
         $perPage = $request->get('per_page', 10); // Default 10 items per page
         $page = $request->get('page', 1);
         $total = count($backups);
@@ -63,38 +76,26 @@ class DatabaseBackupController extends Controller
      */
     public function downloadFile($filename)
     {
-        $path = 'backups/' . $filename;
-
-        if (!Storage::disk('local')->exists($path)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Backup file not found'
-            ], 404);
-        }
-
-        return Storage::disk('local')->download($path);
+        $path = $this->resolveBackupPath($filename);
+        abort_unless($path, 404, 'Backup file not found');
+        return response()->download($path, $filename);
     }
 
-    /**
-     * Delete a backup file
-     */
     public function deleteFile($filename)
     {
-        $path = 'backups/' . $filename;
+        $path = $this->resolveBackupPath($filename);
+        abort_unless($path, 404, 'Backup file not found');
+        unlink($path);
+        return response()->json(['success' => true, 'message' => 'Backup deleted successfully']);
+    }
 
-        if (!Storage::disk('local')->exists($path)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Backup file not found'
-            ], 404);
+    private function resolveBackupPath(string $filename): ?string
+    {
+        if (basename($filename) !== $filename || !in_array(pathinfo($filename, PATHINFO_EXTENSION), ['sql', 'sqlite'], true)) return null;
+        foreach ([Storage::disk('local')->path('backups/'.$filename), storage_path('app/backups/'.$filename)] as $path) {
+            if (is_file($path) && !is_link($path)) return $path;
         }
-
-        Storage::disk('local')->delete($path);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Backup deleted successfully'
-        ]);
+        return null;
     }
 
     /**
@@ -107,18 +108,22 @@ class DatabaseBackupController extends Controller
             $dbConfig = config("database.connections.{$dbConnection}");
 
             if ($dbConnection === 'sqlite') {
-                return $this->downloadSqliteBackup($dbConfig);
+                $response = $this->downloadSqliteBackup($dbConfig);
             } elseif (in_array($dbConnection, ['mysql', 'mariadb'])) {
-                return $this->downloadMysqlBackup($dbConfig);
+                $response = $this->downloadMysqlBackup($dbConfig);
             } elseif ($dbConnection === 'pgsql') {
-                return $this->downloadPostgresBackup($dbConfig);
+                $response = $this->downloadPostgresBackup($dbConfig);
             } else {
                 return response()->json([
                     'success' => false,
                     'message' => "Unsupported database type: {$dbConnection}"
                 ], 400);
             }
+            \App\Models\Setting::setValue('backup_last_success_at', now()->toIso8601String());
+            \App\Models\Setting::setValue('backup_last_error', null);
+            return $response;
         } catch (\Exception $e) {
+            \App\Models\Setting::setValue('backup_last_error', $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Backup failed: ' . $e->getMessage()
@@ -147,7 +152,7 @@ class DatabaseBackupController extends Controller
         );
 
         // Save backup to storage
-        Storage::disk('local')->put('backups/' . $filename, $sql);
+        if (!Storage::disk('local')->put('backups/' . $filename, $sql)) throw new \RuntimeException('The backup could not be written to storage.');
 
         return response($sql, 200)
             ->header('Content-Type', 'application/sql')
@@ -222,7 +227,7 @@ class DatabaseBackupController extends Controller
         );
 
         // Save backup to storage
-        Storage::disk('local')->put('backups/' . $filename, $sql);
+        if (!Storage::disk('local')->put('backups/' . $filename, $sql)) throw new \RuntimeException('The backup could not be written to storage.');
 
         return response($sql, 200)
             ->header('Content-Type', 'application/sql')
@@ -327,7 +332,7 @@ class DatabaseBackupController extends Controller
         );
 
         // Save backup to storage
-        Storage::disk('local')->put('backups/' . $filename, $sql);
+        if (!Storage::disk('local')->put('backups/' . $filename, $sql)) throw new \RuntimeException('The backup could not be written to storage.');
 
         return response($sql, 200)
             ->header('Content-Type', 'application/sql')

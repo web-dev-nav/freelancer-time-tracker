@@ -14,7 +14,7 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 
-class TimeLogExport implements FromArray, WithHeadings, WithStyles, WithColumnWidths, WithTitle
+class TimeLogExport extends \PhpOffice\PhpSpreadsheet\Cell\DefaultValueBinder implements \Maatwebsite\Excel\Concerns\WithCustomValueBinder, FromArray, WithHeadings, WithStyles, WithColumnWidths, WithTitle
 {
     protected $logs;
     protected $startDate;
@@ -70,7 +70,7 @@ class TimeLogExport implements FromArray, WithHeadings, WithStyles, WithColumnWi
                     $log->clock_in_time,
                     $log->clock_out_time,
                     $log->formatted_duration,
-                    $log->work_description
+                    \App\Support\DescriptionText::fromHtml($log->work_description)
                 ];
             }
             
@@ -88,6 +88,15 @@ class TimeLogExport implements FromArray, WithHeadings, WithStyles, WithColumnWi
         $data[] = ['Average Session Length:', $this->logs->count() > 0 ? round($this->totalMinutes / $this->logs->count()) . ' minutes' : '0 minutes'];
 
         return $data;
+    }
+
+    public function bindValue(\PhpOffice\PhpSpreadsheet\Cell\Cell $cell, $value): bool
+    {
+        if ($cell->getColumn() === 'D' && is_string($value)) {
+            $cell->setValueExplicit($value, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+            return true;
+        }
+        return parent::bindValue($cell, $value);
     }
 
     public function headings(): array

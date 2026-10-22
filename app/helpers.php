@@ -9,7 +9,7 @@
 
 if (!function_exists('asset_version')) {
     /**
-     * Generate versioned asset URL using file modification time
+     * Generate versioned asset URL using a content hash
      * This provides cache busting only when files actually change
      *
      * @param string $path The asset path relative to public directory
@@ -23,9 +23,9 @@ if (!function_exists('asset_version')) {
     {
         $publicPath = public_path($path);
 
-        // If file exists, use its modification time as version
+        // Content hashes invalidate dependencies even when deploy tools preserve mtimes
         if (file_exists($publicPath)) {
-            $version = filemtime($publicPath);
+            $version = substr(hash_file('sha256', $publicPath), 0, 12);
             return asset($path) . '?v=' . $version;
         }
 

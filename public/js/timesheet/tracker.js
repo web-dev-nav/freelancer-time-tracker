@@ -32,7 +32,7 @@ export async function clockIn() {
     }
 
     if (!State.selectedProjectId) {
-        window.notify.error('Please select a project first');
+        window.notify.error('Please select an organization first');
         return;
     }
 

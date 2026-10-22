@@ -379,7 +379,7 @@ export function createNewEntry() {
     if (clockOutField) clockOutField.value = currentDateTime.time;
     clearEditorContent('edit-work-description');
 
-    // Store the currently selected project for the new entry
+    // Store the currently selected organization for the new entry
     editLogId.setAttribute('data-create-project-id', State.selectedProjectId || '');
 
     // Show the modal

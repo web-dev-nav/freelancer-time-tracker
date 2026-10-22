@@ -6,7 +6,7 @@
  * - Dashboard statistics
  * - Report data
  * - Pagination state
- * - Project selection state
+ * - Organization selection state
  */
 
 // Active session and dashboard state
@@ -21,9 +21,9 @@ export let currentPage = 1;
 export let currentPerPage = 15;
 export let totalPages = 1;
 
-// Project state
-export let selectedProjectId = null;  // Currently selected project
-export let allProjects = [];          // All active projects
+// Organization state
+export let selectedProjectId = null;  // Currently selected organization
+export let allProjects = [];          // All active organizations
 export let currentProjects = [];
 export let showArchived = false;
 

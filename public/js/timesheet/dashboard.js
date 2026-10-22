@@ -10,7 +10,7 @@ import * as Utils from './utils.js';
 
 /**
  * Load dashboard statistics from the API
- * Filters by selected project if one is set
+ * Filters by selected organization if one is set
  */
 let dashboardRequest = 0;
 
@@ -253,7 +253,7 @@ function updateProjectHint() {
     if (hint)
         hint.textContent = project
             ? `Tracking for ${project.name}`
-            : 'Choose or create a project to start tracking.';
+            : 'Choose or create an organization to start tracking.';
     if (button) button.disabled = !project;
 }
 
@@ -315,9 +315,12 @@ async function loadRecentWork() {
             list.append(row);
         });
     } catch (_) {
-        if (requestId === recentRequest)
-            message(
-                'Recent work is unavailable. Open Work History to try again.',
-            );
+        if (requestId !== recentRequest) return;
+        message('Recent work could not be loaded.');
+        const retry = document.createElement('button');
+        retry.className = 'btn btn-secondary btn-sm';
+        retry.textContent = 'Retry recent work';
+        retry.addEventListener('click', loadRecentWork);
+        list.append(retry);
     }
 }

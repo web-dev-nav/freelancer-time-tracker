@@ -6,7 +6,7 @@
  *
  * Cache Busting: Version is based on file modification time (asset_version helper)
  * When this file changes, the browser reloads this and all imported modules.
- * ES6 module imports are automatically versioned when the entry point is versioned.
+ * The layout import map versions every dependency by content hash.
  */
 
 // Import all modules

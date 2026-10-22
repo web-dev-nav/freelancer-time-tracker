@@ -851,3 +851,99 @@ h2,
 .project-selector-container {
     background: transparent;
 }
+.settings-tabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    border-bottom: 1px solid var(--border-color);
+    gap: 4px;
+    padding-bottom: 12px;
+}
+.settings-tabs .settings-tab {
+    border: 0;
+    border-radius: 6px;
+    padding: 10px 12px;
+    min-height: 40px;
+    font-size: 13px;
+    white-space: normal;
+    text-align: left;
+}
+.settings-tabs .settings-tab.active {
+    background: var(--accent-soft);
+    color: var(--primary-color);
+}
+.backup-health {
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) 2fr;
+    gap: 12px;
+    margin: 24px 0;
+}
+.backup-health dt {
+    font-weight: 600;
+}
+.backup-health dd {
+    margin: 0;
+    color: var(--text-secondary);
+}
+.backup-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.backup-cron-help {
+    margin-top: 28px;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--surface-muted);
+}
+.backup-cron-help h3 {
+    font-size: 16px;
+}
+.backup-cron-help code {
+    display: block;
+    overflow-wrap: anywhere;
+    margin: 16px 0;
+    color: var(--primary-color);
+}
+@media (max-width: 700px) {
+    .backup-health {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    .settings-tabs .settings-tab {
+        flex: 1 1 45%;
+    }
+    .save-bar-content {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .settings-container {
+        padding: 24px 16px !important;
+    }
+}
+.logs-filters {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    align-items: end;
+    margin-bottom: 16px;
+}
+.logs-filters .form-group {
+    margin-bottom: 0;
+}
+.logs-filters .logs-toolbar {
+    grid-column: span 2;
+    justify-content: flex-end;
+}
+.logs-filters .logs-toolbar-btn {
+    min-width: auto;
+}
+@media (max-width: 900px) {
+    .logs-filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .logs-filters .logs-toolbar {
+        grid-column: 1/-1;
+        justify-content: flex-start;
+    }
+}

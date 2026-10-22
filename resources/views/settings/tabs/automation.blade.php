@@ -367,7 +367,7 @@
             <i class="fas fa-paper-plane" style="color:#0369a1;"></i>
             Per-Client Daily Activity Schedules
         </h2>
-        <p class="automation-subtitle">Set different send times, subjects, and activity columns for each client. Each client receives only their project data.</p>
+        <p class="automation-subtitle">Set different send times, subjects, and activity columns for each client. Each client receives only their organization data.</p>
         <div class="automation-chip-row">
             <span class="automation-chip"><i class="fas fa-clock"></i> Checks Every 5 Min</span>
             <span class="automation-chip"><i class="fas fa-envelope-open-text"></i> Per-Client Delivery</span>

@@ -14,10 +14,10 @@
                 <div class="form-group">
                     <label class="form-label" for="invoice-project-id">
                         <i class="fas fa-folder"></i>
-                        Project *
+                        Organization *
                     </label>
                     <select id="invoice-project-id" class="form-control" required onchange="handleCreateInvoiceProjectChange()">
-                        <option value="">Select a project...</option>
+                        <option value="">Select a organization...</option>
                     </select>
                 </div>
 

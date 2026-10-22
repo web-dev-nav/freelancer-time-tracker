@@ -60,11 +60,11 @@
                             @endif
 
                             @if($showProjectSummary)
-                                <h2 style="margin:0 0 10px;font-size:16px;">Project Summary</h2>
+                                <h2 style="margin:0 0 10px;font-size:16px;">Organization Summary</h2>
                                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-bottom:20px;">
                                     <thead>
                                         <tr>
-                                            <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Project</th>
+                                            <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Organization</th>
                                             <th align="right" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Sessions</th>
                                             <th align="right" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Time</th>
                                         </tr>
@@ -93,7 +93,7 @@
                                             <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Date</th>
                                         @endif
                                         @if(in_array('project', $activityColumns, true))
-                                            <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Project</th>
+                                            <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">Organization</th>
                                         @endif
                                         @if(in_array('clock_in', $activityColumns, true))
                                             <th align="left" style="padding:10px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#6b7280;text-transform:uppercase;">In</th>

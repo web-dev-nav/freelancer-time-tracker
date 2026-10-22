@@ -1,8 +1,9 @@
+import { storage } from '../storage.js';
 /**
- * Projects Module
+ * Organizations Module
  *
  * Handles project management including loading, creating, editing, archiving,
- * and deleting projects. Also manages the project selector dropdown.
+ * and deleting projects. Also manages the organization selector dropdown.
  */
 
 import * as State from './state.js';
@@ -282,48 +283,60 @@ function setupClientNameWatcher() {
 }
 
 /**
- * Load active projects for the selector dropdown
+ * Load active organizations for the selector dropdown
  */
 export async function loadProjectsForSelector() {
+    const selector = document.getElementById('project-selector');
+    const errorPanel = document.getElementById('project-load-error');
+    if (errorPanel) errorPanel.hidden = true;
+    selector.disabled = true;
     try {
         const response = await window.api.request('/api/projects/active');
 
+        if (!response.success || !Array.isArray(response.data)) throw new Error('Invalid organization response.');
         if (response.success) {
             State.setAllProjects(response.data);
             updateProjectSelector();
 
-            // Restore last selected project or select first one
-            const savedProjectId = localStorage.getItem('selectedProjectId');
+            // Restore last selected organization or select first one
+            const savedProjectId = storage.getItem('selectedProjectId');
             if (savedProjectId && State.allProjects.find(p => p.id == savedProjectId)) {
                 State.setSelectedProjectId(savedProjectId);
             } else if (State.allProjects.length > 0) {
                 State.setSelectedProjectId(State.allProjects[0].id.toString());
+            } else {
+                State.setSelectedProjectId(null);
             }
 
             document.getElementById('project-selector').value = State.selectedProjectId || '';
             applyClientTabPermissions();
 
-            // Load initial data for selected project
+            // Load initial data for selected organization
             if (State.selectedProjectId) {
                 onProjectChange();
             }
         }
     } catch (error) {
-        console.error('Failed to load projects:', error);
-        window.notify.error('Failed to load projects. Please refresh the page.');
+        selector.replaceChildren(new Option('Unable to load organizations', ''));
+        if (errorPanel) errorPanel.hidden = false;
+        console.error('Failed to load organizations:', error);
+        window.notify.error('Failed to load organizations. Please try again.');
+    } finally {
+        selector.disabled = false;
     }
 }
+window.reloadOrganizations = loadProjectsForSelector;
 
 /**
- * Update the project selector dropdown with current projects
+ * Update the organization selector dropdown with current projects
  */
 export function updateProjectSelector() {
     const selector = document.getElementById('project-selector');
 
     if (State.allProjects.length === 0) {
         const message = window.currentUser?.role === 'author'
-            ? 'No projects - Create one!'
-            : 'No assigned projects';
+            ? 'No organizations - Create one!'
+            : 'No assigned organizations';
         selector.innerHTML = `<option value="">${message}</option>`;
         return;
     }
@@ -335,7 +348,7 @@ export function updateProjectSelector() {
 
 /**
  * Called when project selection changes
- * Reloads all data for the newly selected project
+ * Reloads all data for the newly selected organization
  */
 export function onProjectChange() {
     applyClientTabPermissions();
@@ -357,8 +370,8 @@ export function onProjectChange() {
 }
 
 /**
- * Load projects for the projects tab
- * Loads either active or archived projects based on toggle
+ * Load projects for the organizations tab
+ * Loads either active or archived organizations based on toggle
  */
 export async function loadProjects() {
     try {
@@ -370,12 +383,12 @@ export async function loadProjects() {
             displayProjects();
         }
     } catch (error) {
-        window.notify.error('Failed to load projects: ' + error.message);
+        window.notify.error('Failed to load organizations: ' + error.message);
     }
 }
 
 /**
- * Display projects in the projects tab grid
+ * Display projects in the organizations tab grid
  */
 export function displayProjects() {
     const grid = document.getElementById('projects-grid');
@@ -384,8 +397,8 @@ export function displayProjects() {
         grid.innerHTML = `
             <div class="empty-projects">
                 <i class="fas fa-folder-open"></i>
-                <h3>No ${State.showArchived ? 'Archived ' : ''}Projects</h3>
-                <p>${State.showArchived ? 'You have no archived projects.' : 'Get started by creating your first project!'}</p>
+                <h3>No ${State.showArchived ? 'Archived ' : ''}Organizations</h3>
+                <p>${State.showArchived ? 'You have no archived organizations.' : 'Get started by creating your first project!'}</p>
             </div>
         `;
         return;
@@ -528,7 +541,7 @@ export function showAddProjectModal() {
     setupClientEmailWatcher();
     setupClientNameWatcher();
     loadClientProfiles();
-    document.getElementById('project-modal-title').textContent = 'Add New Project';
+    document.getElementById('project-modal-title').textContent = 'Add New Organization';
     document.getElementById('project-id').value = '';
     document.getElementById('project-form').reset();
     document.getElementById('client-login-password').value = '';
@@ -546,7 +559,7 @@ export function showAddProjectModal() {
 
 /**
  * Edit a project
- * @param {number} projectId - Project ID
+ * @param {number} projectId - Organization ID
  */
 export async function editProject(projectId) {
     try {
@@ -557,7 +570,7 @@ export async function editProject(projectId) {
 
         if (response.success) {
             const project = response.data;
-            document.getElementById('project-modal-title').textContent = 'Edit Project';
+            document.getElementById('project-modal-title').textContent = 'Edit Organization';
             document.getElementById('project-id').value = project.id;
             document.getElementById('project-name').value = project.name;
             document.getElementById('client-name').value = project.client_name || '';
@@ -578,12 +591,12 @@ export async function editProject(projectId) {
             document.body.style.overflow = 'hidden';
         }
     } catch (error) {
-        window.notify.error('Failed to load project: ' + error.message);
+        window.notify.error('Failed to load organization: ' + error.message);
     }
 }
 
 /**
- * Hide the project modal
+ * Hide the organization modal
  */
 export function hideProjectModal() {
     document.getElementById('project-modal').classList.remove('show');
@@ -625,24 +638,24 @@ export async function saveProject(e) {
         });
 
         if (response.success) {
-            window.notify.success(projectId ? 'Project updated successfully!' : 'Project created successfully!');
+            window.notify.success(projectId ? 'Organization updated successfully!' : 'Organization created successfully!');
             hideProjectModal();
             loadProjectsForSelector();  // Refresh the selector
 
-            // If this was a new project and we had no projects before, select it
+            // If this was a new organization and we had no organizations before, select it
             if (!projectId && !State.selectedProjectId) {
                 State.setSelectedProjectId(response.data.id.toString());
-                localStorage.setItem('selectedProjectId', State.selectedProjectId);
+                storage.setItem('selectedProjectId', State.selectedProjectId);
             }
 
-            // If we're on the projects tab, reload it
+            // If we're on the organizations tab, reload it
             const activeTab = document.querySelector('.nav-tab.active');
             if (activeTab && activeTab.getAttribute('data-tab') === 'projects') {
                 loadProjects();
             }
         }
     } catch (error) {
-        window.notify.error('Failed to save project: ' + error.message);
+        window.notify.error('Failed to save organization: ' + error.message);
     }
 }
 
@@ -698,10 +711,10 @@ export function applyClientTabPermissions() {
 
 /**
  * Archive a project
- * @param {number} projectId - Project ID
+ * @param {number} projectId - Organization ID
  */
 export async function archiveProject(projectId) {
-    if (!confirm('Are you sure you want to archive this project? You can always activate it later.')) {
+    if (!confirm('Are you sure you want to archive this organization? You can always activate it later.')) {
         return;
     }
 
@@ -711,7 +724,7 @@ export async function archiveProject(projectId) {
         });
 
         if (response.success) {
-            window.notify.success('Project archived successfully!');
+            window.notify.success('Organization archived successfully!');
             loadProjectsForSelector();
             const activeTab = document.querySelector('.nav-tab.active');
             if (activeTab && activeTab.getAttribute('data-tab') === 'projects') {
@@ -719,13 +732,13 @@ export async function archiveProject(projectId) {
             }
         }
     } catch (error) {
-        window.notify.error('Failed to archive project: ' + error.message);
+        window.notify.error('Failed to archive organization: ' + error.message);
     }
 }
 
 /**
  * Activate an archived project
- * @param {number} projectId - Project ID
+ * @param {number} projectId - Organization ID
  */
 export async function activateProject(projectId) {
     try {
@@ -734,7 +747,7 @@ export async function activateProject(projectId) {
         });
 
         if (response.success) {
-            window.notify.success('Project activated successfully!');
+            window.notify.success('Organization activated successfully!');
             loadProjectsForSelector();
             const activeTab = document.querySelector('.nav-tab.active');
             if (activeTab && activeTab.getAttribute('data-tab') === 'projects') {
@@ -742,16 +755,16 @@ export async function activateProject(projectId) {
             }
         }
     } catch (error) {
-        window.notify.error('Failed to activate project: ' + error.message);
+        window.notify.error('Failed to activate organization: ' + error.message);
     }
 }
 
 /**
  * Delete a project
- * @param {number} projectId - Project ID
+ * @param {number} projectId - Organization ID
  */
 export async function deleteProject(projectId) {
-    if (!confirm('Are you sure you want to delete this project? This action cannot be undone. (Projects with time logs cannot be deleted)')) {
+    if (!confirm('Are you sure you want to delete this organization? This action cannot be undone. (Organizations with time logs cannot be deleted)')) {
         return;
     }
 
@@ -761,7 +774,7 @@ export async function deleteProject(projectId) {
         });
 
         if (response.success) {
-            window.notify.success('Project deleted successfully!');
+            window.notify.success('Organization deleted successfully!');
             loadProjectsForSelector();
             const activeTab = document.querySelector('.nav-tab.active');
             if (activeTab && activeTab.getAttribute('data-tab') === 'projects') {
@@ -769,12 +782,12 @@ export async function deleteProject(projectId) {
             }
         }
     } catch (error) {
-        window.notify.error(error.message || 'Failed to delete project');
+        window.notify.error(error.message || 'Failed to delete organization');
     }
 }
 
 /**
- * Toggle between showing active and archived projects
+ * Toggle between showing active and archived organizations
  */
 export function toggleArchivedProjects() {
     State.setShowArchived(!State.showArchived);
@@ -784,7 +797,7 @@ export function toggleArchivedProjects() {
 
 /**
  * Backup a project's database (project + time logs)
- * @param {number} projectId - Project ID
+ * @param {number} projectId - Organization ID
  */
 export async function backupProject(projectId) {
     try {
@@ -796,9 +809,9 @@ export async function backupProject(projectId) {
         link.click();
         document.body.removeChild(link);
 
-        window.notify.success('Project backup downloaded successfully!');
+        window.notify.success('Organization backup downloaded successfully!');
     } catch (error) {
-        window.notify.error('Failed to backup project: ' + error.message);
+        window.notify.error('Failed to backup organization: ' + error.message);
     }
 }
 

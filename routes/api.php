@@ -75,13 +75,13 @@ Route::middleware('auth')->group(function () {
         // List and statistics
         Route::get('/', [InvoiceController::class, 'index'])->name('index');
         Route::get('/stats', [InvoiceController::class, 'stats'])->name('stats');
+        Route::get('/unbilled-logs', [InvoiceController::class, 'getUnbilledLogs'])->middleware('author')->name('unbilled-logs');
         Route::get('/{id}', [InvoiceController::class, 'show'])->name('show');
         Route::get('/{id}/history', [InvoiceController::class, 'history'])->name('history');
         Route::get('/{id}/pdf/download', [InvoiceController::class, 'downloadPdf'])->name('pdf-download');
         Route::get('/{id}/pdf/preview', [InvoiceController::class, 'previewPdf'])->name('pdf-preview');
 
         // CRUD operations (author only)
-        Route::get('/unbilled-logs', [InvoiceController::class, 'getUnbilledLogs'])->middleware('author')->name('unbilled-logs');
         Route::post('/', [InvoiceController::class, 'store'])->middleware(['author', 'throttle:10,1'])->name('store');
         Route::put('/{id}', [InvoiceController::class, 'update'])->middleware('author')->name('update');
         Route::delete('/{id}', [InvoiceController::class, 'destroy'])->middleware('author')->name('destroy');
@@ -107,6 +107,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/test-daily-activity', [SettingController::class, 'testDailyActivityReport'])->middleware('throttle:3,1')->name('test-daily-activity');
             Route::post('/flush-cache', [SettingController::class, 'flushCache'])->middleware('throttle:3,1')->name('flush-cache');
             Route::get('/debug-email', [SettingController::class, 'debugEmail'])->name('debug-email');
+            Route::get('/backups', [\App\Http\Controllers\BackupSettingController::class, 'index']);
+            Route::put('/backups', [\App\Http\Controllers\BackupSettingController::class, 'update']);
             Route::get('/logs', [SettingController::class, 'logs'])->name('logs');
             Route::post('/logs/delete', [SettingController::class, 'deleteLogFile'])->middleware('throttle:10,1')->name('logs.delete');
             Route::get('/custom-email-schedules', [CustomEmailScheduleController::class, 'index'])->name('custom-email-schedules.index');

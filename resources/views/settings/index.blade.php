@@ -3,7 +3,7 @@
 @section('title', 'Settings')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset_version('css/timesheet/main.css') }}">
+    @include('components.timesheet-styles')
     <style>
         .settings-container {
             max-width: 1200px;
@@ -214,35 +214,37 @@
     <div class="settings-tabs">
         <button class="settings-tab active" data-tab="general" onclick="switchTab('general')">
             <i class="fas fa-building"></i>
-            General
+            Business details
         </button>
         <button class="settings-tab" data-tab="email" onclick="switchTab('email')">
             <i class="fas fa-envelope"></i>
-            Email
+            Email delivery
         </button>
         <button class="settings-tab" data-tab="payment" onclick="switchTab('payment')">
             <i class="fas fa-money-check-alt"></i>
-            Payment
+            Payments & Stripe
         </button>
         <button class="settings-tab" data-tab="automation" onclick="switchTab('automation')">
             <i class="fas fa-clock"></i>
-            Automation
+            Activity reports & cron
         </button>
         <button class="settings-tab" data-tab="scheduler" onclick="switchTab('scheduler')">
             <i class="fas fa-calendar-alt"></i>
-            Scheduler
+            Email schedules
         </button>
         <button class="settings-tab" data-tab="scheduler-log" onclick="switchTab('scheduler-log')">
             <i class="fas fa-clipboard-list"></i>
-            Scheduler Log
+            Delivery history
         </button>
+        <button class="settings-tab" data-tab="backup-schedule" onclick="switchTab('backup-schedule')"><i class="fas fa-database" aria-hidden="true"></i> Backup schedule</button>
         <button class="settings-tab" data-tab="logs" onclick="switchTab('logs')">
             <i class="fas fa-file-lines"></i>
-            Logs
+            Application logs
         </button>
     </div>
 
-    <form id="settings-form">
+    <div class="settings-layout">
+    <form id="settings-form" novalidate>
         {{-- General Tab --}}
         <div class="tab-content active" id="general-tab">
             @include('settings.tabs.general')
@@ -272,15 +274,17 @@
             @include('settings.tabs.scheduler-log')
         </div>
 
+        <div class="tab-content" id="backup-schedule-tab">@include('settings.tabs.backups')</div>
         {{-- Logs Tab --}}
         <div class="tab-content" id="logs-tab">
             @include('settings.tabs.logs')
         </div>
     </form>
+    </div>
 </div>
 
 {{-- Save Bar --}}
-<div class="save-bar">
+<div class="save-bar" id="settings-save-bar">
     <div class="save-bar-content">
         <div id="save-message" class="save-bar-message"></div>
         <div>
@@ -289,7 +293,7 @@
             </button>
             <button type="submit" form="settings-form" class="btn btn-primary">
                 <i class="fas fa-save"></i>
-                Save All Settings
+                Save settings
             </button>
         </div>
     </div>

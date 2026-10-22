@@ -144,11 +144,17 @@ export function truncateDescription(text, maxLength) {
  * @param {string} html - HTML string
  * @returns {string} Plain text
  */
+export function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[char]));
+}
 export function htmlToPlainText(html) {
     if (!html) return '';
-    const temp = document.createElement('div');
-    temp.innerHTML = String(html);
-    return (temp.textContent || temp.innerText || '').trim();
+    const documentText = new DOMParser().parseFromString(String(html), 'text/html');
+    documentText.querySelectorAll('script, style').forEach(node => node.remove());
+    documentText.querySelectorAll('br').forEach(node => node.replaceWith('\n'));
+    documentText.querySelectorAll('li').forEach(node => node.prepend('• '));
+    documentText.querySelectorAll('p, div, li, ul, ol, blockquote').forEach(node => node.append('\n'));
+    return (documentText.body.textContent || '').replace(/\u00a0/g, ' ').replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 /**
@@ -302,4 +308,32 @@ export function initializeUtils() {
     window.utils.copyToClipboard = copyToClipboard;
     window.utils.htmlToPlainText = htmlToPlainText;
     window.utils.sanitizeRichTextHtml = sanitizeRichTextHtml;
+}
+
+
+// Confirm the server created a file before showing success or downloading an error page.
+export async function downloadFile(url, fallbackName) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
+    try {
+        const response = await fetch(url, {signal: controller.signal, headers: {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'}});
+        const type = response.headers.get('content-type') || '';
+        if (!response.ok || type.includes('application/json') || type.includes('text/html')) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.message || 'The file could not be generated. Please try again.');
+        }
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const name = /filename="?([^";]+)"?/i.exec(response.headers.get('content-disposition') || '')?.[1];
+        link.href = objectUrl;
+        link.download = name || fallbackName;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    } catch (error) {
+        if (controller.signal.aborted) throw new Error('File generation timed out. Please try again.');
+        throw error;
+    } finally { clearTimeout(timeout); }
 }

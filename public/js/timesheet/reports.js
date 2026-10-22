@@ -162,7 +162,7 @@ export function displayReport() {
                 : '-';
             const formattedDuration = log.formatted_duration || (log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-');
             const workDescription = log.work_description || '-';
-            const workDescriptionText = Utils.htmlToPlainText(workDescription) || '-';
+            const workDescriptionText = (log.work_description_text ?? Utils.htmlToPlainText(workDescription)) || '-';
             const truncatedDescription = Utils.truncateDescription(workDescriptionText, 100);
 
             // Use server-provided clock_in_display_date to avoid timezone issues
@@ -174,7 +174,7 @@ export function displayReport() {
                 <td>${clockOutDisplay}</td>
                 <td>${formattedDuration}</td>
                 <td>
-                    <div class="description-preview">${truncatedDescription}</div>
+                    <div class="description-preview">${Utils.escapeHtml(truncatedDescription)}</div>
                     ${workDescriptionText.length > 100 ? `<a href="#" class="description-truncated" onclick="viewDetails(${log.id}); return false;">View Details</a>` : ''}
                 </td>
             `;
@@ -188,7 +188,7 @@ export function displayReport() {
             const formattedDuration = log.total_minutes ? window.utils.formatTime(log.total_minutes) : '-';
 
             const workDesc = log.work_description || '-';
-            const workDescText = Utils.htmlToPlainText(workDesc) || '-';
+            const workDescText = (log.work_description_text ?? Utils.htmlToPlainText(workDesc)) || '-';
             const truncatedDesc = Utils.truncateDescription(workDescText, 100);
 
             // Use server-provided clock_in_display_date to avoid timezone issues
@@ -206,7 +206,7 @@ export function displayReport() {
                 <td>${clockOutTime}</td>
                 <td>${formattedDuration}</td>
                 <td>
-                    <div class="description-preview">${truncatedDesc}</div>
+                    <div class="description-preview">${Utils.escapeHtml(truncatedDesc)}</div>
                     ${workDescText.length > 100 ? `<a href="#" class="description-truncated" onclick="viewDetails(${log.id}); return false;">View Details</a>` : ''}
                 </td>
             `;
@@ -232,12 +232,7 @@ export async function exportExcel() {
         const url = State.selectedProjectId
             ? `/api/timesheet/export-excel?start_date=${startDate}&end_date=${endDate}&project_id=${State.selectedProjectId}`
             : `/api/timesheet/export-excel?start_date=${startDate}&end_date=${endDate}`;
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `Timesheet_${State.currentReportData.period.start_date}_to_${State.currentReportData.period.end_date}.xlsx`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        await Utils.downloadFile(url, `Timesheet_${startDate}_to_${endDate}.xlsx`);
 
         window.notify.success('Excel file downloaded successfully!');
     } catch (error) {

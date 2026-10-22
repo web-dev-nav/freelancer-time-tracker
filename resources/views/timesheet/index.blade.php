@@ -4,8 +4,8 @@
 @section('main-anchor', 'workspace-title')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset_version('css/timesheet/main.css') }}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css">
+    @include('components.timesheet-styles')
+    <link rel="stylesheet" href="{{ asset_version('vendor/quill/quill.snow.css') }}">
 @endpush
 
 @section('content')
@@ -58,6 +58,17 @@
 @endpush
 
 @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+    <script src="{{ asset_version('vendor/quill/quill.js') }}"></script>
+    <script>
+        setTimeout(() => {
+            if (window.timesheetInitialized) return;
+            const panel = document.getElementById('project-load-error');
+            if (panel) { panel.hidden = false; panel.querySelector('span').textContent = 'The workspace could not start. Reload to fetch the latest application files.'; }
+            const selector = document.getElementById('project-selector');
+            if (selector) selector.replaceChildren(new Option('Workspace unavailable — retry below', ''));
+            const recent = document.getElementById('recent-work-list');
+            if (recent) recent.textContent = 'Recent work could not load because the workspace did not start.';
+        }, 15000);
+    </script>
     <script type="module" src="{{ asset_version('js/timesheet/index.js') }}"></script>
 @endpush

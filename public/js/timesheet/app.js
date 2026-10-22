@@ -1,3 +1,4 @@
+import { storage } from '../storage.js';
 /**
  * Application Initialization Module
  *
@@ -39,7 +40,7 @@ function getAvailableTabs() {
 
 function resolveInitialTab() {
     const availableTabs = getAvailableTabs();
-    const savedTab = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+    const savedTab = storage.getItem(ACTIVE_TAB_STORAGE_KEY);
 
     if (savedTab && availableTabs.includes(savedTab)) {
         return savedTab;
@@ -72,12 +73,12 @@ export function initializeApp() {
  * Setup all event listeners for the application
  */
 export function setupEventListeners() {
-    // Project selector change
+    // Organization selector change
     const projectSelector = document.getElementById('project-selector');
     if (projectSelector) {
         projectSelector.addEventListener('change', function () {
             State.setSelectedProjectId(this.value || null);
-            localStorage.setItem(
+            storage.setItem(
                 'selectedProjectId',
                 State.selectedProjectId || '',
             );
@@ -155,7 +156,7 @@ export function setupEventListeners() {
         });
     }
 
-    // Project form
+    // Organization form
     const projectForm = document.getElementById('project-form');
     if (projectForm) {
         projectForm.addEventListener('submit', saveProject);
@@ -186,7 +187,7 @@ export function showTab(tabName) {
             'Turn your tracked hours into a timesheet that is ready to share.',
         ],
         projects: [
-            'Projects',
+            'Organizations',
             'Organize your client work and choose what to focus on next.',
         ],
         invoices: [
@@ -212,7 +213,7 @@ export function showTab(tabName) {
     }
     navTab.classList.add('active');
     navTab.setAttribute('aria-current', 'page');
-    localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, tabName);
+    storage.setItem(ACTIVE_TAB_STORAGE_KEY, tabName);
 
     // Update tab content
     document.querySelectorAll('.tab-content').forEach((content) => {
@@ -249,12 +250,12 @@ export function showTab(tabName) {
 /**
  * Main application entry point
  */
-document.addEventListener('DOMContentLoaded', function () {
+function startApp() {
     // Initialize utility functions
     Utils.initializeUtils();
 
     // Load week start preference
-    const savedWeekStart = localStorage.getItem('weekStartDay') || 'monday';
+    const savedWeekStart = storage.getItem('weekStartDay') || 'monday';
     const weekStartDay = document.getElementById('week-start-day');
     if (weekStartDay) {
         weekStartDay.value = savedWeekStart;
@@ -263,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Save week start preference when changed
     if (weekStartDay) {
         weekStartDay.addEventListener('change', function () {
-            localStorage.setItem('weekStartDay', this.value);
+            storage.setItem('weekStartDay', this.value);
         });
     }
 
@@ -276,7 +277,7 @@ document.addEventListener('DOMContentLoaded', function () {
             timeZone: window.appTimezone || 'UTC',
         }).format(new Date());
     initializeApp();
-    initWorkDescriptionEditors();
+    try { initWorkDescriptionEditors(); } catch (error) { console.warn('Rich editor unavailable; using plain text.', error); }
     setupEventListeners();
     loadProjectsForSelector(); // Load projects first
 
@@ -284,4 +285,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (initialTab) {
         showTab(initialTab);
     }
-});
+    window.timesheetInitialized = true;
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', startApp);
+else startApp();

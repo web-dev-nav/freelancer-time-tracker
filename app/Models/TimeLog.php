@@ -114,8 +114,14 @@ class TimeLog extends Model
         'clock_out_time',
         'clock_in_display_date',
         'duration_hours',
-        'formatted_duration'
+        'formatted_duration',
+        'work_description_text'
     ];
+
+    public function getWorkDescriptionTextAttribute(): string
+    {
+        return \App\Support\DescriptionText::fromHtml($this->work_description);
+    }
 
     // Relationships
     public function project()

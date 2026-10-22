@@ -227,7 +227,7 @@ export function displayInvoices(invoices) {
 
         const isOverdue = invoice.is_overdue;
 
-        const isScheduled = invoice.scheduled_send_at && !invoice.sent_at && invoice.status !== 'cancelled';
+        const isScheduled = invoice.scheduled_send_at && !['paid', 'cancelled'].includes(invoice.status);
 
         const openedCount = Number(invoice.opened_count ?? 0);
         let viewedIndicator = '';
@@ -264,6 +264,7 @@ export function displayInvoices(invoices) {
                                         ${isOverdue ? 'OVERDUE' : invoice.status.toUpperCase()}
                                     </span>
                                 `}
+                                ${invoice.last_send_error && isScheduled ? `<span class="badge badge-danger">${Number(invoice.scheduled_send_attempts) >= 5 ? 'Delivery failed — reschedule' : 'Retry pending'}</span>` : ''}
                                 ${viewedIndicator}
                             </div>
                         </div>
@@ -296,6 +297,7 @@ export function displayInvoices(invoices) {
                                 <div>
                                     <div style="font-size: 10px; color: var(--primary-color); text-transform: uppercase; font-weight: 700; margin-bottom: 2px; letter-spacing: 0.5px;">Scheduled Time</div>
                                     <div style="font-size: 14px; font-weight: 700; color: var(--primary-color);">${new Date(invoice.scheduled_send_at).toLocaleString('en-US', {
+                                        timeZone: window.appTimezone || 'UTC',
                                         year: 'numeric',
                                         month: 'short',
                                         day: 'numeric',
@@ -309,13 +311,9 @@ export function displayInvoices(invoices) {
                                 <i class="fas fa-paper-plane" style="color: #3b82f6; font-size: 12px;"></i>
                                 <div style="font-size: 11px; color: var(--primary-color);">
                                     <strong>Will send at:</strong> ${(() => {
-                                        const scheduled = new Date(invoice.scheduled_send_at);
-                                        const minutes = scheduled.getMinutes();
-                                        const nextInterval = Math.ceil(minutes / 5) * 5;
-                                        const triggerTime = new Date(scheduled);
-                                        triggerTime.setMinutes(nextInterval);
-                                        triggerTime.setSeconds(0);
+                                        const triggerTime = new Date(invoice.scheduled_send_at);
                                         return triggerTime.toLocaleString('en-US', {
+                                            timeZone: window.appTimezone || 'UTC',
                                             month: 'short',
                                             day: 'numeric',
                                             hour: 'numeric',
@@ -339,7 +337,7 @@ export function displayInvoices(invoices) {
                         </div>
                         <div class="invoice-detail">
                             <i class="fas fa-folder" style="color: #8b5cf6;"></i>
-                            <span style="font-size: 13px; color: var(--text-secondary);">Project: <strong style="color: var(--text-primary);">${invoice.project?.name || 'N/A'}</strong></span>
+                            <span style="font-size: 13px; color: var(--text-secondary);">Organization: <strong style="color: var(--text-primary);">${invoice.project?.name || 'N/A'}</strong></span>
                         </div>
                         ${invoice.sent_at ? `
                             <div class="invoice-detail">
@@ -486,20 +484,20 @@ export async function showCreateInvoiceModal() {
 
         const selector = document.getElementById('invoice-project-id');
         if (selector) {
-            selector.innerHTML = '<option value="">Select a project...</option>';
+            selector.innerHTML = '<option value="">Select an organization...</option>';
         }
 
         // Reset items table and totals
         displayCreateInvoiceItems();
         updateCreateInvoiceTotals();
 
-        // Load active projects for selector
+        // Load active organizations for selector
         const response = await window.api.request('/api/projects/active');
 
         if (response.success) {
             createInvoiceProjects = response.data || [];
             if (selector) {
-                selector.innerHTML = '<option value="">Select a project...</option>' +
+                selector.innerHTML = '<option value="">Select an organization...</option>' +
                     createInvoiceProjects.map(p => `
                         <option value="${p.id}" data-rate="${p.hourly_rate || 0}" data-tax="${p.has_tax ? 13 : 0}">
                             ${p.name}${p.client_name ? ' (' + p.client_name + ')' : ''}
@@ -630,9 +628,9 @@ export async function createInvoice(e) {
     const notes = document.getElementById('invoice-notes').value;
     const description = document.getElementById('invoice-description').value;
 
-    console.log('Project ID:', projectId);
+    console.log('Organization ID:', projectId);
     if (!projectId) {
-        window.notify.error('Please select a project');
+        window.notify.error('Please select an organization');
         return;
     }
 
@@ -818,7 +816,7 @@ window.deleteInvoiceItem = deleteInvoiceItem;
 export function showAddItemModalForCreate() {
     const projectId = document.getElementById('invoice-project-id').value;
     if (!projectId) {
-        window.notify.error('Please select a project first');
+        window.notify.error('Please select an organization first');
         return;
     }
 
@@ -1064,6 +1062,7 @@ function setInvoiceScheduleState(invoice) {
     const reminderDate = document.getElementById('invoice-reminder-date');
     const reminderTime = document.getElementById('invoice-reminder-time');
     const isLocked = ['paid', 'cancelled'].includes(String(invoice?.status || '').toLowerCase());
+    if (invoice?.last_send_error) showInvoiceMessage('error', `Last delivery attempt failed: ${invoice.last_send_error}. ${Number(invoice.scheduled_send_attempts) >= 5 ? 'Automatic retries stopped after 5 attempts. Save a new schedule to retry.' : 'Automatic retry is pending.'}`);
 
     if (isLocked) {
         const nowInput = document.querySelector('input[name="invoice-schedule-mode"][value="now"]');
@@ -1119,16 +1118,20 @@ function setupInvoiceScheduleControls() {
         if (dueWrap) {
             dueWrap.style.display = 'block';
         }
+        const button = document.getElementById('invoice-delivery-submit');
+        if (button) button.textContent = selected === 'specific' ? 'Save delivery schedule' : 'Send invoice now';
+        const dateInput = document.getElementById('invoice-schedule-date');
+        const timeInput = document.getElementById('invoice-schedule-time');
+        if (dateInput) dateInput.required = selected === 'specific';
+        if (timeInput) timeInput.required = selected === 'specific';
         updateInvoiceSchedulePreview();
     };
 
-    modeInputs.forEach((input) => {
-        input.addEventListener('change', updateVisibility);
-    });
+    modeInputs.forEach(input => { input.onchange = updateVisibility; });
 
     [dateInput, timeInput, reminderDate, reminderTime].forEach((input) => {
         if (input) {
-            input.addEventListener('change', updateInvoiceSchedulePreview);
+            input.onchange = updateInvoiceSchedulePreview;
         }
     });
 
@@ -1152,35 +1155,23 @@ function buildLocalDateTime(dateStr, timeStr) {
         return null;
     }
 
-    return date.toISOString();
+    return `${dateStr} ${timeStr}:00`;
 }
 
+function inputParts(date) {
+    const parts = new Intl.DateTimeFormat('en-CA', {timeZone: window.appTimezone || 'UTC', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'}).formatToParts(date);
+    return Object.fromEntries(parts.map(part => [part.type, part.value]));
+}
 function formatDateInputLocal(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    const parts = inputParts(date);
+    return `${parts.year}-${parts.month}-${parts.day}`;
 }
-
 function formatTimeInputLocal(date) {
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
+    const parts = inputParts(date);
+    return `${parts.hour}:${parts.minute}`;
 }
-
 function formatLocalDateTime(dateStr, timeStr) {
-    const date = new Date(`${dateStr}T${timeStr}:00`);
-    if (Number.isNaN(date.getTime())) {
-        return null;
-    }
-    return date.toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-    });
+    return dateStr && timeStr ? `${dateStr} at ${timeStr} (${window.appTimezone || 'UTC'})` : null;
 }
 
 function updateInvoiceSchedulePreview() {
@@ -1235,6 +1226,7 @@ export async function sendInvoice(e) {
     const scheduleMode = document.querySelector('input[name="invoice-schedule-mode"]:checked')?.value || 'now';
     const isLocked = ['paid', 'cancelled'].includes(String(currentInvoice?.status || '').toLowerCase());
 
+    if (document.getElementById('invoice-delivery-submit')?.disabled) return;
     const data = {
         email: email,
         subject: subject || null,
@@ -1270,6 +1262,8 @@ export async function sendInvoice(e) {
         data.reminder_send_at = buildLocalDateTime(reminderDate, reminderTime);
     }
 
+    const deliveryButton = document.getElementById('invoice-delivery-submit');
+    if (deliveryButton) { deliveryButton.disabled = true; deliveryButton.setAttribute('aria-busy', 'true'); }
     try {
         hideInvoiceMessage();
         const response = await window.api.request(`/api/invoices/${invoiceId}/send-email`, {
@@ -1294,6 +1288,8 @@ export async function sendInvoice(e) {
         }
     } catch (error) {
         showInvoiceMessage('error', 'Failed to send invoice: ' + error.message);
+    } finally {
+        if (deliveryButton) { deliveryButton.disabled = false; deliveryButton.removeAttribute('aria-busy'); }
     }
 }
 
@@ -1831,26 +1827,6 @@ export async function deleteInvoiceItem(itemId) {
 }
 
 /**
- * Calculate next cron trigger time (next 5-minute interval)
- */
-function getNextCronTrigger(scheduledTime) {
-    const scheduled = new Date(scheduledTime);
-    const minutes = scheduled.getMinutes();
-
-    // Round up to next 5-minute interval
-    const nextInterval = Math.ceil(minutes / 5) * 5;
-
-    const triggerTime = new Date(scheduled);
-    triggerTime.setMinutes(nextInterval);
-    triggerTime.setSeconds(0);
-    triggerTime.setMilliseconds(0);
-
-    // If we're already past this interval in the same hour, it's the right time
-    // Otherwise if rounding brought us to :00 of next hour, that's correct too
-    return triggerTime;
-}
-
-/**
  * Update trigger time preview
  */
 function updateTriggerTimePreview() {
@@ -1860,15 +1836,7 @@ function updateTriggerTimePreview() {
     if (!scheduledInput || !previewDiv) return;
 
     if (scheduledInput.value) {
-        const triggerTime = getNextCronTrigger(scheduledInput.value);
-        const formattedTime = triggerTime.toLocaleString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true
-        });
+        const formattedTime = `${scheduledInput.value.replace('T', ' ')} (${window.appTimezone || 'UTC'})`;
 
         previewDiv.innerHTML = `
             <div style="padding: 10px 12px; background: var(--accent-soft); border-radius: 6px; border-left: 3px solid #3b82f6;">
@@ -1900,13 +1868,11 @@ export function toggleScheduleSend() {
 
         // Set minimum datetime to current time
         const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        scheduledInput.min = now.toISOString().slice(0, 16);
+        scheduledInput.min = `${formatDateInputLocal(now)}T${formatTimeInputLocal(now)}`;
 
         // Set default to 1 hour from now
         const oneHourLater = new Date(Date.now() + 60 * 60 * 1000);
-        oneHourLater.setMinutes(oneHourLater.getMinutes() - oneHourLater.getTimezoneOffset());
-        scheduledInput.value = oneHourLater.toISOString().slice(0, 16);
+        scheduledInput.value = `${formatDateInputLocal(oneHourLater)}T${formatTimeInputLocal(oneHourLater)}`;
 
         // Add event listener for time changes
         scheduledInput.removeEventListener('change', updateTriggerTimePreview);

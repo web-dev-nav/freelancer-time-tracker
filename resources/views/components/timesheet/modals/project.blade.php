@@ -1,9 +1,9 @@
-{{-- Project Modal Component --}}
+{{-- Organization Modal Component --}}
 {{-- Modal for adding or editing projects --}}
 <div class="modal" id="project-modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h3 id="project-modal-title">Add New Project</h3>
+            <h3 id="project-modal-title">Add New Organization</h3>
             <div class="modal-header-actions">
                 <a href="{{ route('settings.index') }}" target="_blank" class="btn btn-secondary">
                     <i class="fas fa-cog"></i>
@@ -21,7 +21,7 @@
             <div class="form-group">
                 <label class="form-label" for="project-name">
                     <i class="fas fa-briefcase"></i>
-                    Project Name *
+                    Organization Name *
                 </label>
                 <input type="text" id="project-name" class="form-control" required
                        placeholder="e.g., Upwork Client - Website Development">
@@ -77,7 +77,7 @@
                 <div class="form-group">
                     <label class="form-label" for="project-color">
                         <i class="fas fa-palette"></i>
-                        Project Color
+                        Organization Color
                     </label>
                     <input type="color" id="project-color" class="form-control" value="#8b5cf6">
                 </div>
@@ -133,7 +133,7 @@
                     Description/Notes
                 </label>
                 <textarea id="project-description" class="form-control" rows="3"
-                         placeholder="Add any notes about this project..."></textarea>
+                         placeholder="Add any notes about this organization..."></textarea>
             </div>
         </form>
 
@@ -143,7 +143,7 @@
             </button>
             <button type="submit" form="project-form" class="btn btn-primary">
                 <i class="fas fa-save"></i>
-                Save Project
+                Save Organization
             </button>
         </div>
     </div>

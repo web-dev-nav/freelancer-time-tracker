@@ -9,9 +9,8 @@
     <script src="{{ asset_version('js/theme.js') }}"></script>
     
     <!-- Icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://bootswatch.com/_vendor/bootstrap-icons/font/bootstrap-icons.min.css">
+    <link href="{{ asset_version('vendor/fontawesome/css/all.min.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset_version('vendor/bootstrap/bootstrap.min.css') }}">
 
     <link rel="stylesheet" href="{{ asset_version('css/app-theme.css') }}">
 
@@ -57,7 +56,7 @@
     {{-- Modals Stack (renders outside main-content) --}}
     @stack('modals')
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="{{ asset_version('vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
     <!-- Scripts -->
     <script>
         // Global CSRF token
@@ -88,6 +87,12 @@
                     }
                 };
 
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), options.timeout ?? 20000);
+                const abort = () => controller.abort();
+                options.signal?.addEventListener('abort', abort, { once: true });
+                config.signal = controller.signal;
+                if (options.signal?.aborted) controller.abort();
                 try {
                     const response = await fetch(url, config);
                     if (response.status === 401) {
@@ -104,7 +109,11 @@
                     return data;
                 } catch (error) {
                     console.error('API request failed:', error);
+                    if (controller.signal.aborted) throw new Error('The request timed out or was cancelled. Please try again.');
                     throw error;
+                } finally {
+                    clearTimeout(timeout);
+                    options.signal?.removeEventListener('abort', abort);
                 }
             }
         };
@@ -156,6 +165,7 @@
     </script>
     
     <script src="{{ asset_version('js/dialogs.js') }}" defer></script>
+    @include('components.module-map')
     @stack('scripts')
 </body>
 </html>

@@ -61,6 +61,8 @@ class Invoice extends Model
         'due_date' => 'date',
         'sent_at' => 'datetime',
         'scheduled_send_at' => 'datetime',
+        'next_send_attempt_at' => 'datetime',
+        'scheduled_send_attempts' => 'integer',
         'reminder_send_at' => 'datetime',
         'paid_at' => 'datetime',
         'cancelled_at' => 'datetime',

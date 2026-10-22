@@ -16,7 +16,7 @@
         @if(auth()->user()?->isAuthor())
             <button class="nav-tab" data-tab="projects">
                 <i class="fas fa-folder"></i>
-                Projects
+                Organizations
             </button>
         @endif
         <button class="nav-tab" data-tab="invoices">

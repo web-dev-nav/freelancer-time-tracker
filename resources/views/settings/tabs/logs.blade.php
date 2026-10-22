@@ -29,7 +29,7 @@
     .logs-output {
         margin: 0;
         background: #0b1220;
-        color: var(--surface-border);
+        color: #e2e8f0;
         border: 1px solid #1e293b;
         border-radius: 10px;
         max-height: 58vh;
@@ -110,7 +110,7 @@
     }
 
     .log-line.level-debug .log-level {
-        color: var(--border-color);
+        color: #cbd5e1;
     }
 
     .log-line.stack-line {
@@ -134,14 +134,14 @@
 <div class="settings-section">
     <div class="section-header">
         <h2><i class="fas fa-file-lines"></i> Application Logs</h2>
-        <p>View recent Laravel logs directly here for quick debugging.</p>
+        <p>Choose a day and time range. Logs rotate daily and are kept for at least 7 days. Each request reads a small page, even from large files.</p>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;align-items:end;margin-bottom:12px;">
+    <div class="logs-filters">
         <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label" for="logs-file-select">Log File</label>
+            <label class="form-label" for="logs-file-select">Date</label>
             <select id="logs-file-select" class="form-control">
-                <option value="">Loading files...</option>
+                <option value="">Loading dates…</option>
             </select>
         </div>
 
@@ -151,8 +151,7 @@
                 <option value="200">200</option>
                 <option value="400" selected>400</option>
                 <option value="800">800</option>
-                <option value="1500">1500</option>
-                <option value="3000">3000</option>
+                <option value="1000">1000</option>
             </select>
         </div>
 
@@ -167,6 +166,9 @@
             </select>
         </div>
 
+        <div class="form-group"><label class="form-label" for="logs-source-select">Source</label><select id="logs-source-select" class="form-control"><option value="daily">Daily log</option><option value="legacy">Legacy laravel.log</option></select></div>
+        <div class="form-group"><label class="form-label" for="logs-start-time">From time</label><input type="time" id="logs-start-time" class="form-control"></div>
+        <div class="form-group"><label class="form-label" for="logs-end-time">Until time</label><input type="time" id="logs-end-time" class="form-control"></div>
         <div class="logs-toolbar">
             <button type="button" id="refresh-logs-btn" class="btn btn-secondary logs-toolbar-btn">
                 <i class="fas fa-rotate"></i>
@@ -186,5 +188,8 @@
     <div id="logs-status" style="display:none;margin-bottom:10px;padding:8px 10px;border-radius:8px;font-size:12px;"></div>
     <div id="logs-meta" style="margin-bottom:8px;color:var(--text-secondary);font-size:12px;"></div>
 
-    <div id="logs-output" class="logs-output">Open this tab and click Refresh to load logs.</div>
+    <p class="text-muted">Newest page first. Use “Load older entries” to continue through the selected day. Empty pages can occur when filters exclude the most recent entries.</p>
+    <button type="button" id="logs-older-btn" class="btn btn-secondary" hidden>Load older entries</button>
+    <div id="logs-output" class="logs-output" role="region" aria-label="Application log entries" tabindex="0">Open this tab and click Refresh to load logs.</div>
 </div>
+<style>@media(max-width:740px){.log-line.parsed{grid-template-columns:1fr}.logs-output{max-height:65vh}.log-line .log-ts{font-size:11px}}</style>

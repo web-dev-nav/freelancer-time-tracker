@@ -2,8 +2,11 @@
 
 ## Quick Setup
 
-The application has **1 automated backup task** scheduled to run daily:
-- **12:00 AM** - Full database backup (includes all projects and time logs)
+Run Laravel's scheduler **every minute** for invoice delivery, email schedules, and automatic backups.
+
+Configure the daily full backup in **Settings → Backup schedule**: enable/disable it, choose a time in `APP_TIMEZONE`, and retain 7–365 days. The default is midnight with 30-day retention. Settings also shows the last successful backup, failures, and the scheduler heartbeat. If the heartbeat is missing or older than three minutes, check the host cron job.
+
+After deploying these changes, run `php artisan migrate --force`, `php artisan optimize:clear`, and `php artisan view:cache`. The migration adds invoice retry fields. Interface assets are local and content-versioned; no frontend rebuild is required for the Blade interface.
 
 ## Setup Instructions
 
@@ -108,7 +111,9 @@ php artisan schedule:list
 
 **Expected output:**
 ```
-0 0 * * * ........ backup:database ...... Next Due: X hours from now
+* * * * * ........ backup:scheduled
+* * * * * ........ invoices:send-scheduled
+* * * * * ........ scheduler-heartbeat
 ```
 
 ### Test Scheduler Manually
@@ -127,7 +132,7 @@ php artisan backup:projects --project-id=1
 
 ### Check Backup Files
 ```bash
-ls -lh storage/app/backups/
+ls -lh storage/app/private/backups/
 ```
 
 You should see files like:
@@ -157,11 +162,11 @@ You should see files like:
 
 ```bash
 # Make sure storage directory is writable
-chmod -R 775 storage/app/backups
-chown -R www-data:www-data storage/app/backups
+chmod -R 775 storage/app/private/backups
+chown -R www-data:www-data storage/app/private/backups
 
 # Or use your web server user
-chown -R $USER:$USER storage/app/backups
+chown -R $USER:$USER storage/app/private/backups
 ```
 
 ### PHP Path Issues
@@ -196,50 +201,38 @@ This will run the scheduler every minute in the foreground.
 
 ## Backup Schedule Details
 
-**Current Schedule:**
-- **Frequency:** Daily
-- **Time:** 12:00 AM
-- **Type:** Full database backup (includes all tables: projects, time_logs, sessions, etc.)
-- **Retention:** 30 days (auto-cleanup)
-- **Location:** `storage/app/backups/`
+- Full backups run once per day at the time saved in Settings, using `APP_TIMEZONE`.
+- `backup:scheduled` checks every minute and catches up after a missed run. Failed attempts retry after 15 minutes.
+- `backup:database` creates a backup immediately and remains available for manual use.
+- Organization SQL exports keep their existing two-day schedule. Full backups already include every organization.
+- Files use the private local disk (`storage/app/private/backups` by default). Earlier backups in `storage/app/backups` remain visible and downloadable.
+- SQLite backups include a consistent database snapshot and an SQL export. Cleanup runs after successful backups.
 
-**To change the schedule:**
+## Invoice Delivery and Application Logs
 
-Edit `routes/console.php`:
+Invoice delivery is checked every minute, without five-minute rounding. The selected time uses `APP_TIMEZONE`, independent of the browser's time zone. Failed deliveries remain scheduled and retry up to five attempts with increasing delays. Settings → Delivery history shows outcomes; the invoice displays failed/retrying state. Save a new delivery schedule after correcting email configuration to restart retries. No success state is stored before the mail transport accepts the message. Re-open and save any existing delivery schedules after deploying the timezone fix; old timestamps may have been stored in the browser/UTC time instead of application time.
 
-```php
-// Daily at 3:00 AM
-Schedule::command('backup:database')->dailyAt('03:00');
-
-// Every Monday at 2:00 AM
-Schedule::command('backup:database')->weeklyOn(1, '02:00');
-
-// Twice daily (2 AM and 2 PM)
-Schedule::command('backup:database')->twiceDaily(2, 14);
-
-// Every hour
-Schedule::command('backup:database')->hourly();
-```
+Settings → Application logs selects a date, time range, and level. Each request reads at most 256 KB; use “Load older entries” for previous pages. Log channels rotate daily, retaining at least seven days (14 by default, configurable with `LOG_DAILY_DAYS`). Old `laravel.log` remains available as a separately selected legacy source. Historical daily files cannot be recreated for days that were never logged.
 
 ## Production Tips
 
 1. **Email Notifications:**
    Add to `routes/console.php`:
    ```php
-   Schedule::command('backup:database')
-       ->dailyAt('02:30')
+   Schedule::command('backup:scheduled')
+       ->everyMinute()
        ->emailOutputOnFailure('admin@example.com');
    ```
 
 2. **Logging:**
    Check Laravel logs for backup status:
    ```bash
-   tail -f storage/logs/laravel.log
+   tail -f storage/logs/laravel-YYYY-MM-DD.log
    ```
 
 3. **Monitor Disk Space:**
    ```bash
-   df -h storage/app/backups/
+   df -h storage/app/private/backups/
    ```
 
 4. **Off-site Backups:**
@@ -251,7 +244,7 @@ Schedule::command('backup:database')->hourly();
 ## Security Notes
 
 - Backup files contain sensitive data
-- Ensure `storage/app/backups/` is not publicly accessible
+- Ensure `storage/app/private/backups/` is not publicly accessible
 - Consider encrypting backups for production
 - Set proper file permissions (750 or 755 for directories, 640 or 644 for files)
 

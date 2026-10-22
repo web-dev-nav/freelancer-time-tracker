@@ -18,7 +18,7 @@ const ACTIVITY_COLUMN_OPTIONS = [
     { key: 'summary_sessions', label: 'Summary Sessions' },
     { key: 'summary_hours', label: 'Summary Hours' },
     { key: 'date', label: 'Date' },
-    { key: 'project', label: 'Project' },
+    { key: 'project', label: 'Organization' },
     { key: 'clock_in', label: 'In' },
     { key: 'clock_out', label: 'Out' },
     { key: 'duration', label: 'Duration' },
@@ -232,6 +232,9 @@ window.switchTab = function(tabName) {
         window.location.hash = tabName;
     }
 
+    const saveBar = document.getElementById('settings-save-bar');
+    if (saveBar) saveBar.hidden = ['backup-schedule', 'scheduler-log', 'logs'].includes(tabName);
+    if (tabName === 'backup-schedule') loadBackupSchedule();
     if (tabName === 'scheduler-log') {
         loadSchedulerLogs();
     }
@@ -422,7 +425,7 @@ function renderDailyActivityScheduleTable() {
     }
 
     if (!Array.isArray(dailyActivityClientSchedules) || dailyActivityClientSchedules.length === 0) {
-        container.innerHTML = `<div class="automation-empty-row">No client emails found in projects yet.</div>`;
+        container.innerHTML = `<div class="automation-empty-row">No client emails found in organizations yet.</div>`;
         return;
     }
 
@@ -610,91 +613,62 @@ function formatSchedulerBodyPreview(schedule) {
 
 function setLogsStatus(message, type = 'info') {
     const status = document.getElementById('logs-status');
-    if (!status) {
-        return;
-    }
-
-    if (!message) {
-        status.style.display = 'none';
-        status.textContent = '';
-        return;
-    }
-
-    status.style.display = 'block';
+    if (!status) return;
+    status.style.display = message ? 'block' : 'none';
+    status.className = `alert alert-${type === 'error' ? 'danger' : type}`;
+    status.setAttribute('role', 'status');
     status.textContent = message;
-
-    if (type === 'error') {
-        status.style.background = '#fee2e2';
-        status.style.color = '#991b1b';
-        status.style.border = '1px solid #fecaca';
-    } else if (type === 'success') {
-        status.style.background = '#dcfce7';
-        status.style.color = '#166534';
-        status.style.border = '1px solid #bbf7d0';
-    } else {
-        status.style.background = '#e0f2fe';
-        status.style.color = '#0c4a6e';
-        status.style.border = '1px solid #bae6fd';
-    }
 }
 
-window.loadAppLogs = async function() {
-    const logsOutput = document.getElementById('logs-output');
-    const logsMeta = document.getElementById('logs-meta');
-    const fileSelect = document.getElementById('logs-file-select');
-    const linesSelect = document.getElementById('logs-lines-select');
-    const levelSelect = document.getElementById('logs-level-select');
-    const refreshBtn = document.getElementById('refresh-logs-btn');
-
-    if (!logsOutput || !logsMeta || !fileSelect || !linesSelect || !levelSelect) {
-        return;
+let logRequest = 0;
+let logController = null;
+let logCursor = null;
+window.loadAppLogs = async function(older = false) {
+    const requestId = ++logRequest;
+    logController?.abort();
+    logController = new AbortController();
+    const output = document.getElementById('logs-output');
+    const meta = document.getElementById('logs-meta');
+    const dates = document.getElementById('logs-file-select');
+    const refresh = document.getElementById('refresh-logs-btn');
+    const olderButton = document.getElementById('logs-older-btn');
+    if (!output || !dates) return;
+    const params = new URLSearchParams({lines: document.getElementById('logs-lines-select').value, level: document.getElementById('logs-level-select').value});
+    if (dates.value) params.set('date', dates.value);
+    if (document.getElementById('logs-source-select').value === 'legacy') params.set('file', 'laravel.log');
+    for (const [id, key] of [['logs-start-time', 'start_time'], ['logs-end-time', 'end_time']]) {
+        const value = document.getElementById(id).value;
+        if (value) params.set(key, value);
     }
-
-    const selectedFile = fileSelect.value || '';
-    const lines = linesSelect.value || '400';
-    const level = levelSelect.value || 'all';
-    const params = new URLSearchParams({ lines, level });
-    if (selectedFile) {
-        params.set('file', selectedFile);
-    }
-
-    if (refreshBtn) {
-        refreshBtn.disabled = true;
-        refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-    }
-
-    setLogsStatus('Loading logs...');
-
+    if (older && logCursor !== null) params.set('before', logCursor);
+    refresh.disabled = true;
+    olderButton.disabled = true;
+    output.setAttribute('aria-busy', 'true');
+    setLogsStatus('Loading selected log page…');
     try {
-        const response = await window.api.request(`/api/settings/logs?${params.toString()}`);
-        if (!response?.success) {
-            throw new Error(response?.message || 'Failed to load logs.');
-        }
-
-        const data = response.data || {};
-        const files = Array.isArray(data.available_files) ? data.available_files : [];
-        const currentFile = data.selected_file || '';
-        const options = files.map((file) => {
-            const selected = file.name === currentFile ? 'selected' : '';
-            const sizeKb = Math.max(1, Math.round((Number(file.size || 0) / 1024)));
-            return `<option value="${escapeHtml(file.name)}" ${selected}>${escapeHtml(file.name)} (${sizeKb} KB)</option>`;
-        }).join('');
-
-        fileSelect.innerHTML = options || '<option value="">No log files</option>';
-        latestLogPlainText = String(data.content || '');
-        logsOutput.innerHTML = renderLogsHtml(latestLogPlainText);
-        logsMeta.textContent = `File: ${currentFile || '-'} | Level: ${data.level || level} | Lines: ${data.line_count ?? 0}`;
-        setLogsStatus('Logs loaded successfully.', 'success');
+        const response = await window.api.request(`/api/settings/logs?${params}`, {signal: logController.signal, timeout: 10000});
+        if (requestId !== logRequest) return;
+        if (!response.success) throw new Error(response.message || 'Logs are unavailable.');
+        const data = response.data;
+        dates.replaceChildren(...data.available_dates.map(date => new Option(date, date, false, date === data.selected_date)));
+        const content = String(data.content || '');
+        latestLogPlainText = older ? [content, latestLogPlainText].filter(Boolean).join('\n') : content;
+        output.innerHTML = latestLogPlainText ? renderLogsHtml(latestLogPlainText) : '';
+        if (!latestLogPlainText) output.textContent = data.has_more ? 'No matching entries on this page. Load older entries to continue.' : 'No matching entries for this date and time range.';
+        logCursor = data.next_cursor;
+        olderButton.hidden = !data.has_more;
+        meta.textContent = `${data.selected_date} · ${data.timezone} · ${data.line_count} lines in this page · ${Math.ceil(data.bytes_read / 1024)} KB read · ${data.retention_days} days retained`;
+        setLogsStatus('Log page loaded.', 'success');
     } catch (error) {
-        console.error('Failed to load logs:', error);
-        latestLogPlainText = '';
-        logsOutput.textContent = 'Unable to load logs.';
-        logsMeta.textContent = '';
-        setLogsStatus('Failed to load logs: ' + (error.message || 'Unknown error'), 'error');
+        if (requestId !== logRequest) return;
+        hasLoadedLogsTab = false;
+        output.textContent = 'Could not load logs. Adjust the filters or click Refresh to retry.';
+        setLogsStatus(error.message || 'Unable to load logs.', 'error');
     } finally {
-        if (refreshBtn) {
-            refreshBtn.disabled = false;
-            refreshBtn.innerHTML = '<i class="fas fa-rotate"></i> Refresh';
+        if (requestId === logRequest) {
+            refresh.disabled = false;
+            olderButton.disabled = false;
+            output.setAttribute('aria-busy', 'false');
         }
     }
 };
@@ -732,7 +706,8 @@ window.deleteSelectedLogFile = async function() {
         return;
     }
 
-    const file = fileSelect.value;
+    const file = document.getElementById('logs-source-select').value === 'legacy'
+        ? 'laravel.log' : `laravel-${fileSelect.value}.log`;
     const confirmed = window.confirm(`Delete log file "${file}"? This cannot be undone.`);
     if (!confirmed) {
         return;
@@ -2135,6 +2110,12 @@ document.addEventListener('DOMContentLoaded', function() {
         logsLevelSelect.addEventListener('change', () => window.loadAppLogs());
     }
 
+    ['logs-source-select', 'logs-start-time', 'logs-end-time'].forEach(id => document.getElementById(id)?.addEventListener('change', () => window.loadAppLogs()));
+    document.getElementById('logs-older-btn')?.addEventListener('click', () => window.loadAppLogs(true));
+    document.getElementById('save-backup-schedule')?.addEventListener('click', saveBackupSchedule);
+    document.getElementById('refresh-backup-schedule')?.addEventListener('click', loadBackupSchedule);
+    document.getElementById('open-backups-link')?.addEventListener('click', () => { try { localStorage.setItem('timesheetActiveTab', 'backups'); } catch (_) {} });
+
     const hashTab = (window.location.hash || '').replace('#', '').trim();
     const savedTab = (() => {
         try {
@@ -2147,3 +2128,37 @@ document.addEventListener('DOMContentLoaded', function() {
     const initialTabExists = document.querySelector(`.settings-tab[data-tab="${initialTab}"]`);
     window.switchTab(initialTabExists ? initialTab : 'general');
 });
+
+function renderBackupSchedule(data) {
+    document.getElementById('backup-enabled').checked = data.enabled;
+    setValue('backup-time', data.time);
+    setValue('backup-retention', data.retention_days);
+    const display = value => value ? new Intl.DateTimeFormat(undefined, {dateStyle: 'medium', timeStyle: 'short', timeZone: data.timezone}).format(new Date(value)) + ` (${data.timezone})` : 'Not recorded yet';
+    document.getElementById('backup-last-success').textContent = display(data.last_success_at);
+    document.getElementById('backup-next-run').textContent = data.enabled ? display(data.next_run_at) : 'Automatic backups disabled';
+    document.getElementById('backup-heartbeat').textContent = display(data.scheduler_last_seen_at);
+    const status = document.getElementById('backup-schedule-status');
+    status.textContent = data.scheduler_healthy ? 'Scheduler is running. Backups follow the schedule below.' : 'The scheduler has not checked in recently. Check the host cron job below; invoice delivery and automatic backups need it.';
+    status.className = `alert alert-${data.scheduler_healthy ? 'success' : 'warning'}`;
+    const error = document.getElementById('backup-last-error');
+    error.hidden = !data.last_error;
+    error.textContent = data.last_error ? `Last backup failed: ${data.last_error}. The scheduler retries after 15 minutes.` : '';
+}
+async function loadBackupSchedule() {
+    try {
+        const response = await window.api.request('/api/settings/backups');
+        renderBackupSchedule(response.data);
+    } catch (error) {
+        document.getElementById('backup-schedule-status').textContent = `Could not load backup settings: ${error.message}. Use Refresh status to retry.`;
+    }
+}
+async function saveBackupSchedule() {
+    const button = document.getElementById('save-backup-schedule');
+    button.disabled = true;
+    try {
+        const response = await window.api.request('/api/settings/backups', {method: 'PUT', body: JSON.stringify({enabled: document.getElementById('backup-enabled').checked, time: getValue('backup-time'), retention_days: Number(getValue('backup-retention'))})});
+        renderBackupSchedule(response.data);
+        window.notify.success(response.message);
+    } catch (error) { window.notify.error(`Could not save backup schedule: ${error.message}`); }
+    finally { button.disabled = false; }
+}

@@ -8,13 +8,13 @@
                 <p class="backups-subtitle">Manage and download your backup files</p>
             </div>
             <div class="backups-page-actions">
-                <button class="btn btn-primary" onclick="createFullBackup()">
+                <button class="btn btn-primary" onclick="createFullBackup()" id="create-full-backup-btn">
                     <i class="fas fa-database"></i>
                     Full Database Backup
                 </button>
                 <button class="btn btn-success" onclick="showProjectBackupSelector()">
                     <i class="fas fa-folder"></i>
-                    Project Backup
+                    Organization Backup
                 </button>
                 <button class="btn btn-secondary" onclick="refreshBackupList()">
                     <i class="fas fa-sync-alt"></i>
@@ -23,12 +23,12 @@
             </div>
         </div>
 
-        {{-- Project Backup Selector (Hidden by default) --}}
+        {{-- Organization Backup Selector (Hidden by default) --}}
         <div id="project-backup-selector" class="project-backup-selector" style="display: none;">
             <div class="backup-selector-content">
-                <h3>Select Project to Backup</h3>
+                <h3>Select Organization to Backup</h3>
                 <select id="backup-project-select" class="form-control">
-                    <option value="">-- Select a Project --</option>
+                    <option value="">-- Select an organization --</option>
                 </select>
                 <div class="backup-selector-actions">
                     <button class="btn btn-primary" onclick="createProjectBackup()">

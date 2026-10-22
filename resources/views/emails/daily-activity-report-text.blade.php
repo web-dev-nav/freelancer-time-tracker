@@ -33,7 +33,7 @@ ACTIVITY DETAILS
 Date: {{ $log['date'] }}
 @endif
 @if(in_array('project', $activityColumns, true))
-Project: {{ $log['project'] }}
+Organization: {{ $log['project'] }}
 @endif
 @if(in_array('clock_in', $activityColumns, true))
 In: {{ $log['clock_in'] }}

@@ -33,6 +33,7 @@ class BackupDatabase extends Command
         $dbConfig = config("database.connections.{$dbConnection}");
 
         try {
+            Storage::disk('local')->makeDirectory('backups');
             if ($dbConnection === 'sqlite') {
                 $this->backupSqlite($dbConfig);
             } elseif (in_array($dbConnection, ['mysql', 'mariadb'])) {
@@ -45,10 +46,15 @@ class BackupDatabase extends Command
             }
 
             $this->cleanupOldBackups();
+            \App\Models\Setting::setValue('backup_last_success_at', now()->toIso8601String());
+            \App\Models\Setting::setValue('backup_last_error', null);
+            \App\Services\SchedulerLogService::record(['source' => 'backup', 'type' => 'Database backup', 'status' => 'completed', 'detail' => 'Full database backup saved.']);
             $this->info('✓ Database backup completed successfully!');
             return 0;
 
         } catch (\Exception $e) {
+            \App\Models\Setting::setValue('backup_last_error', $e->getMessage());
+            \App\Services\SchedulerLogService::record(['source' => 'backup', 'type' => 'Database backup', 'status' => 'error', 'detail' => $e->getMessage()]);
             $this->error("Backup failed: {$e->getMessage()}");
             return 1;
         }
@@ -68,15 +74,14 @@ class BackupDatabase extends Command
         // Generate filename with timestamp
         $filename = sprintf(
             'database-full-%s-backup.sqlite',
-            now()->format('Y-m-d_His')
+            now()->format('Y-m-d_His_u')
         );
 
-        // Copy SQLite file
-        $backupPath = storage_path("app/backups/{$filename}");
-
-        if (!copy($dbPath, $backupPath)) {
-            throw new \Exception("Failed to copy SQLite database file");
-        }
+        // VACUUM INTO includes committed WAL data and produces a consistent snapshot.
+        $backupPath = Storage::disk('local')->path("backups/{$filename}");
+        $connection = new \PDO('sqlite:'.$dbPath);
+        $connection->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+        $connection->exec('VACUUM INTO '.$connection->quote($backupPath));
 
         $fileSize = $this->formatBytes(filesize($backupPath));
         $this->info("✓ SQLite database backed up: {$filename} ({$fileSize})");
@@ -92,10 +97,10 @@ class BackupDatabase extends Command
     {
         $filename = sprintf(
             'database-full-%s-backup.sql',
-            now()->format('Y-m-d_His')
+            now()->format('Y-m-d_His_u')
         );
 
-        $backupPath = storage_path("app/backups/{$filename}");
+        $backupPath = Storage::disk('local')->path("backups/{$filename}");
 
         // Use sqlite3 command to generate SQL dump
         $command = sprintf(
@@ -179,10 +184,10 @@ class BackupDatabase extends Command
     {
         $filename = sprintf(
             'database-full-%s-backup.sql',
-            now()->format('Y-m-d_His')
+            now()->format('Y-m-d_His_u')
         );
 
-        $backupPath = storage_path("app/backups/{$filename}");
+        $backupPath = Storage::disk('local')->path("backups/{$filename}");
 
         $command = sprintf(
             'mysqldump -h %s -P %s -u %s %s %s > %s 2>&1',
@@ -266,10 +271,10 @@ class BackupDatabase extends Command
     {
         $filename = sprintf(
             'database-full-%s-backup.sql',
-            now()->format('Y-m-d_His')
+            now()->format('Y-m-d_His_u')
         );
 
-        $backupPath = storage_path("app/backups/{$filename}");
+        $backupPath = Storage::disk('local')->path("backups/{$filename}");
 
         $command = sprintf(
             'PGPASSWORD=%s pg_dump -h %s -p %s -U %s -F p -f %s %s 2>&1',
@@ -334,18 +339,19 @@ class BackupDatabase extends Command
      */
     private function cleanupOldBackups()
     {
-        $this->line('Cleaning up old backups (keeping last 30 days)...');
+        $days = app(\App\Services\BackupSchedule::class)->settings()['retention_days'];
+        $this->line("Cleaning up database backups older than {$days} days...");
 
-        $files = Storage::files('backups');
+        $files = Storage::disk('local')->files('backups');
         $deletedCount = 0;
-        $cutoffDate = now()->subDays(30);
+        $cutoffDate = now()->subDays($days);
 
         foreach ($files as $file) {
             // Only delete database backup files, not project backups
             if (strpos($file, 'database-full-') !== false) {
-                $lastModified = Storage::lastModified($file);
+                $lastModified = Storage::disk('local')->lastModified($file);
                 if ($lastModified < $cutoffDate->timestamp) {
-                    Storage::delete($file);
+                    Storage::disk('local')->delete($file);
                     $deletedCount++;
                 }
             }

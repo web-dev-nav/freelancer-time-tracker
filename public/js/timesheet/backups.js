@@ -1,3 +1,4 @@
+import { downloadFile } from './utils.js';
 /**
  * Backups Module
  *
@@ -43,7 +44,7 @@ async function loadProjectsForBackup() {
             const projects = response.data;
 
             // Clear existing options except the first one
-            select.innerHTML = '<option value="">-- Select a Project --</option>';
+            select.innerHTML = '<option value="">-- Select an organization --</option>';
 
             // Add project options
             projects.forEach(project => {
@@ -54,7 +55,7 @@ async function loadProjectsForBackup() {
             });
         }
     } catch (error) {
-        console.error('Failed to load projects for backup:', error);
+        console.error('Failed to load organizations for backup:', error);
     }
 }
 
@@ -224,26 +225,22 @@ function getPageNumbers(currentPage, totalPages) {
 /**
  * Create a new full database backup
  */
+let creatingBackup = false;
 export async function createFullBackup() {
+    if (creatingBackup) return;
+    creatingBackup = true;
+    const button = document.getElementById('create-full-backup-btn');
+    if (button) { button.disabled = true; button.setAttribute('aria-busy', 'true'); }
     try {
-        // Show loading notification
-        window.notify.info('Creating backup... This may take a moment.');
-
-        // Create a download link and trigger it
-        const link = document.createElement('a');
-        link.href = '/api/backups/create';
-        link.download = `database-full-${new Date().toISOString().split('T')[0]}.sql`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        // Wait a bit then reload the list
-        setTimeout(() => {
-            window.notify.success('Full database backup created successfully!');
-            loadBackups();
-        }, 2000);
+        window.notify.info('Creating backup…');
+        await downloadFile('/api/backups/create', 'database-backup.sql');
+        window.notify.success('Database backup created and downloaded.');
+        await loadBackups();
     } catch (error) {
         window.notify.error('Failed to create backup: ' + error.message);
+    } finally {
+        creatingBackup = false;
+        if (button) { button.disabled = false; button.removeAttribute('aria-busy'); }
     }
 }
 
@@ -297,14 +294,14 @@ export function refreshBackupList() {
 }
 
 /**
- * Show the project backup selector
+ * Show the organization backup selector
  */
 export function showProjectBackupSelector() {
     document.getElementById('project-backup-selector').style.display = 'block';
 }
 
 /**
- * Hide the project backup selector
+ * Hide the organization backup selector
  */
 export function hideProjectBackupSelector() {
     document.getElementById('project-backup-selector').style.display = 'none';
@@ -318,21 +315,21 @@ export async function createProjectBackup() {
     const projectId = document.getElementById('backup-project-select').value;
 
     if (!projectId) {
-        window.notify.error('Please select a project to backup');
+        window.notify.error('Please select an organization to backup');
         return;
     }
 
     try {
-        window.notify.info('Creating project backup...');
+        window.notify.info('Creating organization backup...');
 
         const response = await window.api.request(`/api/projects/${projectId}/backup`);
 
         if (response.success) {
-            window.notify.success('Project backup created successfully!');
+            window.notify.success('Organization backup created successfully!');
             hideProjectBackupSelector();
             loadBackups();
         }
     } catch (error) {
-        window.notify.error('Failed to create project backup: ' + error.message);
+        window.notify.error('Failed to create organization backup: ' + error.message);
     }
 }
